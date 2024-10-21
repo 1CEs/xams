@@ -4,7 +4,7 @@ import { IStudent } from "./interface/user/student";
 import { Role } from "../enums/role";
 import { IUser } from "./interface/user/user";
 
-const { Schema } = mongoose
+const { Schema, model } = mongoose
 
 export const UserSchema = new Schema<IUser>({
     email: {
@@ -63,3 +63,4 @@ export const instructorSchema = new Schema<IInstructor>({
 
 export const studentModel = UserSchema.discriminator('students', StudentSchema)
 export const instructorModel = UserSchema.discriminator('instructors', instructorSchema)
+export const adminModel = model('moderators', UserSchema)
