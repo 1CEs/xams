@@ -2,7 +2,7 @@ import { ObjectId, Date } from "mongoose";
 
 export interface IGroup {
     _id:            ObjectId
-    course:         ObjectId
+    course_id:         ObjectId
     name:           string
     join_code:      string
     students:       ObjectId[]

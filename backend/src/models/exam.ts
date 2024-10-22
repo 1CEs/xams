@@ -22,7 +22,7 @@ export const QuestionSchema = new Schema<IExamination['questions']>([{
         required: true,
     },
     correct_ans: {
-        type: Schema.Types.String,
+        type: [Schema.Types.String],
         required: true,
     },
     hint: {

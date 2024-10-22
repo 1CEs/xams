@@ -11,7 +11,7 @@ export interface IExamination {
         question_type:      QuestionType
         content:            string
         choices:            string[]
-        correct_ans:        string
+        correct_ans:        string[]
         hint:               string
         manual_grading:     boolean
     }[]

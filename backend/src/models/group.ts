@@ -39,7 +39,7 @@ export const ExamSettingSchema = new Schema<IGroup['exam_settings']>([{
 }])
 
 export const GroupSchema = new Schema<IGroup>({
-    course: {
+    course_id: {
         type: [Schema.Types.ObjectId]
     },
     name: {

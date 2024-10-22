@@ -61,6 +61,8 @@ export const instructorSchema = new Schema<IInstructor>({
     exam_bank: { type: [Schema.Types.ObjectId] }
 })
 
-export const studentModel = UserSchema.discriminator('students', StudentSchema)
-export const instructorModel = UserSchema.discriminator('instructors', instructorSchema)
+const userModel = model('user', UserSchema)
+
+export const studentModel = userModel.discriminator('students', StudentSchema)
+export const instructorModel = userModel.discriminator('instructors', instructorSchema)
 export const adminModel = model('moderators', UserSchema)
