@@ -1,7 +1,7 @@
 import { ObjectId } from "mongoose";
 import { instructorModel } from "../../../models/user";
 import { UserPayloadType, UserQueryType } from "../../../types/user";
-import { IInstructorRepository } from "../interface/repository/instructor-repo";
+import { IInstructorRepository } from "../interface/repository/instructor";
 
 export class InstructorRepository implements IInstructorRepository {
     private model: typeof instructorModel

@@ -1,8 +1,8 @@
 import { ObjectId } from "mongoose"
-import { UserPayloadType, UserQueryType } from "../../../../types/user"
+import { UserPayloadType, UserQueryType, UserServiceType, UserType } from "../../../../types/user"
 
 export interface IUserServiceFactory {
-    createService: () => void
+    createService: (type: UserType) => UserServiceType
 }
 
 export interface IUserService {

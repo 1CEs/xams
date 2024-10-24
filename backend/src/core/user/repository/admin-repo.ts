@@ -1,7 +1,7 @@
 import { ObjectId } from "mongoose";
 import { adminModel } from "../../../models/user";
 import { UserPayloadType, UserQueryType } from "../../../types/user";
-import { IAdminRepository } from "../interface/repository/admin-repo";
+import { IAdminRepository } from "../interface/repository/admin";
 
 export class AdminRepository implements IAdminRepository {
     private model: typeof adminModel

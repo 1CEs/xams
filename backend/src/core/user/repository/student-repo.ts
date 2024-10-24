@@ -1,7 +1,7 @@
 import { ObjectId } from "mongoose";
 import { studentModel } from "../../../models/user";
 import { UserPayloadType, UserQueryType } from "../../../types/user";
-import { IStudentRepository } from "../interface/repository/student-repo";
+import { IStudentRepository } from "../interface/repository/student";
 
 export class StudentRepository implements IStudentRepository {
     private model: typeof studentModel

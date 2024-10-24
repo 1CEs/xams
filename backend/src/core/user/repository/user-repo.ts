@@ -1,4 +1,4 @@
-import { IUserRepoFactory } from "../interface/repository/user-repo";
+import { IUserRepoFactory } from "../interface/repository/user";
 import { StudentRepository } from "./student-repo";
 import { AdminRepository } from "./admin-repo";
 import { InstructorRepository } from "./instructor-repo";

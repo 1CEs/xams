@@ -1,4 +1,4 @@
-import { IUserRepository } from "./user-repo";
+import { IUserRepository } from "./user";
 
 export interface IAdminRepository extends IUserRepository {
     // To implement.
