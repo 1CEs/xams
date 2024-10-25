@@ -1,4 +1,4 @@
-import { UserPayloadType, UserQueryType } from "../../../types/user";
+import { SignUpBody, UserPayloadType, UserQueryType } from "../../../types/user";
 import { ObjectId } from "mongoose";
 import { IUserService } from "../interface/service/user";
 import { AdminRepository } from "../repository/admin-repo";
@@ -10,7 +10,7 @@ export class AdminService implements IUserService {
         this.repository = repository
     }
 
-    async saveService(payload: UserPayloadType): Promise<UserQueryType> {
+    async saveService(payload: SignUpBody): Promise<UserQueryType> {
         return this.repository.save(payload)
     }
 
@@ -22,8 +22,8 @@ export class AdminService implements IUserService {
         return this.repository.findById(_id)
     }
 
-    async findByIdentifierService(identifier: 'username' | 'email') {
-        return this.repository.findByIdentifier(identifier)
+    async findByIdentifierService(identifier: 'username' | 'email', value: string) {
+        return this.repository.findByIdentifier(identifier, value)
     }
 
     async updateService(payload: UserPayloadType) {

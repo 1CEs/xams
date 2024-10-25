@@ -1,6 +1,6 @@
 import { ObjectId } from "mongoose";
 import { adminModel } from "../../../models/user";
-import { UserPayloadType, UserQueryType } from "../../../types/user";
+import { PartialPayload, UserPayloadType, UserQueryType } from "../../../types/user";
 import { IAdminRepository } from "../interface/repository/admin";
 
 export class AdminRepository implements IAdminRepository {
@@ -10,7 +10,7 @@ export class AdminRepository implements IAdminRepository {
         this.model = adminModel
     }
 
-    async save(payload: UserPayloadType) {
+    async save(payload: PartialPayload) {
         return await new this.model(payload).save()
     }
 
@@ -22,7 +22,7 @@ export class AdminRepository implements IAdminRepository {
         return await this.model.findById(_id)
     }
 
-    async findByIdentifier(identifier: string): Promise<(Document & UserQueryType & { _id: ObjectId })[]> {
+    async findByIdentifier(identifier: 'username' | 'email', value: string): Promise<(Document & UserQueryType & { _id: ObjectId })[]> {
         return await this.model.find({ email: identifier, username: identifier })
     }
 

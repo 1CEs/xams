@@ -1,4 +1,4 @@
-import { UserPayloadType, UserQueryType } from "../../../types/user";
+import { SignUpBody, UserPayloadType, UserQueryType } from "../../../types/user";
 import { ObjectId } from "mongoose";
 import { IInstructorService } from "../interface/service/instructor";
 import { InstructorRepository } from "../repository/instructor-repo";
@@ -9,7 +9,7 @@ export class InstructorService implements IInstructorService {
     constructor(repository: InstructorRepository) {
       this.repository = repository;
     }
-    async saveService(payload: UserPayloadType): Promise<UserQueryType> {
+    async saveService(payload: SignUpBody): Promise<UserQueryType> {
         return this.repository.save(payload);
     }
 
@@ -21,8 +21,8 @@ export class InstructorService implements IInstructorService {
         return this.repository.findById(_id);
     }
 
-    async findByIdentifierService(identifier: 'username' | 'email'){
-        return this.repository.findByIdentifier(identifier);
+    async findByIdentifierService(identifier: 'username' | 'email', value: string){
+        return this.repository.findByIdentifier(identifier, value);
     }
 
     async updateService(payload: UserPayloadType) {

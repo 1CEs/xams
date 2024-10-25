@@ -1,7 +1,7 @@
-import { UserPayloadType, UserQueryType } from "../../../types/user";
-import { ObjectId } from "mongoose";
+import { SignUpBody, UserPayloadType, UserQueryType } from "../../../types/user";
 import { StudentRepository } from "../repository/student-repo";
 import { IStudentService } from "../interface/service/student";
+import { ObjectId } from "mongoose";
 
 export class StudentService implements IStudentService {
     private repository: StudentRepository;
@@ -10,8 +10,12 @@ export class StudentService implements IStudentService {
         this.repository = repository;
     }
 
-    async saveService(payload: UserPayloadType): Promise<UserQueryType> {
-        // Student-specific logic (if any)
+    async saveService(payload: SignUpBody): Promise<UserQueryType> {
+        const usernameAlreadyExists = await this.findByIdentifierService('username', payload.username)
+        const emailAlreadyExists = await this.findByIdentifierService('email', payload.email)
+        if(usernameAlreadyExists || emailAlreadyExists) {
+            throw new Error('Username or email already exists.')
+        }
         return this.repository.save(payload);
     }
 
@@ -23,8 +27,8 @@ export class StudentService implements IStudentService {
         return this.repository.findById(_id);
     }
 
-    async findByIdentifierService(identifier: 'username' | 'email') {
-        return this.repository.findByIdentifier(identifier);
+    async findByIdentifierService(identifier: 'username' | 'email', value: string) {
+        return this.repository.findByIdentifier(identifier, value);
     }
 
     async updateService(payload: UserPayloadType) {
