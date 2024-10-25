@@ -1,5 +1,5 @@
 import { Button, Card, CardBody, CardFooter, CardHeader, Divider, Image, Link, Radio, RadioGroup } from '@nextui-org/react'
-import React, { DOMElement } from 'react'
+import React, { FormEvent } from 'react'
 import fullLogo from '@/public/images/logo/full-logo.png'
 
 type Props = {
@@ -11,8 +11,32 @@ type Props = {
 }
 
 const Form = (props: Props) => {
+    const onFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        const formData = new FormData(e.currentTarget)
+        if(props.isSignUp) {
+            const signUpFormEntries = Object.fromEntries(formData.entries())
+            const signUpPayload: UserSignUpPayload | any = {
+                ...signUpFormEntries,
+                info: {
+                    firstName: signUpFormEntries.firstName as string,
+                    lastName: signUpFormEntries.lastName as string,
+                    birth: signUpFormEntries.birth as unknown as Date
+                }
+            }
+            {
+                delete signUpPayload.firstName
+                delete signUpPayload.lastName
+                delete signUpPayload.birth
+
+            }
+            console.log(signUpPayload)
+        }
+
+    }
+
     return (
-        <form className={props.className}>
+        <form onSubmit={onFormSubmit} className={props.className}>
             <Card>
                 <CardHeader className='justify-center flex-col'>
                     <Image fetchPriority='high' src={fullLogo.src} width={200} />
@@ -23,11 +47,11 @@ const Form = (props: Props) => {
                 </CardBody>
                 <CardFooter className='flex-col gap-y-6'>
                     <div className='size-full flex justify-between items-center'>
-                        <Button className='hero-background text-background' color='primary'>{props.buttonContent}</Button>
+                        <Button type='submit' className='hero-background text-background' color='primary'>{props.buttonContent}</Button>
                         {props.isSignUp ?
                             <div className='flex justify-between items-center gap-x-5'>
                                 <span className='text-tiny text-white/50'>Sign up as a </span>
-                                <RadioGroup size='sm' defaultValue='student' orientation='horizontal'>
+                                <RadioGroup name='role' size='sm' defaultValue='student' orientation='horizontal'>
                                     <Radio value='student'>Student</Radio>
                                     <Radio value='instructor'>Instructor</Radio>
                                 </RadioGroup>

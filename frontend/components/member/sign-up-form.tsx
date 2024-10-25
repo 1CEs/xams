@@ -15,12 +15,12 @@ const SignUpForm = (props: Props) => {
       isSignUp={true}
     >
       <div className='flex gap-x-3'>
-        <Input size='sm' label="First name" placeholder='Enter your first name' isRequired/>
-        <Input size='sm' label="Last name" placeholder='Enter your last name' isRequired/>
+        <Input name='firstName' size='sm' label="First name" placeholder='Enter your first name' isRequired/>
+        <Input name='lastName' size='sm' label="Last name" placeholder='Enter your last name' isRequired/>
       </div>
-      <DatePicker size='sm' label='Birth date' showMonthAndYearPickers isRequired/>
-      <Input size='sm' label='Username' placeholder='Enter your username' isRequired />
-      <Input size='sm' label='Email' placeholder='Example@mail.com' isRequired />
+      <DatePicker name='birth' size='sm' label='Birth date' showMonthAndYearPickers isRequired/>
+      <Input name='username' size='sm' label='Username' placeholder='Enter your username' isRequired />
+      <Input name='email' size='sm' label='Email' placeholder='Example@mail.com' isRequired />
       <div className='flex gap-x-3'>
         <PasswordInput size='sm' name="password" />
         <PasswordInput size='sm' label='Confirm password' placeholder='Enter your password again' name="confirmPassword" />

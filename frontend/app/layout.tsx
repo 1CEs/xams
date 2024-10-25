@@ -4,6 +4,7 @@ import "./globals.css";
 import { NextUIProvider } from "@nextui-org/react";
 import Navbar from "@/components/navbar";
 import Favicon from '@/favicon.ico'
+import Footer from "@/components/footer";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -28,13 +29,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning={true}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <NextUIProvider>
-          <Navbar />
-          {children}
+          <div className=" min-h-screen flex flex-col">
+            <Navbar />
+            <div className="grow shrink-0">
+              {children}
+            </div>
+            <Footer />
+          </div>
         </NextUIProvider>
       </body>
     </html>
