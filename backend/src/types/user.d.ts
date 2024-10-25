@@ -29,6 +29,7 @@ type SignUpBody = {
     }
     profile_url: string
     role: string
+    bio: string
 }
 
 type SignInBody = {

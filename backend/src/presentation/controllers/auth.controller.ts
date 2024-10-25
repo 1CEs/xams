@@ -10,12 +10,11 @@ export const AuthController = new Elysia({ prefix: '/auth' })
         afterHandle: async (ctx) => {
             const { body } = ctx
             const userBody = body
-            console.log(userBody)
-            // if (userBody.role == 'student') {
-            //     const userService = new UserServiceFactory(new UserRepoFactory).createService(userBody.role)
-            //     const result = await userService.saveService(userBody)
-            //     return result
-            // }
+            if (userBody.role == 'student') {
+                const userService = new UserServiceFactory(new UserRepoFactory).createService(userBody.role)
+                const result = await userService.saveService(userBody)
+                return result
+            }
             return userBody
         }
     })

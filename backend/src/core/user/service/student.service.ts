@@ -13,7 +13,9 @@ export class StudentService implements IStudentService {
     async saveService(payload: SignUpBody): Promise<UserQueryType> {
         const usernameAlreadyExists = await this.findByIdentifierService('username', payload.username)
         const emailAlreadyExists = await this.findByIdentifierService('email', payload.email)
-        if(usernameAlreadyExists || emailAlreadyExists) {
+        console.log(usernameAlreadyExists)
+        console.log(emailAlreadyExists)
+        if(usernameAlreadyExists.length != 0 || emailAlreadyExists.length != 0) {
             throw new Error('Username or email already exists.')
         }
         return this.repository.save(payload);

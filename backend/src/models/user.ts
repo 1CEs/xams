@@ -54,15 +54,16 @@ export const UserSchema = new Schema<IUser>({
 export const StudentSchema = new Schema<IStudent>({
     join_groups: { type: [Schema.Types.ObjectId] },
     exam_attempts: { type: [Schema.Types.ObjectId] }
-}, { timestamps: true})
+}, { collection: 'students', timestamps: true})
 
 export const instructorSchema = new Schema<IInstructor>({
     courses: { type: [Schema.Types.ObjectId] },
     exam_bank: { type: [Schema.Types.ObjectId] }
-})
+}, { collection: 'instructors', timestamps: true })
 
-const userModel = model('user', UserSchema)
+StudentSchema.add(UserSchema)
+instructorSchema.add(UserSchema)
 
-export const studentModel = userModel.discriminator('students', StudentSchema)
-export const instructorModel = userModel.discriminator('instructors', instructorSchema)
+export const studentModel = model('students', StudentSchema)
+export const instructorModel = model('instructors', instructorSchema)
 export const adminModel = model('moderators', UserSchema)

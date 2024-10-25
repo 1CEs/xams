@@ -11,7 +11,8 @@ export const SignUpSchema = t.Object({
         birth: t.Date()
     }),
     role: t.String(),
-    profile_url: t.String(),
+    profile_url: t.String({ default: 'url' }),
+    bio: t.String({ default: "N/A" })
 })
 
 export const SignInSchema = t.Object({
