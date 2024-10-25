@@ -9,13 +9,14 @@ export const AuthController = new Elysia({ prefix: '/auth' })
         body: SignUpSchema,
         afterHandle: async (ctx) => {
             const { body } = ctx
-            const userBody = body as SignUpBody
+            const userBody = body
             console.log(userBody)
             // if (userBody.role == 'student') {
             //     const userService = new UserServiceFactory(new UserRepoFactory).createService(userBody.role)
             //     const result = await userService.saveService(userBody)
             //     return result
             // }
+            return userBody
         }
     })
     .post('/sign-in', ({ body }: { body: SignInBody }) => body, {

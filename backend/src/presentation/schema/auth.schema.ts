@@ -1,10 +1,10 @@
 import { t } from "elysia"
-import { emailRegex, passwordRegex } from "../../validators/regex"
+import { emailRegex, passwordRegex } from "../validators/regex"
 
 export const SignUpSchema = t.Object({
     username: t.String(),
-    email: t.String({ pattern: emailRegex }),
-    password: t.String({ pattern: passwordRegex }),
+    email: t.RegExp(emailRegex, { description: 'Invalid email address.' }),
+    password: t.RegExp(passwordRegex, { description: 'Invalid password.' }),
     info: t.Object({
         first_name: t.String(),
         last_name: t.String(),
@@ -16,5 +16,5 @@ export const SignUpSchema = t.Object({
 
 export const SignInSchema = t.Object({
     identifier: t.String(),
-    password: t.String({ pattern: passwordRegex })
+    password: t.RegExp(passwordRegex, { description: 'Invalid email address.' })
 })

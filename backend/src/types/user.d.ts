@@ -30,3 +30,9 @@ type SignUpBody = {
     profile_url: string
     role: string
 }
+
+type SignInBody = {
+    identifier: string,
+    password: string
+}
+

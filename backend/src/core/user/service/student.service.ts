@@ -1,4 +1,4 @@
-import { SignUpBody, UserPayloadType, UserQueryType } from "../../../types/user";
+import { UserPayloadType, UserQueryType, SignUpBody } from "../../../types/user";
 import { StudentRepository } from "../repository/student-repo";
 import { IStudentService } from "../interface/service/student";
 import { ObjectId } from "mongoose";
