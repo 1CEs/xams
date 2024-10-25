@@ -16,6 +16,10 @@
   --foreground: #171717;
 }
 
+.hero-background {
+  @apply bg-gradient-to-r from-primary to-secondary
+}
+
 .hero-foreground {
   @apply bg-gradient-to-r from-primary to-secondary inline-block text-transparent bg-clip-text
 }
