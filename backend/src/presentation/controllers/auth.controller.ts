@@ -7,6 +7,7 @@ import jwt from "@elysiajs/jwt"
 import { assignTokensToCookies } from "../../utils/jwt-cookies"
 import { errorResponse } from "../../utils/error"
 import { jwtOption } from "../../constants/options"
+import { verifyToken } from "../plugins/auth.plugin"
 
 export const AuthController = new Elysia({ prefix: '/auth' })
     .use(jwt(jwtOption))
@@ -29,11 +30,11 @@ export const AuthController = new Elysia({ prefix: '/auth' })
 
                 const { accToken, refToken } = await assignTokensToCookies<typeof jwt>(body.username, jwt, accessToken, refreshToken)
 
-                const user = await userService.saveService({...body, password, refresh_token: refToken})
+                const user = await userService.saveService({ ...body, password, refresh_token: refToken })
 
                 set.status = 'Created'
                 return {
-                    message: 'Sign In Successfully',
+                    message: 'Sign un successfully.',
                     credentials: {
                         _id: user._id,
                         username: user.username,
@@ -44,7 +45,7 @@ export const AuthController = new Elysia({ prefix: '/auth' })
                     }
                 }
             } catch (err) {
-                return error(500, { err: { message: err }})
+                return error(500, { err: { message: err } })
             }
         }
     })
@@ -61,16 +62,16 @@ export const AuthController = new Elysia({ prefix: '/auth' })
                 const instructor = await service.instructor.findByIdentifierService(body.identifier)
                 const matchService = student ? student : instructor ? instructor : null
 
-                if (!matchService) return error(404, errorResponse('User not found'))
+                if (!matchService) return error(404, errorResponse('User not found.'))
 
                 const isPasswordMatch = await Bun.password.verify(body.password, matchService.password, 'bcrypt')
 
-                if (!isPasswordMatch) return error(401, errorResponse('Incorrect password'))
+                if (!isPasswordMatch) return error(401, errorResponse('Incorrect password.'))
 
                 const { accToken, refToken } = await assignTokensToCookies<typeof jwt>(matchService.username, jwt, accessToken, refreshToken)
 
                 return {
-                    message: 'Sign In Successfully',
+                    message: 'Sign in successfully.',
                     credentials: {
                         _id: matchService._id,
                         username: matchService.username,
@@ -83,5 +84,48 @@ export const AuthController = new Elysia({ prefix: '/auth' })
             } catch (err) {
                 return error(500, 'Err: ' + err)
             }
+        }
+    })
+    .use(verifyToken)
+    .post('/logout', ({ cookie: { accessToken, refreshToken }, user }) => {
+        accessToken.remove
+        refreshToken.remove
+        user.updateOne({ refresh_token: null })
+        return { message: 'Logout successfully' }
+    })
+    .use(verifyToken)
+    .get('/me', ({ user }) => user)
+    .post('/refresh', async ({ cookie: { accessToken, refreshToken }, jwt, error }) => {
+        if (!refreshToken.value) return error(401, errorResponse('Access token is missing.'))
+
+        const jwtPayload = await jwt.verify(refreshToken.value)
+
+        if (!jwtPayload) return error(403, errorResponse('Access token is invalid.'))
+
+        const username = jwtPayload.sub
+
+        const factory = new UserServiceFactory(new UserRepoFactory)
+        const service = {
+            instructor: factory.createService('instructor'),
+            student: factory.createService('student'),
+        }
+
+        const instructor = await service.instructor.findByIdentifierService(username!)
+        const student = await service.student.findByIdentifierService(username!)
+
+        const user = student || instructor
+
+        if (!user) return error(403, errorResponse('Access token is invalid.'))
+
+        const { accToken, refToken } = await assignTokensToCookies<typeof jwt>(user.username, jwt, accessToken, refreshToken)
+
+        user.updateOne({ refresh_token: refToken })
+        
+        return {
+            message: "Access token generated successfully",
+            data: {
+                accessToken: accToken,
+                refreshToken: refToken,
+            },
         }
     })
