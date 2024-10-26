@@ -22,8 +22,8 @@ export class AdminService implements IUserService {
         return this.repository.findById(_id)
     }
 
-    async findByIdentifierService(identifier: 'username' | 'email', value: string) {
-        return this.repository.findByIdentifier(identifier, value)
+    async findByIdentifierService(identifier: string) {
+        return this.repository.findByIdentifier(identifier)
     }
 
     async updateService(payload: UserPayloadType) {

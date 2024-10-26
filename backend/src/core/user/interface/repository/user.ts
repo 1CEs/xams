@@ -10,7 +10,7 @@ export interface IUserRepository {
     save: (payload: PartialPayload) => Promise<UserQueryType>
     find: () => Promise<(Document & UserQueryType & { _id: ObjectId })[]>
     findById: (_id: ObjectId) => Promise<(Document & UserQueryType & { _id: ObjectId })[] | null>
-    findByIdentifier: (identifier: 'username' | 'email', value: string) => Promise<(Document & UserQueryType & { _id: ObjectId })[]>
+    findByIdentifier: (identifier: string) => Promise<(Document & UserQueryType & { _id: ObjectId }) | null>
     update: (payload: UserPayloadType) => Promise<(Document & UserQueryType & { _id: ObjectId })[] | null>
     delete: (_id: ObjectId) => Promise<(Document & UserQueryType & { _id: ObjectId })[] | null>
 }

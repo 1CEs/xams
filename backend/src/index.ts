@@ -1,6 +1,7 @@
 import { Elysia } from "elysia";
 import './database/db'
 import { indexRouter } from "./presentation/routes/index.route";
+import jwt from "@elysiajs/jwt";
 
 const app = new Elysia()
   .use(indexRouter)

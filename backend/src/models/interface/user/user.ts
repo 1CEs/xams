@@ -13,4 +13,5 @@ export interface IUser extends Document {
         last_name:      string
         birth:          Date
     }
+    refresh_token:  string
 }

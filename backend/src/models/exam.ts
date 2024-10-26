@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { IExamination } from "./interface/examination/exam";
-import { QuestionType } from "../enums/question-type";
+import { QuestionType } from "../constants/enums/question-type";
 
 const { Schema, model } = mongoose
 

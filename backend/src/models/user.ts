@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { IInstructor } from "./interface/user/instructor";
 import { IStudent } from "./interface/user/student";
-import { Role } from "../enums/role";
+import { Role } from "../constants/enums/role";
 import { IUser } from "./interface/user/user";
 
 const { Schema, model } = mongoose
@@ -49,6 +49,10 @@ export const UserSchema = new Schema<IUser>({
             required: true
         }
     },
+    refresh_token: {
+        type: Schema.Types.String,
+        required: true
+    }
 }, { timestamps: true })
 
 export const StudentSchema = new Schema<IStudent>({

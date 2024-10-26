@@ -1,28 +1,87 @@
-import Elysia, { t } from "elysia";
-import { SignUpBody, SignInBody } from "../../types/user";
-import { UserServiceFactory } from "../../core/user/service/user.service";
-import { UserRepoFactory } from "../../core/user/repository/user-repo";
-import { SignInSchema, SignUpSchema } from "../schema/auth.schema";
+import Elysia, { t } from "elysia"
+import { SignUpBody, SignInBody, UserType } from "../../types/user"
+import { UserServiceFactory } from "../../core/user/service/user.service"
+import { UserRepoFactory } from "../../core/user/repository/user-repo"
+import { SignInSchema, SignUpSchema } from "../schema/auth.schema"
+import jwt from "@elysiajs/jwt"
+import { assignTokensToCookies } from "../../utils/jwt-cookies"
+import { errorResponse } from "../../utils/error"
+import { jwtOption } from "../../constants/options"
 
 export const AuthController = new Elysia({ prefix: '/auth' })
+    .use(jwt(jwtOption))
     .post('/sign-up', ({ body }: { body: SignUpBody }) => body, {
         body: SignUpSchema,
-        afterHandle: async (ctx) => {
-            const { body } = ctx
-            const userBody = body
-            if (userBody.role == 'student') {
-                const userService = new UserServiceFactory(new UserRepoFactory).createService(userBody.role)
-                const result = await userService.saveService(userBody)
-                return result
+        afterHandle: async ({ body, jwt, cookie: { accessToken, refreshToken }, set, error }) => {
+            try {
+                const userService = new UserServiceFactory(new UserRepoFactory).createService(body.role as UserType)
+                const usernameExists = await userService.findByIdentifierService(body.username)
+                const emailExists = await userService.findByIdentifierService(body.email)
+
+                if (usernameExists || emailExists) {
+                    return error(409, errorResponse('Username or email already exists.'))
+                }
+
+                const password = await Bun.password.hash(body.password, {
+                    algorithm: 'bcrypt',
+                    cost: 16
+                })
+
+                const { accToken, refToken } = await assignTokensToCookies<typeof jwt>(body.username, jwt, accessToken, refreshToken)
+
+                const user = await userService.saveService({...body, password, refresh_token: refToken})
+
+                set.status = 'Created'
+                return {
+                    message: 'Sign In Successfully',
+                    credentials: {
+                        _id: user._id,
+                        username: user.username,
+                        email: user.email,
+                        role: user.role,
+                        refresh_token: refToken,
+                        access_token: accToken
+                    }
+                }
+            } catch (err) {
+                return error(500, { err: { message: err }})
             }
-            return userBody
         }
     })
     .post('/sign-in', ({ body }: { body: SignInBody }) => body, {
         body: SignInSchema,
-        afterHandle: async (ctx) => {
-            const { body } = ctx
-            const userBody = body as SignInBody
-            console.log(userBody)
+        afterHandle: async ({ body, jwt, cookie: { accessToken, refreshToken }, set, error }) => {
+            try {
+                const factory = new UserServiceFactory(new UserRepoFactory)
+                const service = {
+                    instructor: factory.createService('instructor'),
+                    student: factory.createService('student'),
+                }
+                const student = await service.student.findByIdentifierService(body.identifier)
+                const instructor = await service.instructor.findByIdentifierService(body.identifier)
+                const matchService = student ? student : instructor ? instructor : null
+
+                if (!matchService) return error(404, errorResponse('User not found'))
+
+                const isPasswordMatch = await Bun.password.verify(body.password, matchService.password, 'bcrypt')
+
+                if (!isPasswordMatch) return error(401, errorResponse('Incorrect password'))
+
+                const { accToken, refToken } = await assignTokensToCookies<typeof jwt>(matchService.username, jwt, accessToken, refreshToken)
+
+                return {
+                    message: 'Sign In Successfully',
+                    credentials: {
+                        _id: matchService._id,
+                        username: matchService.username,
+                        email: matchService.email,
+                        role: matchService.role,
+                        refresh_token: refToken,
+                        access_token: accToken
+                    }
+                }
+            } catch (err) {
+                return error(500, 'Err: ' + err)
+            }
         }
     })

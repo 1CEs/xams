@@ -5,7 +5,7 @@ import { IStudentRepository } from "../interface/repository/student";
 
 export class StudentRepository implements IStudentRepository {
     private model: typeof studentModel
-    
+
     constructor() {
         this.model = studentModel
     }
@@ -22,8 +22,13 @@ export class StudentRepository implements IStudentRepository {
         return await this.model.findById(_id)
     }
 
-    async findByIdentifier(identifier: 'username' | 'email', value: string): Promise<(Document & UserQueryType & { _id: ObjectId })[]> {
-        return await this.model.find({ email: identifier, username: identifier })
+    async findByIdentifier(identifier: string): Promise<(Document & UserQueryType & { _id: ObjectId }) | null> {
+        return await this.model.findOne({
+            $or: [
+                { email: identifier },
+                { username: identifier }
+            ]
+        })
     }
 
     async update(payload: UserPayloadType): Promise<(Document & UserQueryType & { _id: ObjectId })[] | null> {

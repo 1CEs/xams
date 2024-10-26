@@ -1,5 +1,5 @@
 import { ObjectId } from "mongoose";
-import { QuestionType } from "../../../enums/question-type";
+import { QuestionType } from "../../../constants/enums/question-type";
 
 export interface IExamination {
     _id:                ObjectId

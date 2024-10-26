@@ -32,6 +32,10 @@ type SignUpBody = {
     bio: string
 }
 
+type SaveServicePayload = {
+    refresh_token: string
+} & SignUpBody
+
 type SignInBody = {
     identifier: string,
     password: string
