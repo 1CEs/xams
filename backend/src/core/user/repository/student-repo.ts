@@ -25,8 +25,8 @@ export class StudentRepository implements IStudentRepository {
     async findByIdentifier(identifier: string): Promise<(Document & UserQueryType & { _id: ObjectId }) | null> {
         return await this.model.findOne({
             $or: [
-                { email: identifier },
-                { username: identifier }
+                { email: { $regex: new RegExp(`^${identifier}$`, 'i') } },
+                { username: { $regex: new RegExp(`^${identifier}$`, 'i') } }
             ]
         })
     }

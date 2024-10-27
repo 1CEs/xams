@@ -23,7 +23,12 @@ export class AdminRepository implements IAdminRepository {
     }
 
     async findByIdentifier(identifier: string): Promise<(Document & UserQueryType & { _id: ObjectId }) | null> {
-        return await this.model.findOne({ email: identifier, username: identifier })
+        return await this.model.findOne({
+            $or: [
+                { email: { $regex: new RegExp(`^${identifier}$`, 'i') } },
+                { username: { $regex: new RegExp(`^${identifier}$`, 'i') } }
+            ]
+        })
     }
 
     async update(payload: UserPayloadType): Promise<(Document & UserQueryType & { _id: ObjectId })[] | null> {
