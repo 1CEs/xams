@@ -1,0 +1,1 @@
+export const baseAPIPath = 'http://localhost:3000/api/'

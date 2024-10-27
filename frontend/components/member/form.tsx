@@ -1,6 +1,11 @@
 import { Button, Card, CardBody, CardFooter, CardHeader, Divider, Image, Link, Radio, RadioGroup } from '@nextui-org/react'
-import React, { FormEvent } from 'react'
+import React, { FormEvent, useState } from 'react'
 import fullLogo from '@/public/images/logo/full-logo.png'
+import axios, { isAxiosError } from 'axios'
+import { baseAPIPath } from '@/constants/base'
+import { useUserStore } from '@/stores/user.store'
+import { useRouter } from 'nextjs-toploader/app'
+import { useCookies } from 'next-client-cookies'
 
 type Props = {
     content: string
@@ -11,43 +16,78 @@ type Props = {
 }
 
 const Form = (props: Props) => {
-    const onFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+    const [error, setError] = useState<string | null>(null)
+    const [loading, setLoading] = useState<boolean>(false)
+    const { user, setUser } = useUserStore()
+    const router = useRouter()
+    const cookies = useCookies()
+    const onFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        const formData = new FormData(e.currentTarget)
-        if(props.isSignUp) {
-            const signUpFormEntries = Object.fromEntries(formData.entries())
-            const signUpPayload: UserSignUpPayload | any = {
-                ...signUpFormEntries,
-                info: {
-                    firstName: signUpFormEntries.firstName as string,
-                    lastName: signUpFormEntries.lastName as string,
-                    birth: signUpFormEntries.birth as unknown as Date
+        setError(null)
+        setLoading(true)
+        try {
+            const formData = new FormData(e.currentTarget)
+            
+            if (props.isSignUp) {
+                const signUpFormEntries = Object.fromEntries(formData.entries())
+
+                const signUpPayload: UserSignUpPayload | any = {
+                    ...signUpFormEntries,
+                    info: {
+                        first_name: signUpFormEntries.first_name as string,
+                        last_name: signUpFormEntries.last_name as string,
+                        birth: signUpFormEntries.birth
+                    }
                 }
-            }
-            {
-                delete signUpPayload.firstName
-                delete signUpPayload.lastName
+
+                delete signUpPayload.first_name
+                delete signUpPayload.last_name
                 delete signUpPayload.birth
 
+                const res = await axios.post(baseAPIPath + 'auth/sign-up', signUpPayload)
+                setUser(res.data.credentials as UserResponse)
+                
+            } else {
+                const signInFormEntries = Object.fromEntries(formData.entries())
+                const res = await axios.post(baseAPIPath + 'auth/sign-in', signInFormEntries)
+                setUser(res.data.credentials as UserResponse)
+                
             }
-            console.log(signUpPayload)
-        }
+            const oneDay = 24 * 60 * 60 * 1000
+            cookies.set('user', JSON.stringify(user), { expires: Date.now() - oneDay})
+            router.push('/overview')
+        } catch (error) {
+            if (isAxiosError(error)) {
+                console.error('Error details:', error.response?.data);
+        
+                const { err, errors } = error.response?.data || {};
+                if (err) {
+                    setError(err.message);
+                } else if (errors?.length) {
+                    setError(errors[0].schema.description);
+                }
+            }
 
+        } finally {
+            setLoading(false)
+        }
     }
+
 
     return (
         <form onSubmit={onFormSubmit} className={props.className}>
-            <Card>
+            <Card >
                 <CardHeader className='justify-center flex-col'>
                     <Image fetchPriority='high' src={fullLogo.src} width={200} />
                     <p>きょういくざむす</p>
                 </CardHeader>
                 <CardBody className='flex-col gap-y-3'>
+                    {error && <span className='text-danger text-tiny'>*{error}</span>}
                     {props.children}
                 </CardBody>
                 <CardFooter className='flex-col gap-y-6'>
                     <div className='size-full flex justify-between items-center'>
-                        <Button type='submit' className='hero-background text-background' color='primary'>{props.buttonContent}</Button>
+                        <Button isDisabled={loading} isLoading={loading} type='submit' className='hero-background text-background' color='primary'>{loading ? null : props.buttonContent}</Button>
                         {props.isSignUp ?
                             <div className='flex justify-between items-center gap-x-5'>
                                 <span className='text-tiny text-white/50'>Sign up as a </span>

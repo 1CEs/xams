@@ -3,10 +3,19 @@ type UserSignUpPayload = {
     email: string
     password: string
     info: {
-        firstName: string
-        lastName: string
+        first_name: string
+        last_name: string
         birth: Date
     }
     profile_url: string
     role: string
+}
+
+type UserResponse = {
+    _id: string
+    username: string
+    email: string
+    role: string
+    refresh_token: string
+    access_token: string
 }

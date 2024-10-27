@@ -5,6 +5,8 @@ import { NextUIProvider } from "@nextui-org/react";
 import Navbar from "@/components/navbar";
 import Favicon from '@/favicon.ico'
 import Footer from "@/components/footer";
+import NextTopLoader from "nextjs-toploader";
+import { CookiesProvider } from "next-client-cookies/server";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -34,13 +36,16 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <NextUIProvider>
-          <div className=" min-h-screen flex flex-col">
-            <Navbar />
-            <div className="grow shrink-0">
-              {children}
+          <NextTopLoader color="#82f4b1" showSpinner={false} />
+          <CookiesProvider>
+            <div className=" min-h-screen flex flex-col">
+              <Navbar />
+              <div className="grow shrink-0">
+                {children}
+              </div>
+              <Footer />
             </div>
-            <Footer />
-          </div>
+          </CookiesProvider>
         </NextUIProvider>
       </body>
     </html>
