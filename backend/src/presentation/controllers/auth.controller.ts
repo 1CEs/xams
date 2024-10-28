@@ -44,6 +44,7 @@ export const AuthController = new Elysia({ prefix: '/auth' })
                         username: user.username,
                         email: user.email,
                         role: user.role,
+                        profile_url: user.profile_url,
                         refresh_token: refToken,
                         access_token: accToken
                     }
@@ -81,6 +82,7 @@ export const AuthController = new Elysia({ prefix: '/auth' })
                         username: matchService.username,
                         email: matchService.email,
                         role: matchService.role,
+                        profile_url: matchService.profile_url,
                         refresh_token: refToken,
                         access_token: accToken
                     }
@@ -91,9 +93,10 @@ export const AuthController = new Elysia({ prefix: '/auth' })
         }
     })
     .use(verifyToken)
-    .post('/logout', ({ cookie: { accessToken, refreshToken }, user }) => {
+    .post('/sign-out', ({ cookie: { accessToken, refreshToken }, user }) => {
         accessToken.remove
         refreshToken.remove
+        console.log('sign out')
         user.updateOne({ refresh_token: null })
         return { message: 'Logout successfully' }
     })

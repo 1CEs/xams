@@ -16,6 +16,7 @@ type UserResponse = {
     username: string
     email: string
     role: string
+    profile_url: string
     refresh_token: string
     access_token: string
 }

@@ -2,10 +2,10 @@ import { Button, Card, CardBody, CardFooter, CardHeader, Divider, Image, Link, R
 import React, { FormEvent, useState } from 'react'
 import fullLogo from '@/public/images/logo/full-logo.png'
 import axios, { isAxiosError } from 'axios'
-import { baseAPIPath } from '@/constants/base'
 import { useUserStore } from '@/stores/user.store'
 import { useRouter } from 'nextjs-toploader/app'
 import { useCookies } from 'next-client-cookies'
+import { clientAPI } from '@/config/axios.config'
 
 type Props = {
     content: string
@@ -27,9 +27,10 @@ const Form = (props: Props) => {
         setLoading(true)
         try {
             const formData = new FormData(e.currentTarget)
-            
             if (props.isSignUp) {
                 const signUpFormEntries = Object.fromEntries(formData.entries())
+                
+                const randomProfile = await axios.get('https://api.nekosapi.com/v3/images/random?limit=1')
 
                 const signUpPayload: UserSignUpPayload | any = {
                     ...signUpFormEntries,
@@ -37,19 +38,20 @@ const Form = (props: Props) => {
                         first_name: signUpFormEntries.first_name as string,
                         last_name: signUpFormEntries.last_name as string,
                         birth: signUpFormEntries.birth
-                    }
+                    },
+                    profile_url: randomProfile.data.items[0].image_url || 'https://miscmedia-9gag-fun.9cache.com/images/thumbnail-facebook/1656473044.0987_Y3UVY8_n.jpg'
                 }
 
                 delete signUpPayload.first_name
                 delete signUpPayload.last_name
                 delete signUpPayload.birth
 
-                const res = await axios.post(baseAPIPath + 'auth/sign-up', signUpPayload)
+                const res = await clientAPI.post('auth/sign-up', signUpPayload)
                 setUser(res.data.credentials as UserResponse)
                 
             } else {
                 const signInFormEntries = Object.fromEntries(formData.entries())
-                const res = await axios.post(baseAPIPath + 'auth/sign-in', signInFormEntries)
+                const res = await clientAPI.post('auth/sign-in', signInFormEntries)
                 setUser(res.data.credentials as UserResponse)
                 
             }
@@ -78,7 +80,7 @@ const Form = (props: Props) => {
         <form onSubmit={onFormSubmit} className={props.className}>
             <Card >
                 <CardHeader className='justify-center flex-col'>
-                    <Image fetchPriority='high' src={fullLogo.src} width={200} />
+                    <Image src={fullLogo.src} width={200} fallbackSrc="https://placehold.co/500x400/353535/FFFFFF/webp?text=Loading"/>
                     <p>きょういくざむす</p>
                 </CardHeader>
                 <CardBody className='flex-col gap-y-3'>

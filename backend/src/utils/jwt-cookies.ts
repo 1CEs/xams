@@ -18,6 +18,8 @@ export async function assignTokensToCookies<T extends JwtService>(
     })
     accessToken.set({
         value: accToken,
+        sameSite: 'none',
+        secure: true,
         httpOnly: true,
         maxAge: 6000,
         path: "/",
@@ -30,6 +32,8 @@ export async function assignTokensToCookies<T extends JwtService>(
     })
     refreshToken.set({
         value: refToken,
+        sameSite: 'none',
+        secure: true,
         httpOnly: true,
         maxAge: 86400,
         path: "/",

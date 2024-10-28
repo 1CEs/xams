@@ -4,7 +4,10 @@ import { indexRouter } from "./presentation/routes/index.route";
 import cors from "@elysiajs/cors";
 
 const app = new Elysia()
-  .use(cors())
+  .use(cors({
+    origin: 'http://localhost:8080',
+    credentials: true
+  }))
   .use(indexRouter)
   .get("/", () => "Hello Elysia")
   .listen(3000);

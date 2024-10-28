@@ -8,7 +8,7 @@ type Props = {
 
 const HeaderSection = (props: Props) => {
   return (
-    <div className='flex justify-between px-24 py-8 items-center'>
+    <div className='flex justify-between py-8 items-center'>
         <h1 className='text-3xl font-bold hero-foreground'>{props.content}</h1>
         <Button color='primary' variant='bordered'>{props.buttonContent}</Button>
     </div>
