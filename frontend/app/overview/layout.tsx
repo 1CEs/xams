@@ -12,9 +12,8 @@ export default function OverviewLayout({
 }>) {
     const { user } = useUserStore()
     return (
-        <div className="size-full pt-18 px-14">
+        <div className="size-full pt-12 px-14">
             <Suspense fallback={<div>Loading</div>}>
-                <HeaderSection content="Your Course" buttonContent="New Course"/>
                 {user?.role == 'instructor' ? teacher : student}
             </Suspense>
         </div>

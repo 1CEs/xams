@@ -5,11 +5,11 @@ type Props = {}
 
 const CourseList = (props: Props) => {
   return (
-    <div className='size-full flex gap-4 flex-wrap'>
+    <div className='w-fit  flex gap-4 flex-wrap justify-end'>
       {
-        Array.from({ length: 12 }).map((_, idx: number) => (
+        Array.from({ length: 8 }).map((_, idx: number) => (
           <CourseCard
-            className=' w-1/5'
+            className=' w-[222px]'
             key={idx}
             title='Just a example course name'
             description='This is just a course description that explain about your course.'

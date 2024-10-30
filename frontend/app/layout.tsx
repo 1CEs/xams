@@ -7,6 +7,8 @@ import Favicon from '@/favicon.ico'
 import Footer from "@/components/footer";
 import NextTopLoader from "nextjs-toploader";
 import { CookiesProvider } from "next-client-cookies/server";
+import { ToastContainer } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -37,6 +39,7 @@ export default function RootLayout({
       >
         <NextUIProvider>
           <NextTopLoader color="#82f4b1" showSpinner={false} />
+          <ToastContainer theme="dark" position="bottom-left"/>
           <CookiesProvider>
             <div className=" min-h-screen flex flex-col">
               <Navbar />

@@ -13,9 +13,9 @@ type Props = {
 const CourseCard = (props: Props) => {
   const coverAddress = 'https://img.freepik.com/free-psd/3d-illustration-nocturnal-person-staying-up_23-2150944847.jpg?t=st=1729758457~exp=1729762057~hmac=df0b032ff22d3c02c2b0cb2f7d53fa07236e2c04cf30a9df498fb91df6c46c10&w=1060'
   return (
-    <Card className={props.className + ' transition duration-500 hover:-translate-y-3'}>
-      <CardHeader className='p-0'>
-        <Image className='min-w-full' src={coverAddress} height={200} alt='course cover' />
+    <Card className={props.className + ' transition duration-500 hover:-translate-y-3 '}>
+      <CardHeader className='p-0 rounded-b-none'>
+        <Image className='min-w-full rounded-b-none' src={coverAddress} height={150} alt='course cover' />
       </CardHeader>
       <CardBody>
         <div>

@@ -62,7 +62,7 @@ const Navbar = () => {
                     </Link>
                 </NavbarItem>
                 <NavbarItem isActive>
-                    <Link href="#" aria-current="page">
+                    <Link href="/overview" aria-current="page">
                         Overview
                     </Link>
                 </NavbarItem>
