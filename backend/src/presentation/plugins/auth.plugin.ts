@@ -8,7 +8,6 @@ import { UserRepoFactory } from "../../core/user/repository/user-repo";
 export const verifyToken = (app: Elysia) => app
         .use(jwt(jwtOption))
         .derive(async({jwt, cookie: { accessToken }, cookie, error}) => {
-            console.log(cookie)
             if(!accessToken.value) return error(401, errorResponse('Access token is missing.'))
             
             const jwtPayload = await jwt.verify(accessToken.value)

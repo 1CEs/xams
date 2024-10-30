@@ -1,7 +1,6 @@
 import { ObjectId } from "mongoose";
 import { examinationModel } from "../../models/exam";
 import { IExamination } from "../../models/interface/examination/exam";
-import { UserPayloadType } from "../../types/user";
 import { IExamRepository } from "./interface/repository/exam";
 
 
@@ -20,8 +19,12 @@ export class ExamRepository implements IExamRepository {
         return await this.model.find()
     }
 
-    async findById(_id: ObjectId): Promise<(Document & IExamination & { _id: ObjectId })[] | null> {
+    async findById(_id: ObjectId): Promise<(Document & IExamination & { _id: ObjectId }) | null> {
         return await this.model.findById(_id)
+    }
+
+    async findByInstructor(_id: ObjectId): Promise<(Document & IExamination & { _id: ObjectId })[] | null> {
+        return this.model.find({ instructor_id: _id })
     }
 
     async update(payload: IExamination): Promise<(Document & IExamination & { _id: ObjectId })[] | null> {

@@ -22,6 +22,10 @@ export class ExamService implements IExamService {
         return this.repository.findById(_id);
     }
 
+    async findByInstructorService(_id: ObjectId) {
+        return this.repository.findByInstructor(_id)
+    }
+
     async updateService(payload: IExamination) {
         return this.repository.update(payload);
     }

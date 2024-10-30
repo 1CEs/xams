@@ -2,6 +2,7 @@ import { ObjectId } from "mongoose";
 import { instructorModel } from "../../../models/user";
 import { PartialPayload, UserPayloadType, UserQueryType } from "../../../types/user";
 import { IInstructorRepository } from "../interface/repository/instructor";
+import { IInstructor } from "../../../models/interface/user/instructor";
 
 export class InstructorRepository implements IInstructorRepository {
     private model: typeof instructorModel
@@ -33,6 +34,10 @@ export class InstructorRepository implements IInstructorRepository {
 
     async update(payload: UserPayloadType): Promise<(Document & UserQueryType & { _id: ObjectId })[] | null> {
         return await this.model.findByIdAndUpdate(payload._id, payload)
+    }
+
+    async updateBank(instructor_id: string, exam_id:string): Promise<(Document & IInstructor & { _id: ObjectId })[] | null> {
+        return await this.model.findByIdAndUpdate(instructor_id, { $push: { exam_bank: exam_id }})
     }
 
     async delete(_id: ObjectId): Promise<(Document & UserQueryType & { _id: ObjectId })[] | null> {

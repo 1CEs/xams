@@ -62,7 +62,8 @@ export const StudentSchema = new Schema<IStudent>({
 
 export const instructorSchema = new Schema<IInstructor>({
     courses: { type: [Schema.Types.ObjectId] },
-    exam_bank: { type: [Schema.Types.ObjectId] }
+    exam_bank: { type: [Schema.Types.ObjectId] },
+    question_bank: { type: [Schema.Types.ObjectId]}
 }, { collection: 'instructors', timestamps: true })
 
 StudentSchema.add(UserSchema)

@@ -4,4 +4,5 @@ import { IUser } from "./user";
 export interface IInstructor extends IUser {
     courses:        ObjectId[]
     exam_bank:      ObjectId[]
+    question_bank:  ObjectId[]
 }
