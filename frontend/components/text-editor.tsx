@@ -14,6 +14,7 @@ import { resizeFile } from '@/utils/resizer'
 import { errorHandler } from '@/utils/error'
 import Placeholder from '@tiptap/extension-placeholder'
 import TextAlign from '@tiptap/extension-text-align'
+import { useFormikContext } from 'formik'
 
 const lowlight = createLowlight(common)
 
@@ -72,7 +73,7 @@ const MenuBar = () => {
                 isIconOnly
                 className={`${editor.isActive('bold') ? 'text-blue-300 bg-blue-500/30' : null}`}
             />
-            <Select size='sm' startContent={<VaadinHeader fontSize={18} />} className='w-[100px]'>
+            <Select aria-label='heading' size='sm' startContent={<VaadinHeader fontSize={18} />} className='w-[100px]'>
                 {
                     Array.from({ length: 3 }).map((_, idx: number) => (
                         <SelectItem
@@ -188,16 +189,23 @@ const MenuBar = () => {
     )
 }
 
-const TextEditor = ({ className }: { className?: string}) => {
+const TextEditor = ({ className, name }: { className?: string, name: string}) => {
+    const { values, setFieldValue } = useFormikContext<QuestionForm>()
     return (
         <EditorProvider
             editorProps={{
                 attributes: {
+                    textValue: '',
                     class: cn(
                         'prose max-w-none [&_ol]:list-decimal [&_ul]:list-disc bg-background/50 rounded-lg',
                         className
                     ),
                 },
+                
+            }}
+            onUpdate={({ editor }) => {
+                const html = editor.getHTML()
+                setFieldValue(name, html)
             }}
             extensions={[StarterKit, Underline, ListItem, OrderedList, TextAlign.configure({
                 types: ['heading', 'paragraph'],
