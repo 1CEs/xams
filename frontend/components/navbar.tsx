@@ -87,9 +87,7 @@ const Navbar = () => {
                                 isLoading={loading}
                                 onPress={() => router.push('/member/sign-in')}
                                 className="text-primary"
-                                as={Link}
                                 color="primary"
-                                href="#"
                                 variant="flat"
                             >
                                 {!loading && 'Sign In'}

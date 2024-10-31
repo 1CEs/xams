@@ -11,8 +11,7 @@ const CodeBlockComponent: FC<NodeViewProps> = ({ node: { attrs: { language: defa
             defaultSelectedKeys={defaultLanguage}
             onChange={(event: ChangeEvent<HTMLSelectElement>) => updateAttributes({ language: event.target.value })}
         >
-            <SelectItem key={'null'}> auto </SelectItem>
-            <SelectItem key={''} isReadOnly>-</SelectItem>
+            <SelectItem key={defaultLanguage}> auto </SelectItem>
             {extension.options.lowlight.listLanguages().map((lang: string, index: number) => (
                 <SelectItem key={lang}>
                     {lang}
