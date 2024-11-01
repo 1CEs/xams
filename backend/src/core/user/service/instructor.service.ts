@@ -33,6 +33,10 @@ export class InstructorService implements IInstructorService {
         return this.repository.updateBank(instructor_id, exam_id)
     }
 
+    async updateCategoryService(instructor_id: string, name: string, color: string) {
+        return this.repository.updateCategory(instructor_id, name, color)
+    }
+
     async deleteService(_id: ObjectId) {
         return this.repository.delete(_id)
     }

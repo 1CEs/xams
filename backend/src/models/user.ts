@@ -58,12 +58,26 @@ export const UserSchema = new Schema<IUser>({
 export const StudentSchema = new Schema<IStudent>({
     join_groups: { type: [Schema.Types.ObjectId] },
     exam_attempts: { type: [Schema.Types.ObjectId] }
-}, { collection: 'students', timestamps: true})
+}, { collection: 'students', timestamps: true })
 
 export const instructorSchema = new Schema<IInstructor>({
     courses: { type: [Schema.Types.ObjectId] },
-    exam_bank: { type: [Schema.Types.ObjectId] },
-    question_bank: { type: [Schema.Types.ObjectId]}
+    exam_bank: { type: [Schema.Types.ObjectId], ref: 'examinations' },
+    question_bank: { type: [Schema.Types.ObjectId] },
+    my_category: {
+        type: [{
+            _id: { type: Schema.Types.ObjectId, default: () => new mongoose.Types.ObjectId() },
+            name: { type: Schema.Types.String, required: true },
+            color: { type: Schema.Types.String, required: true }
+        }],
+        validate: {
+            validator: function (categories: { name: string; color: string }[]) {
+                const names = categories.map(cat => cat.name)
+                return names.length === new Set(names).size
+            },
+            message: "Category names in my_category must be unique."
+        }
+    }
 }, { collection: 'instructors', timestamps: true })
 
 StudentSchema.add(UserSchema)

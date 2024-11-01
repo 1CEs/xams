@@ -40,6 +40,10 @@ export class InstructorRepository implements IInstructorRepository {
         return await this.model.findByIdAndUpdate(instructor_id, { $push: { exam_bank: exam_id }})
     }
 
+    async updateCategory(instructor_id: string, name: string, color: string): Promise<(Document & IInstructor & { _id: ObjectId })[] | null> {
+        return await this.model.findByIdAndUpdate(instructor_id, { $push: { my_category: { name, color }}})
+    }
+
     async delete(_id: ObjectId): Promise<(Document & UserQueryType & { _id: ObjectId })[] | null> {
         return await this.model.findByIdAndDelete(_id)
     }
