@@ -1,4 +1,5 @@
 "use client"
+import Loading from "@/components/loading"
 import HeaderSection from "@/components/overview/header-section"
 import { useUserStore } from "@/stores/user.store"
 import { Suspense } from "react"
@@ -13,8 +14,10 @@ export default function OverviewLayout({
     const { user } = useUserStore()
     return (
         <div className="size-full pt-12 px-14">
-            <Suspense fallback={<div>Loading</div>}>
-                {user?.role == 'instructor' ? teacher : student}
+            <Suspense fallback={
+                <Loading />
+            }>
+                {user?.role == 'instructor' ? teacher : user?.role == 'student' ? student : <Loading />}
             </Suspense>
         </div>
     )

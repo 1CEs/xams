@@ -1,3 +1,4 @@
+import { clientAPI } from '@/config/axios.config'
 import { popularColors } from '@/constants/color'
 import { errorHandler } from '@/utils/error'
 import { Avatar, Button, Divider, Input, ModalBody, ModalContent, ModalFooter, ModalHeader } from '@nextui-org/react'
@@ -17,12 +18,14 @@ const CategoryFormModal = (props: Props) => {
         setSelectedColor(color)
     }
 
-    const onCreateCategory = (e: FormEvent<HTMLFormElement>) => {
+    const onCreateCategory = async (e: FormEvent<HTMLFormElement>) => {
         try {
             e.preventDefault()
             const formEntries = Object.fromEntries(new FormData(e.currentTarget))
             console.log(formEntries)
-            if (!formEntries.category_name) throw new Error('Please enter category name')
+            if (formEntries.category_name == '') throw new Error('Please enter category name')
+            const res = await clientAPI.patch('category', formEntries)
+            console.log(res.data)
             toast.success('Create examination successfully')
             
         } catch (error) {
@@ -41,7 +44,7 @@ const CategoryFormModal = (props: Props) => {
                         <ModalBody>
                             <div className='flex gap-x-6 items-center'>
                                 <label>Name </label>
-                                <Input name='category_name' size='sm' />
+                                <Input name='name' size='sm' />
                             </div>
                             <Divider />
                             <div className='flex flex-wrap gap-3'>

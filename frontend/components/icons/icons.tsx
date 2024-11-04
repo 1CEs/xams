@@ -152,3 +152,11 @@ export function FeTextAlignRight(props: SVGProps<SVGSVGElement>) {
 export function MdiBin(props: SVGProps<SVGSVGElement>) {
 	return (<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}><path fill="currentColor" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"></path></svg>);
 }
+
+export function FeEdit(props: SVGProps<SVGSVGElement>) {
+	return (<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}><path fill="currentColor" fillRule="evenodd" d="M5 20h14a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2m-1-5L14 5l3 3L7 18H4zM15 4l2-2l3 3l-2.001 2.001z"></path></svg>);
+}
+
+export function FluentColorWarning16(props: SVGProps<SVGSVGElement>) {
+	return (<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16" {...props}><g fill="none"><path fill="url(#fluentColorWarning160)" d="M9.092 2.638a1.25 1.25 0 0 0-2.182 0L2.157 11.14A1.25 1.25 0 0 0 3.247 13h9.504a1.25 1.25 0 0 0 1.091-1.86z"></path><path fill="url(#fluentColorWarning161)" d="M8.75 10.25a.75.75 0 1 1-1.5 0a.75.75 0 0 1 1.5 0M7.5 8V5.5a.5.5 0 0 1 1 0V8a.5.5 0 0 1-1 0"></path><defs><linearGradient id="fluentColorWarning160" x1={3.872} x2={10.725} y1={0.279} y2={14.525} gradientUnits="userSpaceOnUse"><stop stopColor="#ffcd0f"></stop><stop offset={1} stopColor="#fe8401"></stop></linearGradient><linearGradient id="fluentColorWarning161" x1={6} x2={8.466} y1={5} y2={11.575} gradientUnits="userSpaceOnUse"><stop stopColor="#4a4a4a"></stop><stop offset={1} stopColor="#212121"></stop></linearGradient></defs></g></svg>);
+}

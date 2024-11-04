@@ -1,7 +1,7 @@
 "use client"
 
 import NewQuestionForm from "@/components/exam/new-question-form";
-import { IconParkOutlineCheckCorrect, MingcuteAddFill, MingcuteFileNewFill, SystemUiconsReuse } from "@/components/icons/icons";
+import { IconParkOutlineCheckCorrect, MdiBin, MingcuteAddFill, MingcuteFileNewFill, SystemUiconsReuse } from "@/components/icons/icons";
 import { clientAPI } from "@/config/axios.config";
 import { errorHandler } from "@/utils/error";
 import { Button, Card, CardBody, CardFooter, CardHeader, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Textarea } from "@nextui-org/react";
@@ -57,6 +57,12 @@ export default function CreateExaminationPage() {
                                 </DropdownItem>
                             </DropdownMenu>
                         </Dropdown>
+                        <Button
+                            startContent={<MdiBin fontSize={14} />}
+                            variant="flat"
+                            color='danger'
+                            size="sm"
+                        > Delete </Button>
                         <Button
                             startContent={<IconParkOutlineCheckCorrect fontSize={14} />}
                             variant="flat"

@@ -6,6 +6,7 @@ import MultipleChoiceForm from './multiple-choice'
 import TrueOrFalseForm from './true_or_false'
 import { Formik, FormikHelpers } from 'formik'
 import QuestionTypeSelector from './question-type-selector'
+import CategorySelector from './category-selector'
 
 export const HeadLine = ({ number, content, isOptional }: { number: number, content: string, isOptional?: boolean }) => {
     return (
@@ -125,24 +126,7 @@ const NewQuestionForm = () => {
                                 </div>
                             </StepProvider>
                             <StepProvider number={5} content='Category' >
-                                <div className='flex flex-col px-10 gap-y-3'>
-                                    <div className='flex gap-x-3 items-center'>
-                                        <Select
-                                            placeholder='Select your categories here'
-                                            className='w-fit' name='category'
-                                            value={values.category[0]}
-                                            onChange={handleChange}
-                                            aria-label='category'>
-                                            <SelectItem key={'default'} >Default</SelectItem>
-                                        </Select>
-                                        <Button color='secondary' size='sm' variant='light'>New Category</Button>
-
-                                    </div>
-                                    <div className='flex flex-wrap gap-x-3 p-3 w-fit bg-background/60 rounded-3xl'>
-                                        <Chip onClose={() => console.log("close")}>Default</Chip>
-                                    </div>
-                                </div>
-
+                                <CategorySelector handleChange={handleChange} values={values}/>
                             </StepProvider>
                             <StepProvider number={6} content='Question settings' >
                                 <div className='flex gap-x-9 px-10'>
