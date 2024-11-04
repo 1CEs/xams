@@ -36,6 +36,9 @@ export class InstructorService implements IInstructorService {
     async updateCategoryService(instructor_id: string, name: string, color: string) {
         return this.repository.updateCategory(instructor_id, name, color)
     }
+    async deleteCategoryService(instructor_id: string, category_id: string) {
+        return this.repository.deleteCategory(instructor_id, category_id)
+    }
 
     async deleteService(_id: ObjectId) {
         return this.repository.delete(_id)

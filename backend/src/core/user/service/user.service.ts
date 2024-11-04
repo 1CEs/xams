@@ -11,8 +11,8 @@ import { AdminRepository } from "../repository/admin-repo";
 export class UserServiceFactory implements IUserServiceFactory {
     private repoFactory: UserRepoFactory;
   
-    constructor(repoFactory: UserRepoFactory) {
-      this.repoFactory = repoFactory;
+    constructor() {
+      this.repoFactory = new UserRepoFactory
     }
   
     createService(user: UserType): UserServiceType {

@@ -1,4 +1,4 @@
-import { ObjectId } from "mongoose";
+import mongoose, { ObjectId } from "mongoose";
 import { instructorModel } from "../../../models/user";
 import { PartialPayload, UserPayloadType, UserQueryType } from "../../../types/user";
 import { IInstructorRepository } from "../interface/repository/instructor";
@@ -42,6 +42,14 @@ export class InstructorRepository implements IInstructorRepository {
 
     async updateCategory(instructor_id: string, name: string, color: string): Promise<(Document & IInstructor & { _id: ObjectId })[] | null> {
         return await this.model.findByIdAndUpdate(instructor_id, { $push: { my_category: { name, color }}})
+    }
+
+    async deleteCategory(instructor_id: string, category_id: string): Promise<(Document & IInstructor & { _id: ObjectId })[] | null> {
+        return await this.model.findByIdAndUpdate(
+            instructor_id,
+            { $pull: { my_category: { _id: new mongoose.Types.ObjectId(category_id) } } },
+            { new: true } 
+        );
     }
 
     async delete(_id: ObjectId): Promise<(Document & UserQueryType & { _id: ObjectId })[] | null> {
