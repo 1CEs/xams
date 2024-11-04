@@ -39,7 +39,7 @@ export const ExamController = new Elysia({ prefix: 'exam' })
             try {
                 const service = new ExamService()
                 const exam = await service.saveService({ ...body, instructor_id: String(user._id) })
-                const userService = new UserServiceFactory(new UserRepoFactory).createService(user.role as UserType)
+                const userService = new UserServiceFactory().createService(user.role as UserType)
                 const update = (userService as InstructorService).updateBankService(String(user._id), String(exam._id))
                 return update
             } catch (err) {

@@ -15,8 +15,8 @@ export const AuthController = new Elysia({ prefix: '/auth' })
         body: SignUpSchema,
         afterHandle: async ({ body, jwt, cookie: { accessToken, refreshToken }, set, error }) => {
             try {
-                const studentService = new UserServiceFactory(new UserRepoFactory).createService('student')
-                const instructorService = new UserServiceFactory(new UserRepoFactory).createService('instructor')
+                const studentService = new UserServiceFactory().createService('student')
+                const instructorService = new UserServiceFactory().createService('instructor')
                 const studentExists = await studentService.findByIdentifierService(body.username) || await studentService.findByIdentifierService(body.email)
                 const instructorExists = await instructorService.findByIdentifierService(body.username) || await instructorService.findByIdentifierService(body.email)
 
@@ -26,7 +26,7 @@ export const AuthController = new Elysia({ prefix: '/auth' })
                     return error(409, errorResponse('Username or email already exists.'))
                 }
 
-                const userService = new UserServiceFactory(new UserRepoFactory).createService(body.role as UserType)
+                const userService = new UserServiceFactory().createService(body.role as UserType)
                 const password = await Bun.password.hash(body.password, {
                     algorithm: 'bcrypt',
                     cost: 16
@@ -58,7 +58,7 @@ export const AuthController = new Elysia({ prefix: '/auth' })
         body: SignInSchema,
         afterHandle: async ({ body, jwt, cookie: { accessToken, refreshToken }, set, error }) => {
             try {
-                const factory = new UserServiceFactory(new UserRepoFactory)
+                const factory = new UserServiceFactory()
                 const service = {
                     instructor: factory.createService('instructor'),
                     student: factory.createService('student'),
@@ -111,7 +111,7 @@ export const AuthController = new Elysia({ prefix: '/auth' })
 
         const username = jwtPayload.sub
 
-        const factory = new UserServiceFactory(new UserRepoFactory)
+        const factory = new UserServiceFactory()
         const service = {
             instructor: factory.createService('instructor'),
             student: factory.createService('student'),
