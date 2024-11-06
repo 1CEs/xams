@@ -1,11 +1,11 @@
-import mongoose from "mongoose";
-import { IStudent } from "./interface/istudent";
-import { UserModel } from "./user.model";
-import { IUser } from "./interface/iuser";
+import mongoose from "mongoose"
+import { IStudent } from "./interface/istudent"
+import { UserModel } from "./user.model"
+import { IStudentDocument } from "../../../types/user"
 
 const { Schema } = mongoose
 
-const StudentSchema = new Schema<IStudent>({
+const StudentSchema = new Schema<IStudentDocument>({
     enrolls: {
         type: [Schema.Types.ObjectId]
     },
@@ -14,4 +14,4 @@ const StudentSchema = new Schema<IStudent>({
     }
 })
 
-export const StudentModel = UserModel.discriminator<IUser & IStudent>('student', StudentSchema)
+export const StudentModel = UserModel.discriminator<IStudentDocument>('student', StudentSchema)

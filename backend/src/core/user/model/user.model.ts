@@ -1,5 +1,6 @@
 import mongoose from "mongoose"
 import { IUser } from "./interface/iuser"
+import { IUserDocument } from "../../../types/user"
 
 const { Schema, model } = mongoose
 
@@ -18,7 +19,7 @@ const UserInfoSchema = new Schema<IUser['info']>({
     }
 })
 
-const UserSchema = new Schema<IUser>({
+const UserSchema = new Schema<IUserDocument>({
     _id: { type: Schema.Types.ObjectId },
     username: {
         type: Schema.Types.String,
@@ -53,4 +54,4 @@ const UserSchema = new Schema<IUser>({
 
 }, { timestamps: true })
 
-export const UserModel = model<IUser>('users', UserSchema)
+export const UserModel = model<IUserDocument>('users', UserSchema)

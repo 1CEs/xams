@@ -2,6 +2,7 @@ import mongoose from "mongoose"
 import { IInstructor } from "./interface/iintructor"
 import { UserModel } from "./user.model"
 import { IUser } from "./interface/iuser"
+import { IInstructorDocument } from "../../../types/user"
 
 const { Schema } = mongoose
 
@@ -17,7 +18,7 @@ const CategoriesSchema = new Schema<IInstructor['categories']>({
     }
 })
 
-const InstructorSchema = new Schema<IInstructor>({
+const InstructorSchema = new Schema<IInstructorDocument>({
     categories: [CategoriesSchema],
     exams: {
         type: [Schema.Types.ObjectId],
@@ -29,4 +30,4 @@ const InstructorSchema = new Schema<IInstructor>({
     }
 })
 
-export const InstructorModel = UserModel.discriminator<IUser & IInstructor>('instructor', InstructorSchema)
+export const InstructorModel = UserModel.discriminator<IInstructorDocument>('instructor', InstructorSchema)
