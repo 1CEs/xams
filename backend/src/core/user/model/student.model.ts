@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { IStudent } from "./interface/istudent";
 import { UserModel } from "./user.model";
+import { IUser } from "./interface/iuser";
 
 const { Schema } = mongoose
 
@@ -13,4 +14,4 @@ const StudentSchema = new Schema<IStudent>({
     }
 })
 
-export const StudentModel = UserModel.discriminator('student', StudentSchema)
+export const StudentModel = UserModel.discriminator<IUser & IStudent>('student', StudentSchema)
