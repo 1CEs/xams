@@ -1,0 +1,1 @@
+type UserRole = 'student' | 'instructor' | 'admin'

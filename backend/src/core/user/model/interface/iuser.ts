@@ -7,7 +7,7 @@ export interface IUser extends Document {
     password: string
     profile_url: string
     bio?: string
-    role: 'student' | 'instructor' | 'admin'
+    role: UserRole
     info: {
         first_name: string
         last_name: string
