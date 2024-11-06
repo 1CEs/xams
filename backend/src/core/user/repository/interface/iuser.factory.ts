@@ -1,6 +1,8 @@
-import { IInstructor } from "../../model/interface/iintructor";
-import { IStudent } from "../../model/interface/istudent";
+import { UserRole } from "../../../../types/user";
+import { IInstructorRepository } from "./iinstructor.repository";
+import { IStudentRepository } from "./istudent.repository";
+import { IUserRepository } from "./iuser.repository";
 
-export interface IUserRepoFactory<T extends (IInstructor | IStudent)> {
-    createRepository: () => T
+export interface IUserRepoFactory {
+    createRepository: (role: UserRole) => (IUserRepository | IInstructorRepository | IStudentRepository)
 }
