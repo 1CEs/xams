@@ -1,5 +1,4 @@
-import { IUserService } from "./iuser.service";
-
-export interface IInstructorService<T> extends IUserService<T>{
-    addExam: (_id: string) => Promise<T> 
+import { UpdateWriteOpResult } from "mongoose"
+export interface IInstructorService {
+    updateExam: (instructor_id: string, examination_id: string) => Promise<UpdateWriteOpResult> 
 }
