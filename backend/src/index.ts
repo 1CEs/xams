@@ -1,5 +1,7 @@
-import { Elysia } from "elysia";
-import { Database } from "./database/database";
+import { Elysia } from "elysia"
+import { Database } from "./database/database"
+import { indexMiddleware } from "./presentation/middleware/index.middleware"
+import { indexRouter } from "./presentation/routes/index.route"
 
 const runServer = async () => {
   const { db, err } = await new Database().connect(process.env.DB_CONN!)
@@ -9,7 +11,14 @@ const runServer = async () => {
   }
   
   console.log('Connected to database')
-  const app = new Elysia().get("/", () => "Hello Elysia").listen(3000)
+
+  const app = new Elysia()
+    .use(indexMiddleware)
+    .use(indexRouter)
+    .get("/", () => "Hello Elysia")
+    .listen(3000)
+  
+
   console.log(
     `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
   )

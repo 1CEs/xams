@@ -2,7 +2,7 @@ import { ObjectId } from "mongoose"
 import { UserRole } from "../../../../types/user"
 
 export interface IUser {
-    _id: ObjectId
+    _id?: ObjectId
     email: string
     username: string
     password: string

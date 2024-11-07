@@ -17,10 +17,9 @@ const UserInfoSchema = new Schema<IUser['info']>({
         type: Schema.Types.Date,
         required: true
     }
-})
+}, {_id: false})
 
 const UserSchema = new Schema<IUserDocument>({
-    _id: { type: Schema.Types.ObjectId },
     username: {
         type: Schema.Types.String,
         required: true

@@ -1,5 +1,4 @@
 import mongoose from "mongoose"
-import { IStudent } from "./interface/istudent"
 import { UserModel } from "./user.model"
 import { IStudentDocument } from "../../../types/user"
 
