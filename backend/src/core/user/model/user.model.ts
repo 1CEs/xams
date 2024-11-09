@@ -22,11 +22,15 @@ const UserInfoSchema = new Schema<IUser['info']>({
 const UserSchema = new Schema<IUserDocument>({
     username: {
         type: Schema.Types.String,
-        required: true
+        required: true,
+        index: true,
+        unique: true
     },
     email: {
         type: Schema.Types.String,
-        required: true
+        required: true,
+        index: true,
+        unique: true
     },
     password: {
         type: Schema.Types.String,
