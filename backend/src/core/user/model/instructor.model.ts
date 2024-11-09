@@ -20,7 +20,7 @@ const CategoriesSchema = new Schema<IInstructor['categories']>({
 
 const InstructorSchema = new Schema<IInstructorDocument>({
     categories: [CategoriesSchema],
-    exams: {
+    exam_bank: {
         type: [Schema.Types.ObjectId],
         ref: 'examinations'
     },

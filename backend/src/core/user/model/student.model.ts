@@ -5,7 +5,7 @@ import { IStudentDocument } from "../../../types/user"
 const { Schema } = mongoose
 
 const StudentSchema = new Schema<IStudentDocument>({
-    enrolls: {
+    join_groups: {
         type: [Schema.Types.ObjectId]
     },
     exam_attempts: {

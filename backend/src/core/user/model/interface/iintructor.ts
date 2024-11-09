@@ -8,5 +8,5 @@ export interface IInstructor extends IUser {
         color: string
     }
     courses: ObjectId[]
-    exams: ObjectId[]
+    exam_bank: ObjectId[]
 }
