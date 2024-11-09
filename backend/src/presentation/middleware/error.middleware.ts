@@ -1,6 +1,6 @@
 import Elysia from "elysia";
 import { AuthorizationError } from "../errors/authorization.error";
-import { AuthenticationError } from "../errors/Authentication.error";
+import { AuthenticationError } from "../errors/authentication.error";
 import { BadRequestError } from "../errors/badrequest.error";
 import { ForbiddenError } from "../errors/forbidden.error";
 import { TooManyRequestError } from "../errors/toomanyrequest.error";

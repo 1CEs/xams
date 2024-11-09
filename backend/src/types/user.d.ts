@@ -15,8 +15,18 @@ declare type IInstructorDocument = IInstructor & Document
 declare type IStudentDocument = IStudent & Document
 declare type UserRepositoryType = InstructorRepository | StudentRepository | UserRepository
 declare type UserServiceType = UserService<IUser> | InstructorService | StudentService
-declare type SignUpPayload = Omit<IUser, '_id'>
+declare type SignUpPayload = {
+    body?: Omit<IUser, '_id'>
+    jwt: JWTMethods
+    accessToken: Cookie<string | undefined>
+    refreshToken: Cookie<string | undefined>
+}
 declare type SignInPayload = {
-    identifier: string,
-    password: string
+    body?: {
+        identifier: string
+        password: string
+    }
+    jwt: JWTMethods,
+    accessToken: Cookie<string | undefined>,
+    refreshToken: Cookie<string | undefined>
 }
