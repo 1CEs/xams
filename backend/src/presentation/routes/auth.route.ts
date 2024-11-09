@@ -5,12 +5,21 @@ import { SignInSchema } from "./schema/sign-in.schema";
 
 const ac = new AuthController()
 export const AuthRoute = new Elysia({ prefix: '/auth' })
-    .post('/sign-up', ({ body }) => ac.signup(body as any), {
+    .post('/sign-up', ({ body }) => ac.signup(body), {
         body: SignUpSchema,
-        error({ code, error }) {
-            console.log(error)
-        }
     })
     .post('/sign-in', ({ body }) => ac.signin(body), {
-        body: SignInSchema
+        body: SignInSchema,
+    })
+    .onError(({ code, error }) => {
+        let parsedError
+        try {
+            parsedError = JSON.parse(error.message)
+        } catch (e) {
+            parsedError = error.message
+        }
+        return {
+            code,
+            err: parsedError
+        }
     })
