@@ -9,8 +9,9 @@ export class BaseRepository<T extends Document> implements IBaseRepository<T> {
     }
 
     async save(payload: Partial<T>) {
-        const document = new this._model(payload)
-        return (await document.save()) as T & Document
+        await this._model.init()
+        const document = await this._model.create(payload)
+        return document as T & Document
     }
 
     async find() {
