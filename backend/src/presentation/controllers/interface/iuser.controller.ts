@@ -6,9 +6,12 @@ export interface IUserController {
     // Generally controller methods
     getUsers: () => Promise<(IUser | IStudent | IInstructor)[] | null>
     getUser: (id: string) => Promise<(IUser | IStudent | IInstructor) | null>
-    updateUser: (id: string) => Promise<(IUser | IStudent | IInstructor) | null>
+    updateUser: (id: string, payload: Partial<IUser>) => Promise<(IUser | IStudent | IInstructor) | null>
     deleteUser: (id: string) => Promise<(IUser | IStudent | IInstructor) | null>
     
-    // Only-Instructor methods
+    // Instructor-Only methods
     updateCategory: (id: string, detail: any) => Promise<any>
+    updateExamBank: (id: string, detail: any) => Promise<any>
+
+    // Student-Only methods
 }

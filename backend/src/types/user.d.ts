@@ -30,3 +30,8 @@ declare type SignInPayload = {
     accessToken: Cookie<string | undefined>,
     refreshToken: Cookie<string | undefined>
 }
+
+declare type CategoryPayload = {
+    name: string
+    color: string
+}
