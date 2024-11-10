@@ -3,6 +3,7 @@ import { AuthController } from "../controllers/auth.controller"
 import { SignUpSchema } from "./schema/sign-up.schema"
 import { SignInSchema } from "./schema/sign-in.schema"
 import { JWT } from "../middleware/jwt.middleware"
+import { tokenVerifier } from "../middleware/token-verify.middleware"
 
 const ac = new AuthController()
 
@@ -23,3 +24,5 @@ export const AuthRoute = new Elysia({ prefix: '/auth' })
     }) => ac.signin({ body, accessToken, refreshToken, jwt }), {
         body: SignInSchema,
     })
+    .use(tokenVerifier)
+    .get('/me', ({ user }) => ac.me(user))

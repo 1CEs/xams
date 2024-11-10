@@ -46,6 +46,10 @@ export class AuthController implements IAuthController {
         return user
     } 
 
+    me(user: IUser) {
+        return user
+    }
+
     async setToken(id: string, { jwt, accessToken, refreshToken }: SetTokenParameters) {
         const accToken = await jwt.sign({
             sub: id,

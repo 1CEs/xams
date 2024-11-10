@@ -2,7 +2,8 @@ import Elysia from "elysia"
 import { JWT } from "./jwt.middleware"
 import { UserServiceFactory } from "../../core/user/service/user.factory"
 
-export const tokenVerifier = new Elysia()
+export const tokenVerifier = (app: Elysia) =>
+    app
     .use(JWT)
     .derive(async ({ jwt, cookie: { accessToken }, set }) => {
         if (!accessToken.value) {
