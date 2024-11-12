@@ -50,6 +50,12 @@ export class AuthController implements IAuthController {
         return user
     }
 
+    logout({ accessToken, refreshToken }: Omit<SetTokenParameters, 'jwt'>) {
+        accessToken.remove()
+        refreshToken.remove()
+        return 'Logout Successfully'
+    }
+
     async setToken(id: string, { jwt, accessToken, refreshToken }: SetTokenParameters) {
         const accToken = await jwt.sign({
             sub: id,

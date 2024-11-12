@@ -10,6 +10,13 @@ export interface IAuthController {
     signup: (payload: SignUpPayload) => Promise<((IUser | IStudent | IInstructor) & Document) | null>
     signin: (payload: SignInPayload) => Promise<IUser>
     me: (user: (IUser | IStudent | IInstructor)) => IUser
+    logout: (
+        {
+            jwt,
+            accessToken,
+            refreshToken
+        }: SetTokenParameters
+    ) => void
     setToken: (
         id: string,
         {
