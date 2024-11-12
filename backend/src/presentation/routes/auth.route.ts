@@ -5,24 +5,25 @@ import { SignInSchema } from "./schema/sign-in.schema"
 import { JWT } from "../middleware/jwt.middleware"
 import { tokenVerifier } from "../middleware/token-verify.middleware"
 
-const ac = new AuthController()
-
 export const AuthRoute = new Elysia({ prefix: '/auth' })
     .use(JWT)
+    .decorate('controller', new AuthController())
     .post('/sign-up', ({
+        controller,
         body,
         cookie: { accessToken, refreshToken },
         jwt
-    }) => ac.signup({ body, accessToken, refreshToken, jwt }),
+    }) => controller.signup({ body, accessToken, refreshToken, jwt }),
         {
             body: SignUpSchema,
         })
     .post('/sign-in', ({
+        controller,
         body,
         cookie: { accessToken, refreshToken },
         jwt
-    }) => ac.signin({ body, accessToken, refreshToken, jwt }), {
+    }) => controller.signin({ body, accessToken, refreshToken, jwt }), {
         body: SignInSchema,
     })
     .use(tokenVerifier)
-    .get('/me', ({ user }) => ac.me(user))
+    .get('/me', ({ controller, user }) => controller.me(user))
