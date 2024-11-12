@@ -34,4 +34,10 @@ export class UserController implements IUserController {
         return await (this._factory.createService('instructor') as InstructorService).updateCategory(id, payload)
     }
 
+    async updateExamBank(instructor_id: string, examination_id: string) {
+        return await (this._factory.createService('instructor') as InstructorService).updateExam(instructor_id, examination_id)
+    }
+
+    // Student-Only methods
+
 }
