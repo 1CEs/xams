@@ -1,15 +1,23 @@
-import { IUser } from "../../core/user/model/interface/iuser";
-import { IUserServiceFactory } from "../../core/user/service/interface/iuser.factory";
-import { UserServiceFactory } from "../../core/user/service/user.factory";
-import { SignInPayload, SignUpPayload } from "../../types/user";
-import { emailRegex } from "../../utils/regex";
-import { IAuthController } from "./interface/iauth.controller";
-import { SetTokenParameters } from "../../types/auth";
+import { IUser } from "../../core/user/model/interface/iuser"
+import { IUserServiceFactory } from "../../core/user/service/interface/iuser.factory"
+import { UserServiceFactory } from "../../core/user/service/user.factory"
+import { SignInPayload, SignUpPayload } from "../../types/user"
+import { emailRegex } from "../../utils/regex"
+import { IAuthController } from "./interface/iauth.controller"
+import { SetTokenParameters } from "../../types/auth"
 
 export class AuthController implements IAuthController {
     private _factory: IUserServiceFactory
     constructor() {
         this._factory = new UserServiceFactory()
+    }
+
+    private _response<T>(message: string, code: number, data: T ): ControllerResponse<T> {
+        return {
+            message,
+            code,
+            data
+        }
     }
 
     async signup(payload: SignUpPayload) {
@@ -20,7 +28,7 @@ export class AuthController implements IAuthController {
         delete payload.body
         await this.setToken(String(user?._id), { ...payload })
 
-        return user
+        return this._response<typeof user>('Sign-up Successfully', 201, user)
     }
 
     async signin(payload: SignInPayload) {
@@ -43,17 +51,17 @@ export class AuthController implements IAuthController {
         delete payload.body
         await this.setToken(String(user._id), { ...payload })
 
-        return user
+        return this._response<typeof user>('Sign-in Successfully', 200, user)
     } 
 
     me(user: IUser) {
-        return user
+        return this._response<typeof user>(`Hello ${user.username}`, 200, user)
     }
 
     logout({ accessToken, refreshToken }: Omit<SetTokenParameters, 'jwt'>) {
         accessToken.remove()
         refreshToken.remove()
-        return 'Logout Successfully'
+        return this._response<null>('Logout Successfully', 200, null)
     }
 
     async setToken(id: string, { jwt, accessToken, refreshToken }: SetTokenParameters) {
@@ -79,5 +87,4 @@ export class AuthController implements IAuthController {
             path: '/'
         })
     }
-
 }

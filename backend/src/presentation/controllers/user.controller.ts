@@ -1,3 +1,4 @@
+import { UpdateWriteOpResult } from "mongoose";
 import { IUser } from "../../core/user/model/interface/iuser";
 import { InstructorService } from "../../core/user/service/instructor.service";
 import { IUserServiceFactory } from "../../core/user/service/interface/iuser.factory";
@@ -12,30 +13,44 @@ export class UserController implements IUserController {
         this._factory = new UserServiceFactory()
     }
 
+    private _response<T>(message: string, code: number, data: T) {
+        return {
+            message,
+            code,
+            data
+        }
+    }
+
     // Generally controller methods
     async getUsers() {
-        return await this._factory.createService('general').getUsers()
+        const users = await this._factory.createService('general').getUsers()
+        return this._response<typeof users>('Done', 200, users)
     }
 
     async getUser(id: string) {
-        return await this._factory.createService('general').getUserById(id)
+        const user = await this._factory.createService('general').getUserById(id)
+        return this._response<typeof user>('Done', 200, user)
     }
 
     async updateUser(id: string, payload: Partial<IUser>) {
-        return await this._factory.createService('general').updateUser(id, payload)
+        const updated = await this._factory.createService('general').updateUser(id, payload)
+        return this._response<typeof updated>('Update Successfully', 200, updated)
     }
 
     async deleteUser(id: string) {
-        return await this._factory.createService('general').deleteUser(id)
+        const deleted = await this._factory.createService('general').deleteUser(id)
+        return this._response<typeof deleted>('Delete Successfully', 200, deleted)
     }
 
     // Instructor-Only methods
     async updateCategory(id: string, payload: CategoryPayload) {
-        return await (this._factory.createService('instructor') as InstructorService).updateCategory(id, payload)
+        const updated = await (this._factory.createService('instructor') as InstructorService).updateCategory(id, payload)
+        return this._response<UpdateWriteOpResult>('Update Category Successfully', 200, updated)
     }
 
     async updateExamBank(instructor_id: string, examination_id: string) {
-        return await (this._factory.createService('instructor') as InstructorService).updateExam(instructor_id, examination_id)
+        const updated = await (this._factory.createService('instructor') as InstructorService).updateExam(instructor_id, examination_id)
+        return this._response<UpdateWriteOpResult>('Update Examination Bank Successfully', 200, updated)
     }
 
     // Student-Only methods

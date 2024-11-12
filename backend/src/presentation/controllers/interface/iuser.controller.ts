@@ -4,10 +4,10 @@ import { IUser } from "../../../core/user/model/interface/iuser";
 
 export interface IUserController {
     // Generally controller methods
-    getUsers: () => Promise<(IUser | IStudent | IInstructor)[] | null>
-    getUser: (id: string) => Promise<(IUser | IStudent | IInstructor) | null>
-    updateUser: (id: string, payload: Partial<IUser>) => Promise<(IUser | IStudent | IInstructor) | null>
-    deleteUser: (id: string) => Promise<(IUser | IStudent | IInstructor) | null>
+    getUsers: () => Promise<ControllerResponse<any>>
+    getUser: (id: string) => Promise<ControllerResponse<any>>
+    updateUser: (id: string, payload: Partial<IUser>) => Promise<ControllerResponse<any>>
+    deleteUser: (id: string) => Promise<ControllerResponse<any>>
     
     // Instructor-Only methods
     updateCategory: (id: string, detail: any) => Promise<any>
