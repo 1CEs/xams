@@ -1,6 +1,8 @@
 import { IExamination } from "../../core/examination/model/interface/iexamination";
+import { IQuestion } from "../../core/examination/model/interface/iquestion";
 import { ExaminationService } from "../../core/examination/service/exam.service";
 import { IExaminationService } from "../../core/examination/service/interface/iexam.service";
+import { IInstructor } from "../../core/user/model/interface/iintructor";
 import { IExaminationController } from "./interface/iexam.controller";
 
 export class ExaminationController implements IExaminationController {
@@ -18,7 +20,8 @@ export class ExaminationController implements IExaminationController {
         }
     }
 
-    async addExamination(payload: Omit<IExamination, "_id">) {
+    // Examination-Only methods
+    async addExamination(payload: Omit<IExamination, "_id" | "questions">) {
         const exam = await this._service.addExamination(payload)
         return this._response<typeof exam>('Create Examination Successfully', 200, exam)
     }
@@ -43,4 +46,14 @@ export class ExaminationController implements IExaminationController {
         return this._response<typeof deleted>('Delete Examination Successfully', 200, deleted)
     }
 
+    // Question-Only methods
+    async addExaminationQuestion(id: string, payload: Omit<IQuestion, '_id'>) {
+        const exam = await this._service.addExaminationQuestion(id, payload)
+        return this._response<typeof exam>('Add Question Successfully', 200, exam)
+    }
+
+    async updateQuestion(id: string, question_id: string, payload: Partial<IQuestion>) {
+        const exam = await this._service.updateQuestion(id, question_id, payload)
+        return this._response<typeof exam>('Update Question Successfully', 200, exam)
+    }
 }
