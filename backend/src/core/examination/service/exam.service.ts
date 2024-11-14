@@ -1,4 +1,5 @@
 import { IExamination } from "../model/interface/iexamination";
+import { IQuestion } from "../model/interface/iquestion";
 import { ExaminationRepository } from "../repository/exam.repository";
 import { IExaminationRepository } from "../repository/interface/iexam.repository";
 import { IExaminationService } from "./interface/iexam.service";
@@ -10,7 +11,7 @@ export class ExaminationService implements IExaminationService {
         this._repository = new ExaminationRepository
     }
 
-    async addExamination(payload: Omit<IExamination, "_id">) {
+    async addExamination(payload: Omit<IExamination, "_id" | 'questions'>) {
         const result = await this._repository.save(payload)
         return result
     }
@@ -32,6 +33,16 @@ export class ExaminationService implements IExaminationService {
 
     async deleteExamination(id: string) {
         const result = await this._repository.delete(id)
+        return result
+    }
+
+    async addExaminationQuestion(id: string, payload: Omit<IQuestion, "_id">) {
+        const result = await this._repository.addExaminationQuestion(id, payload)
+        return result
+    }
+
+    async updateQuestion(id: string, question_id: string, payload: Partial<IQuestion>) {
+        const result = await this._repository.updateQuestion(id, question_id, payload)
         return result
     }
 }
