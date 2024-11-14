@@ -6,11 +6,11 @@ import { updateUserSchema } from "./schema/user.schema";
 export const UserRoute = new Elysia({ prefix: '/user' })
     .decorate('controller', new UserController())
     .use(tokenVerifier)
-    .get('', ({ controller }) => controller.getUsers())
-    .get('/:id', ({ params, controller }) => controller.getUser(params.id))
-    .patch('/:id', ({ params, body, controller }) => controller.updateUser(params.id, body), {
+    .get('', async ({ controller }) => await controller.getUsers())
+    .get('/:id', async ({ params, controller }) => await controller.getUser(params.id))
+    .patch('/:id', async ({ params, body, controller }) => await controller.updateUser(params.id, body), {
         body: updateUserSchema
     })
-    .delete('/:id', ({ params, controller }) => controller.deleteUser(params.id))
+    .delete('/:id', async ({ params, controller }) => await controller.deleteUser(params.id))
 
     
