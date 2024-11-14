@@ -16,7 +16,7 @@ const runServer = async () => {
     .use(indexMiddleware)
     .use(indexRouter)
     .get("/", () => "Hello Elysia")
-    .listen(3000)
+    .listen(3001)
   
 
   console.log(

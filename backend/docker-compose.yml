@@ -1,11 +1,29 @@
 version: '3.8'
+
 services:
-  app:
+  xams-backend:
     build:
       context: .
-    image: xams-backend
+    depends_on:
+      - mongo
+    environment: 
+      - mongodb://isongwut:justapassword@localhost:27017/xams-db?authSource=admin
+      - DB_CONN=${DB_CONN}
+      - JWT_SECRET=${JWT_SECRET}
+      - ACCESS_TOKEN_EXP=${ACCESS_TOKEN_EXP}
+      - REFRESH_TOKEN_EXP=${REFRESH_TOKEN_EXP}
     ports:
       - "3000:3000"
+  
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
     environment:
-      - NODE_ENV=production
-    command: ["bun", "run", "src/index.ts"]
+      - MONGO_INITDB_ROOT_USERNAME=isongwut
+      - MONGO_INITDB_ROOT_PASSWORD=justapassword
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
