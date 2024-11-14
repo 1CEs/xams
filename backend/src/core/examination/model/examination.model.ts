@@ -16,4 +16,6 @@ export const ExaminationSchema = new Schema<ExaminationDocument>({
     description: { type: Schema.Types.String },
     questions: { type: [QuestionSchema] }
 
-})
+}, { timestamps: true })
+
+export const ExaminationModel = model('examinations', ExaminationSchema)
