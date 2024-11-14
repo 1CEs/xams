@@ -1,6 +1,8 @@
+import { UpdateWriteOpResult } from "mongoose";
 import { IInstructor } from "../../../core/user/model/interface/iintructor";
 import { IStudent } from "../../../core/user/model/interface/istudent";
 import { IUser } from "../../../core/user/model/interface/iuser";
+import { CategoryPayload } from "../../../types/user";
 
 export interface IUserController {
     // Generally controller methods
@@ -10,8 +12,8 @@ export interface IUserController {
     deleteUser: (id: string) => Promise<ControllerResponse<any>>
     
     // Instructor-Only methods
-    updateCategory: (id: string, detail: any) => Promise<any>
-    updateExamBank: (id: string, detail: any) => Promise<any>
+    updateCategory: (id: string, payload: CategoryPayload) => Promise<ControllerResponse<UpdateWriteOpResult>>
+    updateExamBank: (instructor_id: string, examination_id: string) => Promise<ControllerResponse<UpdateWriteOpResult>>
 
     // Student-Only methods
 }

@@ -2,7 +2,6 @@ import { IExamination } from "../../core/examination/model/interface/iexaminatio
 import { IQuestion } from "../../core/examination/model/interface/iquestion";
 import { ExaminationService } from "../../core/examination/service/exam.service";
 import { IExaminationService } from "../../core/examination/service/interface/iexam.service";
-import { IInstructor } from "../../core/user/model/interface/iintructor";
 import { IExaminationController } from "./interface/iexam.controller";
 
 export class ExaminationController implements IExaminationController {

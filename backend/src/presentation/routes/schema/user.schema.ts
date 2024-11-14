@@ -1,5 +1,5 @@
 import { t } from "elysia";
-import { emailRegex, urlRegex } from "../../../utils/regex";
+import { emailRegex, hexRegex, urlRegex } from "../../../utils/regex";
 
 export const updateUserSchema = t.Object({
     username: t.Optional(t.String({ maxLength: 255 })),
@@ -13,4 +13,9 @@ export const updateUserSchema = t.Object({
             birth: t.Date()
         }
     ))
+})
+
+export const updateCategorySchema = t.Object({
+    name: t.String({ description: 'Category name is required'}),
+    color: t.String({ pattern: hexRegex, description: 'Color is required'})
 })
