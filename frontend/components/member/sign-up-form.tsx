@@ -4,11 +4,7 @@ import Form from './form'
 import { DatePicker, Input } from '@nextui-org/react'
 import PasswordInput from './password-input'
 
-type Props = {
-  error: string
-}
-
-const SignUpForm = (props: Props) => {
+const SignUpForm = () => {
   const [password, setPassword] = useState<string>('')
   const [confirmPassword, setConfirmPassword] = useState<string>('')
   const [passwordMatchError, setPasswordMatchError] = useState<string>('')

@@ -4,7 +4,7 @@ import { Navbar as Nav, NavbarBrand, NavbarContent, NavbarItem, Link, Button, Av
 import { useRouter } from 'nextjs-toploader/app'
 import { useCookies } from 'next-client-cookies'
 import { useUserStore } from '@/stores/user.store'
-import { Suspense, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Fa6SolidBell, FluentSettings16Filled } from './icons/icons'
 import axios, { isAxiosError } from 'axios'
 import { baseAPIPath } from '@/constants/base'
