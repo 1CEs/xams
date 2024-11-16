@@ -6,6 +6,7 @@ export interface IExaminationService {
     addExamination: (payload: Omit<IExamination, '_id' | 'questions'>) => Promise<IExamination | null>
     getExaminations: () => Promise<IExamination[] | null>
     getExaminationById: (id: string) => Promise<IExamination | null>
+    getExaminationByInstructorId: (instructor_id: string) => Promise<IExamination[] | null>
     updateExamination: (id: string, payload: Partial<IExamination>) => Promise<IExamination | null>
     deleteExamination: (id: string) => Promise<IExamination | null>
 

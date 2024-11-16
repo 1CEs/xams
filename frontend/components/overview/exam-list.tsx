@@ -5,18 +5,20 @@ import React, { useEffect, useState } from 'react'
 import { MdiPaper } from '../icons/icons'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useUserStore } from '@/stores/user.store'
 
 type Props = {}
 
 const ExamList = (props: Props) => {
     const [exams, setExams] = useState<ExamResponse[]>([])
+    const { user } = useUserStore()
     const pathName = usePathname()
 
     useEffect(() => {
         const getExams = async () => {
             try {
-                const res = await clientAPI.get('exam')
-                setExams(res.data)
+                const res = await clientAPI.get(`exam?instructor_id=${user?._id}`)
+                setExams(res.data.data)
                 console.log(res.data)
             } catch (error) {
                 errorHandler(error)

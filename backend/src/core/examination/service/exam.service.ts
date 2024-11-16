@@ -26,6 +26,11 @@ export class ExaminationService implements IExaminationService {
         return result
     }
 
+    async getExaminationByInstructorId (instructor_id: string) {
+        const result = await this._repository.getExaminationByInstructorId(instructor_id)
+        return result
+    }
+
     async updateExamination(id: string, payload: Partial<IExamination>) {
         const result = await this._repository.update(id, payload)
         return result

@@ -18,7 +18,7 @@ export default function CreateExaminationPage() {
         const getExam = async () => {
             try {
                 const res = await clientAPI.get(`exam/${_id}`)
-                setExam(res.data.exam)
+                setExam(res.data.data)
             } catch (error) {
                 errorHandler(error)
             }

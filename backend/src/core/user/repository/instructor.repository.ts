@@ -14,7 +14,7 @@ export class InstructorRepository
     async updateExamination(instructor_id: string, examination_id: string) {
         const result = await this._model.updateOne(
             { _id: instructor_id }, 
-            { $push: { exams: examination_id } }
+            { $push: { exam_bank: examination_id } }
         ).exec()
         return result
     }

@@ -12,10 +12,10 @@ export class UserRepository
     }
 
     async findByUsername(username: string) {
-        return await this._model.findOne().select({ username })
+        return await this._model.findOne({ username }).exec()
     }
 
     async findByEmail(email: string) {
-        return await this._model.findOne().select({ email }).exec()
+        return await this._model.findOne({ email }).exec()
     }
 }

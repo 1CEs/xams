@@ -14,11 +14,12 @@ const ExamFormModal = (props: Props) => {
       const formEntries = Object.fromEntries(formData.entries())
       const res = await clientAPI.post('exam', {
         title: formEntries.title,
-        description: formEntries.description
+        description: formEntries.description,
       })
       console.log(res)
       toast.success('Create examination successfully')
     } catch (error) {
+      console.log(error)
       errorHandler(error)
     }
   }

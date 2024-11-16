@@ -47,12 +47,13 @@ const Form = (props: Props) => {
                 delete signUpPayload.birth
 
                 const res = await clientAPI.post('auth/sign-up', signUpPayload)
-                setUser(res.data.credentials as UserResponse)
+                console.log(res.data)
+                setUser(res.data.data as UserResponse)
                 
             } else {
                 const signInFormEntries = Object.fromEntries(formData.entries())
                 const res = await clientAPI.post('auth/sign-in', signInFormEntries)
-                setUser(res.data.credentials as UserResponse)
+                setUser(res.data.data as UserResponse)
                 
             }
             const oneDay = 24 * 60 * 60 * 1000

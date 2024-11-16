@@ -2,6 +2,9 @@ import { IExamination } from "../../core/examination/model/interface/iexaminatio
 import { IQuestion } from "../../core/examination/model/interface/iquestion";
 import { ExaminationService } from "../../core/examination/service/exam.service";
 import { IExaminationService } from "../../core/examination/service/interface/iexam.service";
+import { IInstructor } from "../../core/user/model/interface/iintructor";
+import { InstructorService } from "../../core/user/service/instructor.service";
+import { UserServiceFactory } from "../../core/user/service/user.factory";
 import { IExaminationController } from "./interface/iexam.controller";
 
 export class ExaminationController implements IExaminationController {
@@ -20,8 +23,13 @@ export class ExaminationController implements IExaminationController {
     }
 
     // Examination-Only methods
-    async addExamination(payload: Omit<IExamination, "_id" | "questions">) {
+    async addExamination(payload: Omit<IExamination, "_id" | "questions">, user: IInstructor) {
+        console.log(user)
         const exam = await this._service.addExamination(payload)
+        const service = new UserServiceFactory().createService(user.role)
+
+        const update = (service as InstructorService).updateExam(user._id as unknown as string, exam?._id as unknown as string)
+
         return this._response<typeof exam>('Create Examination Successfully', 200, exam)
     }
 
@@ -33,6 +41,11 @@ export class ExaminationController implements IExaminationController {
     async getExaminationById(id: string) {
         const exam = await this._service.getExaminationById(id)
         return this._response<typeof exam>('Done', 200, exam)
+    }
+
+    async getExaminationByInstructorId (instructor_id: string) {
+        const exams = await this._service.getExaminationByInstructorId(instructor_id)
+        return this._response<typeof exams>('Done', 200, exams)
     }
 
     async updateExamination(id: string, payload: Partial<IExamination>) {
