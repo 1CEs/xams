@@ -1,4 +1,5 @@
 import { clientAPI } from '@/config/axios.config'
+import { useUserStore } from '@/stores/user.store'
 import { errorHandler } from '@/utils/error'
 import { Select, SelectItem, Button, Chip, SharedSelection, Selection, Avatar } from '@nextui-org/react'
 import { useFormikContext } from 'formik'
@@ -13,12 +14,13 @@ const CategorySelector = (props: Props) => {
     const [categories, setCategories] = useState<CategoryResponse[]>([])
     const [selectedCategories, setSelectedCategories] = useState<Selection>(new Set([]))
     const { setFieldValue } = useFormikContext<QuestionForm>()
+    const { user } = useUserStore()
 
     useEffect(() => {
         const getCategories = async () => {
             try {
-                const res = await clientAPI.get('category')
-                setCategories(res.data)
+                const res = await clientAPI.get(`user/category/${user?._id}`)
+                setCategories(res.data.data)
                 console.log(res.data)
             } catch (error) {
                 errorHandler(error)

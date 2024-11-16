@@ -1,14 +1,14 @@
 "use client"
 
-import { Navbar as Nav, NavbarBrand, NavbarContent, NavbarItem, Link, Button, Avatar, Badge, Input, Popover, PopoverTrigger, PopoverContent, Divider, Spinner } from '@nextui-org/react'
+import { Navbar as Nav, NavbarBrand, NavbarContent, NavbarItem, Link, Button, Avatar, Badge, Popover, PopoverTrigger, PopoverContent, Divider, Spinner } from '@nextui-org/react'
 import { useRouter } from 'nextjs-toploader/app'
 import { useCookies } from 'next-client-cookies'
 import { useUserStore } from '@/stores/user.store'
 import { useEffect, useState } from 'react'
 import { Fa6SolidBell, FluentSettings16Filled } from './icons/icons'
-import axios, { isAxiosError } from 'axios'
-import { baseAPIPath } from '@/constants/base'
+import { isAxiosError } from 'axios'
 import { usePathname } from 'next/navigation'
+import { clientAPI } from '@/config/axios.config'
 
 const Navbar = () => {
     const [signedIn, setSignedIn] = useState<boolean>(false)
@@ -16,7 +16,7 @@ const Navbar = () => {
     const [contentLoading, setContentLoading] = useState<boolean>(true)
     const pathName = usePathname()
     const router = useRouter()
-    const { user } = useUserStore()
+    const { user, setUser } = useUserStore()
     const cookies = useCookies()
 
     useEffect(() => {
@@ -35,12 +35,13 @@ const Navbar = () => {
     const onLogout = async () => {
         try {
             setLoading(true)
-            const res = await axios.post(baseAPIPath + 'auth/sign-out', null, {
+            const res = await clientAPI.post('/auth/logout', null, {
                 withCredentials: true
             })
             console.log(res)
             cookies.remove('user')
             router.push('/')
+            setUser(null)
             setSignedIn(false)
             setLoading(false)
         } catch (error) {

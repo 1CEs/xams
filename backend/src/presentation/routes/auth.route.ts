@@ -25,5 +25,6 @@ export const AuthRoute = new Elysia({ prefix: '/auth' })
     }) => await controller.signin({ body, accessToken, refreshToken, jwt }), {
         body: SignInSchema,
     })
+    .post('/logout', ({ controller, cookie: { accessToken, refreshToken }}) => controller.logout({ accessToken, refreshToken }))
     .use(tokenVerifier)
     .get('/me', ({ controller, user }) => controller.me(user))

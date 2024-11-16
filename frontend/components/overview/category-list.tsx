@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { FeEdit, MdiBin } from '../icons/icons';
 import { errorHandler } from '@/utils/error';
 import ConfirmModal from '../modals/confirm-modal';
+import { useUserStore } from '@/stores/user.store';
 
 type Props = {}
 
@@ -14,6 +15,7 @@ const CategoryList = (props: Props) => {
     const [categories, setCategories] = useState<CategoryResponse[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<CategoryResponse | null>(null);
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
+    const { user } = useUserStore()
 
     const onDeleteCategory = async () => {
         console.log('wtf')
@@ -63,8 +65,8 @@ const CategoryList = (props: Props) => {
 
     useEffect(() => {
         const getCategory = async () => {
-            const res = await clientAPI.get('category');
-            setCategories(res.data);
+            const res = await clientAPI.get(`user/category/${user?._id}`);
+            setCategories(res.data.data);
             console.log(res.data);
         };
         getCategory();
@@ -76,7 +78,7 @@ const CategoryList = (props: Props) => {
                 <TableHeader columns={CATEGORY_COLUMNS}>
                     {(column) => <TableColumn key={column.key}>{column.label}</TableColumn>}
                 </TableHeader>
-                <TableBody items={categories}>
+                <TableBody emptyContent={" No category "} items={categories}>
                     {(item) => (
                         <TableRow key={item._id}>
                             {(columnKey) => <TableCell>{renderCell(item, columnKey as keyof CategoryColumns)}</TableCell>}

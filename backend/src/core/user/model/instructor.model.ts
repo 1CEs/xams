@@ -1,13 +1,12 @@
 import mongoose from "mongoose"
-import { IInstructor } from "./interface/iintructor"
+import { ICategory, IInstructor } from "./interface/iintructor"
 import { UserModel } from "./user.model"
 import { IUser } from "./interface/iuser"
 import { IInstructorDocument } from "../../../types/user"
 
 const { Schema } = mongoose
 
-const CategoriesSchema = new Schema<IInstructor['categories']>({
-    _id: { type: Schema.Types.ObjectId },
+const CategoriesSchema = new Schema<ICategory>({
     name: {
         type: Schema.Types.String,
         required: true
@@ -16,7 +15,7 @@ const CategoriesSchema = new Schema<IInstructor['categories']>({
         type: Schema.Types.String,
         required: true
     }
-})
+}, { _id: true })
 
 const InstructorSchema = new Schema<IInstructorDocument>({
     categories: [CategoriesSchema],

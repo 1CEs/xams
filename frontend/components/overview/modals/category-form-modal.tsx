@@ -24,7 +24,7 @@ const CategoryFormModal = (props: Props) => {
             const formEntries = Object.fromEntries(new FormData(e.currentTarget))
             console.log(formEntries)
             if (formEntries.category_name == '') throw new Error('Please enter category name')
-            const res = await clientAPI.patch('category', formEntries)
+            const res = await clientAPI.patch('user/category', formEntries)
             console.log(res.data)
             toast.success('Create examination successfully')
             

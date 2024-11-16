@@ -40,7 +40,7 @@ const ConfirmModal = (props: Props) => {
                             props.onAction()
                             onClose()
                         }}>
-                            Close
+                            Delete
                         </Button>
                     </ModalFooter>
                 </div>
