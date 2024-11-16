@@ -12,6 +12,7 @@ export interface IUserController {
     deleteUser: (id: string) => Promise<ControllerResponse<any>>
     
     // Instructor-Only methods
+    getCategory: (instructor_id: string) => Promise<ControllerResponse<IInstructor['categories'] | undefined>>
     updateCategory: (id: string, payload: CategoryPayload) => Promise<ControllerResponse<UpdateWriteOpResult>>
     updateExamBank: (instructor_id: string, examination_id: string) => Promise<ControllerResponse<UpdateWriteOpResult>>
 

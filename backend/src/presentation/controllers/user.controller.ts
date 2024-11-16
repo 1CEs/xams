@@ -5,6 +5,7 @@ import { IUserServiceFactory } from "../../core/user/service/interface/iuser.fac
 import { UserServiceFactory } from "../../core/user/service/user.factory";
 import { CategoryPayload } from "../../types/user";
 import { IUserController } from "./interface/iuser.controller";
+import { IInstructor } from "../../core/user/model/interface/iintructor";
 
 export class UserController implements IUserController {
     private _factory: IUserServiceFactory
@@ -43,6 +44,11 @@ export class UserController implements IUserController {
     }
 
     // Instructor-Only methods
+    async getCategory (instructor_id: string) {
+        const categories = await (this._factory.createService('instructor') as InstructorService).getCategory(instructor_id)
+        return this._response<typeof categories>('Done', 200, categories)
+    }
+
     async updateCategory(id: string, payload: CategoryPayload) {
         const updated = await (this._factory.createService('instructor') as InstructorService).updateCategory(id, payload)
         return this._response<UpdateWriteOpResult>('Update Category Successfully', 200, updated)

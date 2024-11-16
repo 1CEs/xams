@@ -6,7 +6,7 @@ export interface IInstructor extends IUser {
         _id: ObjectId
         name: string
         color: string
-    }
+    }[]
     courses: ObjectId[]
     exam_bank: ObjectId[]
 }

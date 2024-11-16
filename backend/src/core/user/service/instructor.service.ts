@@ -9,6 +9,11 @@ export class InstructorService extends UserService<IInstructor> implements IInst
         super(role)
     }
 
+    async getCategory(instructor_id: string) {
+        const result = await (this._repository as InstructorRepository).getCategory(instructor_id)
+        return result
+    }
+
     async updateExam(instructor_id: string, examination_id: string) {
         const result = await (this._repository as InstructorRepository).updateExamination(instructor_id, examination_id)
         return result
