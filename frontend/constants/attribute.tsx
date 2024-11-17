@@ -1,4 +1,4 @@
-import { MaterialSymbolsListAlt, PajamasFalsePositive, MaterialSymbolsMatchWordRounded, MaterialSymbolsMatchCaseRounded, CarbonTextLongParagraph } from "@/components/icons/icons";
+import { MaterialSymbolsListAlt, PajamasFalsePositive, MaterialSymbolsMatchWordRounded, MaterialSymbolsMatchCaseRounded, CarbonTextLongParagraph, UilParagraph } from "@/components/icons/icons";
 
 export const questionTypes = [
     {
@@ -22,8 +22,13 @@ export const questionTypes = [
         icon: <MaterialSymbolsMatchCaseRounded fontSize={32} />,
     },
     {
-        name: 'es',
-        content: 'Essay',
+        name: 'les',
+        content: 'Long Essay',
         icon: <CarbonTextLongParagraph fontSize={32} />,
     },
+    {
+        name: 'ses',
+        content: 'Short Essay',
+        icon: <UilParagraph fontSize={32} />,
+    }
 ]

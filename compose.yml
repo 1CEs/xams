@@ -1,19 +1,30 @@
-version: '3.8'
-
 services:
-  xams-backend:
+  frontend:
     build:
-      context: .
+      context: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - 8080:8080
+    environment:
+      - PORT=8080
+    networks:
+      - xams-network
+
+  backend:
+    build:
+      context: ./backend
     depends_on:
       - mongo
     environment: 
-      - mongodb://isongwut:justapassword@localhost:27017/xams-db?authSource=admin
-      - DB_CONN=${DB_CONN}
+      - DB_CONN=mongodb://isongwut:justapassword@mongo:27017/xams-db?authSource=admin
       - JWT_SECRET=${JWT_SECRET}
       - ACCESS_TOKEN_EXP=${ACCESS_TOKEN_EXP}
       - REFRESH_TOKEN_EXP=${REFRESH_TOKEN_EXP}
     ports:
       - "3000:3000"
+    networks:
+      - xams-network
   
   mongo:
     image: mongo:latest
@@ -24,6 +35,12 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=justapassword
     volumes:
       - mongo-data:/data/db
+    networks:
+      - xams-network
+
+networks:
+  xams-network:
+    driver: bridge
 
 volumes:
   mongo-data:
