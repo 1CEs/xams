@@ -12,14 +12,8 @@ type QuestionSelector = 'mc' | 'tf' | 'ses' | 'les'
 type QuestionForm = {
     question: string
     type: QuestionSelector
-    choices: {
-        content: string
-        number: number
-        is_correct: boolean
-    }[]
+    choices: string[]
+    answer: string[]
     category: string[]
-    settings: {
-        point: number
-        is_random: 'no' | 'yes'
-    }
+    score: number
 }

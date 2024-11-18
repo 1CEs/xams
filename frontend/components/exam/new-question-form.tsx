@@ -55,23 +55,10 @@ const NewQuestionForm = () => {
             initialValues={{
                 question: '',
                 type: 'mc',
-                choices: [
-                    {
-                        number: 1,
-                        content: '',
-                        is_correct: false
-                    },
-                    {
-                        number: 2,
-                        content: '',
-                        is_correct: false
-                    },
-                ],
+                choices: ["", ""],
+                answer: [],
                 category: [''],
-                settings: {
-                    point: 1,
-                    is_random: 'no'
-                }
+                score: 1
             }}
             onSubmit={(
                 values: QuestionForm,
@@ -92,9 +79,22 @@ const NewQuestionForm = () => {
             }) => (
                 <form className="col-span-2 pl-32" onSubmit={handleSubmit}>
                     <Card>
-                        <CardHeader className="gap-x-3">
-                            <Button size="sm" color="success" type='submit'>Save</Button>
-                            <Button size="sm">Save and add new question</Button>
+                        <CardHeader className="justify-between">
+                            <div className='flex gap-x-4'>
+                                <Button size="sm" color="success" type='submit'>Save</Button>
+                                <Button size="sm">Save and add new question</Button>
+                            </div>
+
+                            <Input
+                                className='w-[100px] text-secondary'
+                                size='sm'
+                                max={100}
+                                type='number'
+                                startContent={<span className='text-sm text-foreground/50'>Score: </span>}
+                                onChange={handleChange}
+                                value={values.score.toString()}
+                                name='score'
+                            />
                         </CardHeader>
                         <Divider />
                         <CardBody className='gap-y-9'>
@@ -113,32 +113,7 @@ const NewQuestionForm = () => {
                                 {formRenderer[values.type].form}
                             </StepProvider>
                             <StepProvider number={4} content='Category' >
-                                <CategorySelector handleChange={handleChange} values={values}/>
-                            </StepProvider>
-                            <StepProvider number={5} content='Question settings' >
-                                <div className='flex gap-x-9 px-10'>
-                                    <div className='flex flex-col items-center gap-y-4'>
-                                        <span className='text-sm'>Points Available</span>
-                                        <Input
-                                            size='sm'
-                                            onChange={handleChange}
-                                            value={values.settings.point.toString()}
-                                            name='settings.point'
-                                        />
-                                    </div>
-                                    <div className='flex flex-col items-center gap-y-4'>
-                                        <span className='text-sm'>Randomize Answer</span>
-                                        <RadioGroup
-                                            size='sm'
-                                            color='secondary'
-                                            defaultValue={values.settings.is_random}
-                                            onChange={handleChange} orientation='horizontal'
-                                            name='settings.is_random'>
-                                            <Radio value={'no'}>No</Radio>
-                                            <Radio value={'yes'}>Yes</Radio>
-                                        </RadioGroup>
-                                    </div>
-                                </div>
+                                <CategorySelector handleChange={handleChange} values={values} />
                             </StepProvider>
                         </CardBody>
                         <CardFooter>
