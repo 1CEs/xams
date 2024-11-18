@@ -1,7 +1,7 @@
 import { Button, Checkbox, Chip } from '@nextui-org/react'
 import React, { Dispatch, useState } from 'react'
-import TextEditor from '../text-editor'
-import { MdiBin, MingcuteAddFill } from '../icons/icons'
+import TextEditor from '../../text-editor'
+import { MdiBin, MingcuteAddFill } from '../../icons/icons'
 import { useFormikContext } from 'formik'
 
 type Props = {}

@@ -7,20 +7,16 @@ type ExamResponse = {
     _id: string
 }
 
-type QuestionSelector = 'mc' | 'tf' | string
+type QuestionSelector = 'mc' | 'tf' | 'ses' | 'les'
 
 type QuestionForm = {
     question: string
-    type: string
+    type: QuestionSelector
     choices: {
-        content: string,
-        number: number,
-        is_correct: boolean,
+        content: string
+        number: number
+        is_correct: boolean
     }[]
-    feedback: {
-        correct: string
-        incorrect: string
-    },
     category: string[]
     settings: {
         point: number

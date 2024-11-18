@@ -1,12 +1,14 @@
-import { Avatar, Button, Card, CardBody, CardFooter, CardHeader, Chip, Divider, Input, Radio, RadioGroup, Select, SelectItem } from '@nextui-org/react'
+import { Avatar, Button, Card, CardBody, CardFooter, CardHeader, Divider, Input, Radio, RadioGroup } from '@nextui-org/react'
 import React, { ChangeEvent, FormEvent } from 'react'
 import TextEditor from '../text-editor'
 import { StepProvider } from '../provider'
-import MultipleChoiceForm from './multiple-choice'
-import TrueOrFalseForm from './true_or_false'
+import MultipleChoiceForm from './question/multiple-choice'
+import TrueOrFalseForm from './question/true-or-false'
 import { Formik, FormikHelpers } from 'formik'
 import QuestionTypeSelector from './question-type-selector'
 import CategorySelector from './category-selector'
+import ShortEssayForm from './question/short-essay'
+import LongEssayForm from './question/long-essay'
 
 export const HeadLine = ({ number, content, isOptional }: { number: number, content: string, isOptional?: boolean }) => {
     return (
@@ -19,9 +21,22 @@ export const HeadLine = ({ number, content, isOptional }: { number: number, cont
 
 const NewQuestionForm = () => {
     const formRenderer = {
-        mc: <MultipleChoiceForm />,
-        tf: <TrueOrFalseForm />
-
+        mc: {
+            form: <MultipleChoiceForm />,
+            content: 'Add your multiple choices'
+        },
+        tf: {
+            form: <TrueOrFalseForm />,
+            content: 'Add your true or false choices'
+        },
+        ses: {
+            form: <ShortEssayForm />,
+            content: 'Add your short essay'
+        },
+        les: {
+            form: <LongEssayForm />,
+            content: 'Add your long essay'
+        }
     }
 
     const onFormChange = (e: ChangeEvent<HTMLFormElement>) => {
@@ -52,10 +67,6 @@ const NewQuestionForm = () => {
                         is_correct: false
                     },
                 ],
-                feedback: {
-                    correct: '',
-                    incorrect: ''
-                },
                 category: [''],
                 settings: {
                     point: 1,
@@ -98,37 +109,13 @@ const NewQuestionForm = () => {
                                     />
                                 </div>
                             </StepProvider>
-                            <StepProvider number={3} content='Add your multiple choice' >
-                                {formRenderer[values.type as Exclude<QuestionSelector, string>]}
+                            <StepProvider number={3} content={formRenderer[values.type].content}>
+                                {formRenderer[values.type].form}
                             </StepProvider>
-                            <StepProvider number={4} content='Give feedback' isOptional={true}>
-                                <div className='flex gap-x-6 px-10'>
-                                    <div className='flex w-full text-nowrap items-center gap-x-3'>
-                                        <span className='text-sm w-fit text-secondary'>Correctly answered</span>
-                                        <Input
-                                            color='secondary'
-                                            variant='bordered'
-                                            name='feedback.correct'
-                                            onChange={handleChange}
-                                            value={values.feedback.correct}
-                                        />
-                                    </div>
-                                    <div className='flex w-full text-nowrap items-center gap-x-3'>
-                                        <span className='text-sm text-danger'>Incorrectly answered</span>
-                                        <Input
-                                            color='danger'
-                                            variant='bordered'
-                                            name='feedback.incorrect'
-                                            onChange={handleChange}
-                                            value={values.feedback.incorrect}
-                                        />
-                                    </div>
-                                </div>
-                            </StepProvider>
-                            <StepProvider number={5} content='Category' >
+                            <StepProvider number={4} content='Category' >
                                 <CategorySelector handleChange={handleChange} values={values}/>
                             </StepProvider>
-                            <StepProvider number={6} content='Question settings' >
+                            <StepProvider number={5} content='Question settings' >
                                 <div className='flex gap-x-9 px-10'>
                                     <div className='flex flex-col items-center gap-y-4'>
                                         <span className='text-sm'>Points Available</span>

@@ -12,23 +12,13 @@ export const questionTypes = [
         icon: <PajamasFalsePositive fontSize={32} />,
     },
     {
-        name: 'ma',
-        content: 'Matching',
-        icon: <MaterialSymbolsMatchWordRounded fontSize={32} />,
-    },
-    {
-        name: 'ft',
-        content: 'Free Text',
-        icon: <MaterialSymbolsMatchCaseRounded fontSize={32} />,
+        name: 'ses',
+        content: 'Short Essay',
+        icon: <UilParagraph fontSize={32} />,
     },
     {
         name: 'les',
         content: 'Long Essay',
         icon: <CarbonTextLongParagraph fontSize={32} />,
-    },
-    {
-        name: 'ses',
-        content: 'Short Essay',
-        icon: <UilParagraph fontSize={32} />,
     }
 ]
