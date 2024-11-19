@@ -76,52 +76,60 @@ const NewQuestionForm = () => {
                 handleBlur,
                 handleSubmit,
                 isSubmitting,
-            }) => (
-                <form className="col-span-2 pl-32" onSubmit={handleSubmit}>
-                    <Card>
-                        <CardHeader className="justify-between">
-                            <div className='flex gap-x-4'>
-                                <Button size="sm" color="success" type='submit'>Save</Button>
-                                <Button size="sm">Save and add new question</Button>
-                            </div>
+            }) => {
+                const handleScoreChange = (e: ChangeEvent<HTMLInputElement>) => {
+                    const value = e.target.value
+                    if (/^\d*\.?\d*$/.test(value)) {
+                        handleChange(e)
+                    }
+                };
 
-                            <Input
-                                className='w-[100px] text-secondary'
-                                size='sm'
-                                max={100}
-                                type='number'
-                                startContent={<span className='text-sm text-foreground/50'>Score: </span>}
-                                onChange={handleChange}
-                                value={values.score.toString()}
-                                name='score'
-                            />
-                        </CardHeader>
-                        <Divider />
-                        <CardBody className='gap-y-9'>
-                            <StepProvider number={1} content='Select Question Type'>
-                                <QuestionTypeSelector />
-                            </StepProvider>
-                            <StepProvider number={2} content='Write your question'>
-                                <div className='px-10'>
-                                    <TextEditor
-                                        className='min-h-[150px]'
-                                        name='question'
-                                    />
+                return (
+                    <form className="col-span-2 pl-32" onSubmit={handleSubmit}>
+                        <Card>
+                            <CardHeader className="justify-between">
+                                <div className='flex gap-x-4'>
+                                    <Button size="sm" color="success" type='submit'>Save</Button>
+                                    <Button size="sm">Save and add new question</Button>
                                 </div>
-                            </StepProvider>
-                            <StepProvider number={3} content={formRenderer[values.type].content}>
-                                {formRenderer[values.type].form}
-                            </StepProvider>
-                            <StepProvider number={4} content='Category' >
-                                <CategorySelector handleChange={handleChange} values={values} />
-                            </StepProvider>
-                        </CardBody>
-                        <CardFooter>
 
-                        </CardFooter>
-                    </Card>
-                </form>
-            )}
+                                <Input
+                                    className='w-[100px] text-secondary'
+                                    size='sm'
+                                    maxLength={4}
+                                    startContent={<span className='text-sm text-foreground/50'>Score: </span>}
+                                    onChange={handleScoreChange}
+                                    value={values.score.toString()}
+                                    name='score'
+                                />
+                            </CardHeader>
+                            <Divider />
+                            <CardBody className='gap-y-9'>
+                                <StepProvider number={1} content='Select Question Type'>
+                                    <QuestionTypeSelector />
+                                </StepProvider>
+                                <StepProvider number={2} content='Write your question'>
+                                    <div className='px-10'>
+                                        <TextEditor
+                                            className='min-h-[150px]'
+                                            name='question'
+                                        />
+                                    </div>
+                                </StepProvider>
+                                <StepProvider number={3} content={formRenderer[values.type].content}>
+                                    {formRenderer[values.type].form}
+                                </StepProvider>
+                                <StepProvider number={4} content='Category' >
+                                    <CategorySelector handleChange={handleChange} values={values} />
+                                </StepProvider>
+                            </CardBody>
+                            <CardFooter>
+
+                            </CardFooter>
+                        </Card>
+                    </form>
+                )
+            }}
 
         </Formik>
 

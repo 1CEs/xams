@@ -6,6 +6,17 @@ type Props = {}
 
 const QuestionTypeSelector = (props: Props) => {
     const { values, setFieldValue } = useFormikContext<QuestionForm>()
+    const onSelectChange = (name: string) => {
+        setFieldValue('type', name)
+        if (name == 'mc') {
+            setFieldValue('choices', ['', ''])
+            return
+        }
+        setFieldValue('choices', [])
+        setFieldValue('answer', [])
+
+
+    }
     return (
         <ul className='flex items-center h-fit justify-center p-3 gap-x-3'>
             {
@@ -16,7 +27,7 @@ const QuestionTypeSelector = (props: Props) => {
                                     flex flex-col gap-y-2 p-6 items-center justify-between`}
                         key={idx}
 
-                        onClick={() => setFieldValue("type", item.name)}
+                        onClick={() => onSelectChange(item.name)}
                     >
                         {item.icon}
                         <span className='text-sm'>{item.content}</span>
