@@ -165,3 +165,10 @@ export function UilParagraph(props: SVGProps<SVGSVGElement>) {
 	return (<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}><path fill="currentColor" d="M13 13.5H3a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2m8-5H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2"></path></svg>);
 }
 
+export function IconParkTwotoneNestedArrows(props: SVGProps<SVGSVGElement>) {
+	return (<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48" {...props}><defs><mask id="ipTNestedArrows0"><g fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth={4}><path d="M30 17V4H4v26h13"></path><path fill="#555" d="M43 43V17H17v26z"></path><path d="M33 30H17m16 0l-5-5zm0 0l-5 5zM17 17v26"></path></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTNestedArrows0)"></path></svg>);
+}
+
+export function MdiDrag(props: SVGProps<SVGSVGElement>) {
+	return (<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}><path fill="currentColor" d="M7 19v-2h2v2zm4 0v-2h2v2zm4 0v-2h2v2zm-8-4v-2h2v2zm4 0v-2h2v2zm4 0v-2h2v2zm-8-4V9h2v2zm4 0V9h2v2zm4 0V9h2v2zM7 7V5h2v2zm4 0V5h2v2zm4 0V5h2v2z"></path></svg>);
+}

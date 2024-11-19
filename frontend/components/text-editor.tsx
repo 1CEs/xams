@@ -14,7 +14,7 @@ import { resizeFile } from '@/utils/resizer'
 import { errorHandler } from '@/utils/error'
 import Placeholder from '@tiptap/extension-placeholder'
 import TextAlign from '@tiptap/extension-text-align'
-import { useFormikContext } from 'formik'
+import { FormikContextType, useFormikContext } from 'formik'
 
 const lowlight = createLowlight(common)
 
@@ -189,8 +189,15 @@ const MenuBar = () => {
     )
 }
 
-const TextEditor = ({ className, name }: { className?: string, name: string}) => {
-    const { values, setFieldValue } = useFormikContext<QuestionForm>()
+type Props = {
+    className?: string
+    name: string,
+    type: "nested" | "unnested"
+}
+
+const TextEditor = (props: Props) => {
+    type matchType<T> = T extends 'nested' ? NestedQuestionForm : QuestionForm
+    const { values, setFieldValue } = useFormikContext<matchType<Props['type']>>()
     return (
         <EditorProvider
             editorProps={{
@@ -198,14 +205,14 @@ const TextEditor = ({ className, name }: { className?: string, name: string}) =>
                     textValue: '',
                     class: cn(
                         'prose max-w-none [&_ol]:list-decimal [&_ul]:list-disc bg-background/50 rounded-lg',
-                        className
+                        props.className
                     ),
                 },
                 
             }}
             onUpdate={({ editor }) => {
                 const html = editor.getHTML()
-                setFieldValue(name, html)
+                setFieldValue(props.name, html)
             }}
             extensions={[StarterKit, Underline, ListItem, OrderedList, TextAlign.configure({
                 types: ['heading', 'paragraph'],

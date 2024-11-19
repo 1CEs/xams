@@ -14,8 +14,6 @@ const QuestionTypeSelector = (props: Props) => {
         }
         setFieldValue('choices', [])
         setFieldValue('answer', [])
-
-
     }
     return (
         <ul className='flex items-center h-fit justify-center p-3 gap-x-3'>

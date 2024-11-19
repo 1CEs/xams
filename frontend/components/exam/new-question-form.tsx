@@ -113,6 +113,7 @@ const NewQuestionForm = () => {
                                         <TextEditor
                                             className='min-h-[150px]'
                                             name='question'
+                                            type='unnested'
                                         />
                                     </div>
                                 </StepProvider>

@@ -80,7 +80,7 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number }) => {
                         />
                     )}
                 </div>
-                <TextEditor name={`choices.${number}`} className="min-h-[100px] w-full" />
+                <TextEditor name={`choices.${number}`} type='unnested' className="min-h-[100px] w-full" />
             </div>
         </div>
     )

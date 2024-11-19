@@ -17,3 +17,8 @@ type QuestionForm = {
     category: string[]
     score: number
 }
+
+type NestedQuestionForm = {
+    question: string
+    questions: QuestionForm[] | never[]
+}
