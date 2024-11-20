@@ -18,6 +18,8 @@ type QuestionForm = {
     score: number
 }
 
+type QuestionWithIdentifier<T extends QuestionForm> = T & { id: number }
+
 type NestedQuestionForm = {
     question: string
     questions: QuestionForm[] | never[]

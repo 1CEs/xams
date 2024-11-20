@@ -5,12 +5,65 @@ import DraggableQuestion from "@/components/exam/question/draggable-question";
 import NestedQuestionForm from "@/components/exam/question/nested-question";
 import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, MdiBin, MingcuteAddFill, MingcuteFileNewFill, SystemUiconsReuse } from "@/components/icons/icons";
 import { clientAPI } from "@/config/axios.config";
-import { useParentStore } from "@/stores/parent.store";
 import { errorHandler } from "@/utils/error";
-import { DndContext } from "@dnd-kit/core";
 import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Textarea, useDisclosure } from "@nextui-org/react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import {
+    DndContext,
+    DragEndEvent,
+    KeyboardSensor,
+    PointerSensor,
+    closestCenter,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    SortableContext,
+    arrayMove,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+
+const questionDummy: QuestionWithIdentifier<QuestionForm>[] = [
+    {
+        id: 1,
+        type: 'tf',
+        answer: ['true'],
+        choices: ['Because...'],
+        category: ['Physics'],
+        score: 1,
+        question: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quae."
+    },
+    {
+        id: 2,
+        type: 'mc',
+        answer: ['true'],
+        choices: ['Because...'],
+        category: ['Physics'],
+        score: 1,
+        question: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quae."
+    },
+    {
+        id: 3,
+        type: 'tf',
+        answer: ['true'],
+        choices: ['Because...'],
+        category: ['Physics'],
+        score: 1,
+        question: "Lorem ipsum dolor sit amet consectetur"
+    },
+    {
+        id: 4,
+        type: 'les',
+        answer: ['true'],
+        choices: ['Because...'],
+        category: ['Physics'],
+        score: 1,
+        question: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quae."
+    }
+]
 
 export default function CreateExaminationPage() {
     const params = useSearchParams()
@@ -18,7 +71,13 @@ export default function CreateExaminationPage() {
     const [exam, setExam] = useState<ExamResponse | null>(null)
     const [isNewQuestion, setIsNewQuestion] = useState<boolean>(false)
     const [isNestedQuestion, setIsNestedQuestion] = useState<boolean>(false)
-    const { parent, setParent } = useParentStore()
+    const [questionList, setQuestionList] = useState<QuestionWithIdentifier<QuestionForm>[]>(questionDummy);
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     useEffect(() => {
         const getExam = async () => {
@@ -32,17 +91,28 @@ export default function CreateExaminationPage() {
         getExam()
     }, [_id])
 
-    const handleDragEnd = (e: any) => {
-        const { over } = e;
-        if (over) {
-            setParent(over.id)
-            console.log(parent)
+    function handleDragEnd(event: DragEndEvent) {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            setQuestionList((items) => {
+                const oldIndex = items.findIndex((item) => item.id === active.id);
+                const newIndex = items.findIndex((item) => item.id === over.id);
+
+                return arrayMove(items, oldIndex, newIndex);
+            });
+            console.log(questionList)
         }
     }
 
     if (exam) {
         return (
-            <DndContext onDragEnd={handleDragEnd}>
+            <DndContext 
+                onDragEnd={handleDragEnd}
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                modifiers={[restrictToVerticalAxis]}
+                >
                 <div className="grid grid-cols-3">
                     <div className="col-span-1 flex flex-col gap-y-8">
                         <div className="flex flex-row-reverse gap-x-6">
@@ -116,8 +186,14 @@ export default function CreateExaminationPage() {
                             </form>
                         </div>
                         <div className="flex flex-col gap-y-3">
-                            <DraggableQuestion id="1">Question 1</DraggableQuestion>
-                            <DraggableQuestion id="2">Question 2</DraggableQuestion>
+                            <SortableContext items={questionList} strategy={verticalListSortingStrategy}>
+                                {
+                                    questionList.map((question, index) => (
+                                        <DraggableQuestion question={question} key={index} id={question.id} />
+                                    ))
+                                }
+                            </SortableContext>
+
                         </div>
                     </div>
                     {isNewQuestion ?

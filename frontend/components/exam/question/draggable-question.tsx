@@ -1,38 +1,53 @@
 import { MdiDrag } from "@/components/icons/icons";
-import { useDraggable } from "@dnd-kit/core";
-import { Card, CardBody } from "@nextui-org/react";
+import { useDndContext } from "@dnd-kit/core";
+import { defaultAnimateLayoutChanges, useSortable } from "@dnd-kit/sortable";
+import { Accordion, AccordionItem } from "@nextui-org/react";
+import { CSS } from "@dnd-kit/utilities";
 
 interface DraggableQuestionProps {
-    id: string;
-    children: React.ReactNode;
+    id: number
+    question: QuestionWithIdentifier<QuestionForm>
 }
 
-const DraggableQuestion = ({ id, children }: DraggableQuestionProps) => {
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+const DraggableQuestion = ({ id, question }: DraggableQuestionProps) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+    } = useSortable({
         id,
+        animateLayoutChanges: () => false
     });
 
+    const { active } = useDndContext();
+
+    const isDragging = active?.id === id;
+
     const style = {
-        transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-        zIndex: isDragging ? 10 : 1,
+        transform: CSS.Transform.toString(transform),
+        transition
     };
 
     return (
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center ${isDragging ? "opacity-75 border-secondary border-r-2" : ""}`}
+            className={`flex items-center ${isDragging && "opacity-75 border-secondary border-r-2"}`}
+            {...listeners}
+            {...attributes}
         >
 
-            <Card
-                className="shadow-md border border-default bg-background w-full"
-            >
-                <CardBody>{children}</CardBody>
-            </Card>
+            <Accordion variant="splitted" isCompact>
+                <AccordionItem title={question.question.slice(0, 50)}>
+                    {question.type}
+                </AccordionItem>
+
+            </Accordion>
             <div
-                {...listeners}
-                {...attributes}
-                className="text-3xl cursor-grab active:cursor-grabbing flex justify-center"
+
+                className="text-3xl cursor-grab active:cursor-grabbing flex"
             >
                 <MdiDrag />
             </div>
