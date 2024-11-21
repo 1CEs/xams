@@ -9,6 +9,7 @@ import QuestionTypeSelector from './question-type-selector'
 import CategorySelector from './category-selector'
 import ShortEssayForm from './question/short-essay'
 import LongEssayForm from './question/long-essay'
+import { clientAPI } from '@/config/axios.config'
 
 export const HeadLine = ({ number, content, isOptional }: { number: number, content: string, isOptional?: boolean }) => {
     return (
@@ -19,7 +20,11 @@ export const HeadLine = ({ number, content, isOptional }: { number: number, cont
     )
 }
 
-const NewQuestionForm = () => {
+type Props = {
+    examination_id: string
+}
+
+const NewQuestionForm = ({ examination_id } : Props) => {
     const formRenderer = {
         mc: {
             form: <MultipleChoiceForm />,
@@ -39,17 +44,6 @@ const NewQuestionForm = () => {
         }
     }
 
-    const onFormChange = (e: ChangeEvent<HTMLFormElement>) => {
-        console.log('hi')
-    }
-
-    const onFormSubmit = (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        const formEntries = Object.fromEntries(new FormData(e.currentTarget).entries())
-        console.log(formEntries)
-
-    }
-
     return (
         <Formik
             initialValues={{
@@ -60,12 +54,14 @@ const NewQuestionForm = () => {
                 category: [''],
                 score: 1
             }}
-            onSubmit={(
+            onSubmit={async (
                 values: QuestionForm,
                 { setSubmitting }: FormikHelpers<QuestionForm>
             ) => {
                 setSubmitting(false);
                 console.log(values)
+                const res = await clientAPI.post(`exam/question/${examination_id}`, values)
+                console.log(res.data)
             }}
         >
             {({

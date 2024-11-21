@@ -22,6 +22,9 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
             .post('', async ({ body, user, controller }) => await controller.addExamination({ ...body, instructor_id: user._id as unknown as string }, user as IInstructor), {
                 body: AddExaminationSchema
             })
+            .post('/question/:id', async ({ params, body, controller }) => await controller.addExaminationQuestion(params.id, body), {
+                body: QuestionFormSchema
+            })
             .patch('/:id', async ({ params, body, controller }) => await controller.updateExamination(params.id, body), {
                 body: updateExaminationSchema
             })

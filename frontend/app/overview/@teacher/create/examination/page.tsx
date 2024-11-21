@@ -26,7 +26,6 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { questionDummy } from '@/mock/question.mock'
 import { useQuestionListStore } from "@/stores/question.store/question-list.store"
 import { useNestedQuestionsStore } from "@/stores/question.store/nested-question.store"
 
@@ -36,7 +35,7 @@ export default function CreateExaminationPage() {
     const [exam, setExam] = useState<ExamResponse | null>(null)
     const [isNewQuestion, setIsNewQuestion] = useState<boolean>(false)
     const [isNestedQuestion, setIsNestedQuestion] = useState<boolean>(false)
-    const { questionList, setQuestionList } = useQuestionListStore()
+    const { questionList, setQuestionList, initializeQuestionList } = useQuestionListStore()
     const { nestedQuestions, setNestedQuestions } = useNestedQuestionsStore()
     const [activeId, setActiveId] = useState<number | null>(null)
 
@@ -52,13 +51,15 @@ export default function CreateExaminationPage() {
             try {
                 const res = await clientAPI.get(`exam/${_id}`)
                 setExam(res.data.data)
+                initializeQuestionList(res.data.data.questions)
+                console.log(res.data)
             } catch (error) {
+                console.log(error)
                 errorHandler(error)
             }
         }
         getExam()
-    }, [_id])
-
+    }, [])
 
     function handleDragStart(event: DragStartEvent) {
         const { active } = event
@@ -173,19 +174,26 @@ export default function CreateExaminationPage() {
                                 </Card>
                             </form>
                         </div>
-                        <div className="flex flex-col gap-y-3">
-                            <SortableContext items={questionList} strategy={verticalListSortingStrategy}>
-                                {
-                                    questionList.map((question, index) => (
-                                        <DraggableQuestion question={question} key={index} id={question.id} />
-                                    ))
-                                }
-                            </SortableContext>
-                            <DragOverlay>{activeId ? <DraggableQuestion question={questionList.find((item) => item.id === activeId)!} id={activeId} /> : null}</DragOverlay>
-                        </div>
+                        {questionList.length == 0 ?
+                            <div className="flex flex-col gap-y-3">
+                                <p className="text-center text-sm text-foreground/50">No question added yet.</p>
+                            </div>
+                            :
+
+                            <div className="flex flex-col gap-y-3">
+
+                                <SortableContext items={questionList} strategy={verticalListSortingStrategy}>
+                                    {
+                                        questionList.map((question, index) => (
+                                            <DraggableQuestion question={question} key={index} id={question.id} />
+                                        ))
+                                    }
+                                </SortableContext>
+                                <DragOverlay>{activeId ? <DraggableQuestion question={questionList.find((item) => item.id === activeId)!} id={activeId} /> : null}</DragOverlay>
+                            </div>}
                     </div>
                     {isNewQuestion ?
-                        <NewQuestionForm />
+                        <NewQuestionForm examination_id={_id!} />
                         : null
                     }
                     {isNestedQuestion ?

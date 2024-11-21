@@ -1,7 +1,7 @@
 type ExamResponse = {
     description: string
     instructor_id: string
-    questions: []
+    questions: QuestionWithIdentifier<QuestionForm>[] | never[]
     title: string
     __v: number
     _id: string
@@ -18,7 +18,7 @@ type QuestionForm = {
     score: number
 }
 
-type QuestionWithIdentifier<T extends QuestionForm> = T & { id: number }
+type QuestionWithIdentifier<T extends QuestionForm> = T & { id: number, _id: string }
 
 type NestedQuestionForm = {
     question: string
