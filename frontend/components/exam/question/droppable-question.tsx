@@ -1,4 +1,5 @@
 import { useDroppable } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import React from "react";
 
 type Props = {
@@ -19,9 +20,12 @@ const DroppableQuestion = ({ id, children }: Props) => {
     }
 
     return (
-        <div ref={setNodeRef} style={style} className="rounded-md w-full">
-            {children || "Drop here"}
-        </div>
+        <SortableContext id={id} items={[]} strategy={verticalListSortingStrategy}>
+            <div ref={setNodeRef} style={style} className="rounded-md w-full">
+                {children || "Drop here"}
+            </div>
+        </SortableContext>
+
     )
 }
 

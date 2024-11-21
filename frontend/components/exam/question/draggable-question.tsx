@@ -1,6 +1,6 @@
 import { MdiDrag } from "@/components/icons/icons";
 import { useDndContext } from "@dnd-kit/core";
-import { defaultAnimateLayoutChanges, useSortable } from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
 import { Accordion, AccordionItem } from "@nextui-org/react";
 import { CSS } from "@dnd-kit/utilities";
 

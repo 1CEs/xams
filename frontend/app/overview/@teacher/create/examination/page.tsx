@@ -1,69 +1,32 @@
 "use client"
 
-import NewQuestionForm from "@/components/exam/new-question-form";
-import DraggableQuestion from "@/components/exam/question/draggable-question";
-import NestedQuestionForm from "@/components/exam/question/nested-question";
-import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, MdiBin, MingcuteAddFill, MingcuteFileNewFill, SystemUiconsReuse } from "@/components/icons/icons";
-import { clientAPI } from "@/config/axios.config";
-import { errorHandler } from "@/utils/error";
-import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Textarea, useDisclosure } from "@nextui-org/react";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import NewQuestionForm from "@/components/exam/new-question-form"
+import DraggableQuestion from "@/components/exam/question/draggable-question"
+import NestedQuestionForm from "@/components/exam/question/nested-question"
+import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, MdiBin, MingcuteAddFill, MingcuteFileNewFill, SystemUiconsReuse } from "@/components/icons/icons"
+import { clientAPI } from "@/config/axios.config"
+import { errorHandler } from "@/utils/error"
+import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, ScrollShadow, Textarea, useDisclosure } from "@nextui-org/react"
+import { useSearchParams } from "next/navigation"
+import { useEffect, useState } from "react"
 import {
     DndContext,
     DragEndEvent,
+    DragOverlay,
+    DragStartEvent,
     KeyboardSensor,
     PointerSensor,
     closestCenter,
     useSensor,
     useSensors,
-} from '@dnd-kit/core';
+} from '@dnd-kit/core'
 import {
     SortableContext,
     arrayMove,
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-
-const questionDummy: QuestionWithIdentifier<QuestionForm>[] = [
-    {
-        id: 1,
-        type: 'tf',
-        answer: ['true'],
-        choices: ['Because...'],
-        category: ['Physics'],
-        score: 1,
-        question: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quae."
-    },
-    {
-        id: 2,
-        type: 'mc',
-        answer: ['true'],
-        choices: ['Because...'],
-        category: ['Physics'],
-        score: 1,
-        question: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quae."
-    },
-    {
-        id: 3,
-        type: 'tf',
-        answer: ['true'],
-        choices: ['Because...'],
-        category: ['Physics'],
-        score: 1,
-        question: "Lorem ipsum dolor sit amet consectetur"
-    },
-    {
-        id: 4,
-        type: 'les',
-        answer: ['true'],
-        choices: ['Because...'],
-        category: ['Physics'],
-        score: 1,
-        question: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quae."
-    }
-]
+} from '@dnd-kit/sortable'
+import { questionDummy } from '@/mock/question.mock'
 
 export default function CreateExaminationPage() {
     const params = useSearchParams()
@@ -71,13 +34,16 @@ export default function CreateExaminationPage() {
     const [exam, setExam] = useState<ExamResponse | null>(null)
     const [isNewQuestion, setIsNewQuestion] = useState<boolean>(false)
     const [isNestedQuestion, setIsNestedQuestion] = useState<boolean>(false)
-    const [questionList, setQuestionList] = useState<QuestionWithIdentifier<QuestionForm>[]>(questionDummy);
+    const [questionList, setQuestionList] = useState<QuestionWithIdentifier<QuestionForm>[]>(questionDummy)
+    const [nestedQuestions, setNestedQuestions] = useState<QuestionWithIdentifier<QuestionForm>[]>([])
+    const [activeId, setActiveId] = useState<number | null>(null)
+
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
-    );
+    )
 
     useEffect(() => {
         const getExam = async () => {
@@ -91,28 +57,48 @@ export default function CreateExaminationPage() {
         getExam()
     }, [_id])
 
+
+    function handleDragStart(event: DragStartEvent) {
+        const { active } = event
+        const { id } = active
+
+        setActiveId(id as number)
+    }
+
     function handleDragEnd(event: DragEndEvent) {
-        const { active, over } = event;
+        const { active, over } = event
 
-        if (over && active.id !== over.id) {
+        if (!over) return
+
+        const activeId = active.id
+        const overId = over.id
+
+        if (activeId === overId) return
+
+        if (String(overId).startsWith("nested-")) {
+            setQuestionList((prev) => prev.filter((item) => item.id !== activeId))
+            const draggedItem = questionList.find((item) => item.id === activeId)
+            if (draggedItem) {
+                setNestedQuestions((prev) => [...prev, draggedItem])
+            }
+        } else {
             setQuestionList((items) => {
-                const oldIndex = items.findIndex((item) => item.id === active.id);
-                const newIndex = items.findIndex((item) => item.id === over.id);
-
-                return arrayMove(items, oldIndex, newIndex);
-            });
-            console.log(questionList)
+                const oldIndex = items.findIndex((item) => item.id === activeId)
+                const newIndex = items.findIndex((item) => item.id === overId)
+                return arrayMove(items, oldIndex, newIndex)
+            })
         }
     }
 
     if (exam) {
         return (
-            <DndContext 
+            <DndContext
                 onDragEnd={handleDragEnd}
+                onDragStart={handleDragStart}
                 sensors={sensors}
                 collisionDetection={closestCenter}
-                modifiers={[restrictToVerticalAxis]}
-                >
+                modifiers={[]}
+            >
                 <div className="grid grid-cols-3">
                     <div className="col-span-1 flex flex-col gap-y-8">
                         <div className="flex flex-row-reverse gap-x-6">
@@ -185,7 +171,7 @@ export default function CreateExaminationPage() {
                                 </Card>
                             </form>
                         </div>
-                        <div className="flex flex-col gap-y-3">
+                        <ScrollShadow className="flex max-h-[400px] flex-col gap-y-3">
                             <SortableContext items={questionList} strategy={verticalListSortingStrategy}>
                                 {
                                     questionList.map((question, index) => (
@@ -193,15 +179,15 @@ export default function CreateExaminationPage() {
                                     ))
                                 }
                             </SortableContext>
-
-                        </div>
+                            <DragOverlay>{activeId ? <DraggableQuestion question={questionList.find((item) => item.id === activeId)!} id={activeId} /> : null}</DragOverlay>
+                        </ScrollShadow>
                     </div>
                     {isNewQuestion ?
                         <NewQuestionForm />
                         : null
                     }
                     {isNestedQuestion ?
-                        <NestedQuestionForm />
+                        <NestedQuestionForm nestedQuestion={nestedQuestions}/>
                         : null
                     }
                 </div>
