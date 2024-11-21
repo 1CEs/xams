@@ -8,18 +8,15 @@ export const QuestionSchema = new Schema<QuestionDocument>({
         type: Schema.Types.String,
         required: true
     },
-    content: {
+    question: {
         type: Schema.Types.String,
         required: true
     },
-    contents: { type: [Schema.Types.String] },
     choices: { type: [Schema.Types.String] },
-    correct: { 
-        type: [Schema.Types.String], 
-        required: true
-    },
+    answer: { type: [Schema.Types.String] },
+    category: { type: [Schema.Types.String] },
     score: {
         type: Schema.Types.Number,
         required: true
     }
-})
+}, { _id: true })

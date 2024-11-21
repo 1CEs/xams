@@ -1,7 +1,7 @@
 import Elysia, { t } from "elysia";
 import { ExaminationController } from "../controllers/exam.controller";
 import { tokenVerifier } from "../middleware/token-verify.middleware";
-import { AddExaminationSchema, updateExaminationSchema } from "./schema/exam.schema";
+import { AddExaminationSchema, QuestionFormSchema, updateExaminationSchema } from "./schema/exam.schema";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
 
 export const ExamRoute = new Elysia({ prefix: '/exam' })
@@ -28,5 +28,5 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
             .delete('/:id', async ({ params, controller }) => await controller.deleteExamination(params.id))
 
             // Question-Only routes
-            .patch('/question', async ({ user, controller }) => {})
+            
     )
