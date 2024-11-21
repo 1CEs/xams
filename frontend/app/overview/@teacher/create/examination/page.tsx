@@ -6,7 +6,7 @@ import NestedQuestionForm from "@/components/exam/question/nested-question"
 import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, MdiBin, MingcuteAddFill, MingcuteFileNewFill, SystemUiconsReuse } from "@/components/icons/icons"
 import { clientAPI } from "@/config/axios.config"
 import { errorHandler } from "@/utils/error"
-import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, ScrollShadow, Textarea, useDisclosure } from "@nextui-org/react"
+import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Textarea, useDisclosure } from "@nextui-org/react"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import {
@@ -27,6 +27,8 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { questionDummy } from '@/mock/question.mock'
+import { useQuestionListStore } from "@/stores/question.store/question-list.store"
+import { useNestedQuestionsStore } from "@/stores/question.store/nested-question.store"
 
 export default function CreateExaminationPage() {
     const params = useSearchParams()
@@ -34,8 +36,8 @@ export default function CreateExaminationPage() {
     const [exam, setExam] = useState<ExamResponse | null>(null)
     const [isNewQuestion, setIsNewQuestion] = useState<boolean>(false)
     const [isNestedQuestion, setIsNestedQuestion] = useState<boolean>(false)
-    const [questionList, setQuestionList] = useState<QuestionWithIdentifier<QuestionForm>[]>(questionDummy)
-    const [nestedQuestions, setNestedQuestions] = useState<QuestionWithIdentifier<QuestionForm>[]>([])
+    const { questionList, setQuestionList } = useQuestionListStore()
+    const { nestedQuestions, setNestedQuestions } = useNestedQuestionsStore()
     const [activeId, setActiveId] = useState<number | null>(null)
 
     const sensors = useSensors(
@@ -171,7 +173,7 @@ export default function CreateExaminationPage() {
                                 </Card>
                             </form>
                         </div>
-                        <ScrollShadow className="flex max-h-[400px] flex-col gap-y-3">
+                        <div className="flex flex-col gap-y-3">
                             <SortableContext items={questionList} strategy={verticalListSortingStrategy}>
                                 {
                                     questionList.map((question, index) => (
@@ -180,14 +182,14 @@ export default function CreateExaminationPage() {
                                 }
                             </SortableContext>
                             <DragOverlay>{activeId ? <DraggableQuestion question={questionList.find((item) => item.id === activeId)!} id={activeId} /> : null}</DragOverlay>
-                        </ScrollShadow>
+                        </div>
                     </div>
                     {isNewQuestion ?
                         <NewQuestionForm />
                         : null
                     }
                     {isNestedQuestion ?
-                        <NestedQuestionForm nestedQuestion={nestedQuestions}/>
+                        <NestedQuestionForm />
                         : null
                     }
                 </div>

@@ -13,15 +13,12 @@ const DroppableQuestion = ({ id, children }: Props) => {
     })
 
     const style = {
-        backgroundColor: isOver ? "rgba(0, 128, 0, 0.1)" : "transparent",
-        border: "2px dashed #ccc",
-        padding: "16px",
-        height: "200px",
+        backgroundColor: isOver ? "rgba(0, 128, 0, 0.1)" : "#101010",
     }
 
     return (
         <SortableContext id={id} items={[]} strategy={verticalListSortingStrategy}>
-            <div ref={setNodeRef} style={style} className="rounded-md w-full">
+            <div ref={setNodeRef} style={style} className="rounded-md w-3/4 border-secondary border-dashed border-2 min-h-[300px] max-h-fit p-6">
                 {children || "Drop here"}
             </div>
         </SortableContext>

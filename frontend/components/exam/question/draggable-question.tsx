@@ -7,9 +7,10 @@ import { CSS } from "@dnd-kit/utilities";
 interface DraggableQuestionProps {
     id: number
     question: QuestionWithIdentifier<QuestionForm>
+    disableDrag?: boolean
 }
 
-const DraggableQuestion = ({ id, question }: DraggableQuestionProps) => {
+const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps) => {
     const {
         attributes,
         listeners,
@@ -34,9 +35,7 @@ const DraggableQuestion = ({ id, question }: DraggableQuestionProps) => {
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center ${isDragging && "opacity-75 border-secondary border-r-2"}`}
-            {...listeners}
-            {...attributes}
+            className={`flex w-full items-center ${isDragging && "opacity-75 border-secondary border-r-2"}`}
         >
 
             <Accordion variant="splitted" isCompact>
@@ -45,12 +44,16 @@ const DraggableQuestion = ({ id, question }: DraggableQuestionProps) => {
                 </AccordionItem>
 
             </Accordion>
-            <div
 
-                className="text-3xl cursor-grab active:cursor-grabbing flex"
-            >
-                <MdiDrag />
-            </div>
+            {!disableDrag &&
+                <div
+                    {...listeners}
+                    {...attributes}
+                    className="text-3xl cursor-grab active:cursor-grabbing flex"
+                >
+                    <MdiDrag />
+                </div>
+            }
         </div>
     );
 }
