@@ -12,7 +12,7 @@ const TrueOrFalseForm = (props: Props) => {
         setFieldValue('answer', [e])
     }
     const onInputValueChange = (value: string) => {
-        setFieldValue('chocices', [value])
+        setFieldValue('choices', [value])
     }
     return (
         <div className='px-10 flex flex-col' >

@@ -3,10 +3,10 @@
 import NewQuestionForm from "@/components/exam/new-question-form"
 import DraggableQuestion from "@/components/exam/question/draggable-question"
 import NestedQuestionForm from "@/components/exam/question/nested-question"
-import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, MdiBin, MingcuteAddFill, MingcuteFileNewFill, SystemUiconsReuse } from "@/components/icons/icons"
+import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, IcRoundFolder, MdiBin, MingcuteAddFill, MingcuteFileNewFill, SystemUiconsReuse } from "@/components/icons/icons"
 import { clientAPI } from "@/config/axios.config"
 import { errorHandler } from "@/utils/error"
-import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Textarea, useDisclosure } from "@nextui-org/react"
+import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Textarea, Tooltip, useDisclosure } from "@nextui-org/react"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import {
@@ -28,6 +28,7 @@ import {
 } from '@dnd-kit/sortable'
 import { useQuestionListStore } from "@/stores/question.store/question-list.store"
 import { useNestedQuestionsStore } from "@/stores/question.store/nested-question.store"
+import { useCreateQuestionTrigger } from "@/stores/trigger.store"
 
 export default function CreateExaminationPage() {
     const params = useSearchParams()
@@ -38,6 +39,7 @@ export default function CreateExaminationPage() {
     const { questionList, setQuestionList, initializeQuestionList } = useQuestionListStore()
     const { nestedQuestions, setNestedQuestions } = useNestedQuestionsStore()
     const [activeId, setActiveId] = useState<number | null>(null)
+    const { trigger } = useCreateQuestionTrigger()
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -59,7 +61,7 @@ export default function CreateExaminationPage() {
             }
         }
         getExam()
-    }, [_id])
+    }, [_id, trigger])
 
     function handleDragStart(event: DragStartEvent) {
         const { active } = event
@@ -91,6 +93,12 @@ export default function CreateExaminationPage() {
                 return arrayMove(items, oldIndex, newIndex)
             })
         }
+    }
+
+    const onAikenImportClick = () => {
+        console.log('first')
+        const el = document.getElementById('aiken-import')
+        el?.click()
     }
 
     if (exam) {
@@ -145,6 +153,18 @@ export default function CreateExaminationPage() {
                                             <h1>Reuse Question</h1>
                                             <span className="text-tiny text-foreground/50">use your questions from question bank.</span>
                                         </DropdownItem>
+                                        <DropdownItem onPress={onAikenImportClick} startContent={<IcRoundFolder />} description="" key="import-aiken">
+                                            <h1>Import Aiken</h1>
+                                            <span className="text-tiny text-foreground/50">Import your question using an Aiken file.</span>
+                                            <label className="relative">
+                                                <Input
+                                                    className="absolute inset-0 opacity-0"
+                                                    id="aiken-import" type="file" variant="faded"
+                                                    size="sm" accept=".aiken"
+                                                />
+                                            </label>
+
+                                        </DropdownItem>
 
                                     </DropdownMenu>
                                 </Dropdown>
@@ -185,7 +205,21 @@ export default function CreateExaminationPage() {
                                 <SortableContext items={questionList} strategy={verticalListSortingStrategy}>
                                     {
                                         questionList.map((question, index) => (
-                                            <DraggableQuestion question={question} key={index} id={question.id} />
+                                            <div className="flex gap-x-3" key={index}>
+                                                <DraggableQuestion question={question} id={question.id} />
+                                                <Tooltip content="Delete question">
+                                                    <Button
+                                                        size="sm"
+                                                        isIconOnly
+                                                        variant="flat"
+                                                        color="danger"
+                                                        className="hover:animate-pulse"
+                                                    >
+                                                        <MdiBin fontSize={16} />
+                                                    </Button>
+                                                </Tooltip>
+                                            </div>
+
                                         ))
                                     }
                                 </SortableContext>

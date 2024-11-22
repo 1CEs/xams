@@ -10,6 +10,9 @@ import CategorySelector from './category-selector'
 import ShortEssayForm from './question/short-essay'
 import LongEssayForm from './question/long-essay'
 import { clientAPI } from '@/config/axios.config'
+import { errorHandler } from '@/utils/error'
+import { toast } from 'react-toastify'
+import { useCreateQuestionTrigger } from '@/stores/trigger.store'
 
 export const HeadLine = ({ number, content, isOptional }: { number: number, content: string, isOptional?: boolean }) => {
     return (
@@ -24,7 +27,8 @@ type Props = {
     examination_id: string
 }
 
-const NewQuestionForm = ({ examination_id } : Props) => {
+const NewQuestionForm = ({ examination_id }: Props) => {
+    const { trigger, setTrigger } = useCreateQuestionTrigger()
     const formRenderer = {
         mc: {
             form: <MultipleChoiceForm />,
@@ -58,10 +62,15 @@ const NewQuestionForm = ({ examination_id } : Props) => {
                 values: QuestionForm,
                 { setSubmitting }: FormikHelpers<QuestionForm>
             ) => {
-                setSubmitting(false);
-                console.log(values)
-                const res = await clientAPI.post(`exam/question/${examination_id}`, values)
-                console.log(res.data)
+                try {
+                    setSubmitting(false)
+                    console.log(values)
+                    const res = await clientAPI.post(`exam/question/${examination_id}`, values)
+                    toast.success(res.data.message)
+                    setTrigger(!trigger)
+                } catch (error) {
+                    errorHandler(error)
+                }
             }}
         >
             {({
@@ -78,7 +87,7 @@ const NewQuestionForm = ({ examination_id } : Props) => {
                     if (/^\d*\.?\d*$/.test(value)) {
                         handleChange(e)
                     }
-                };
+                }
 
                 return (
                     <form className="col-span-2 pl-32" onSubmit={handleSubmit}>

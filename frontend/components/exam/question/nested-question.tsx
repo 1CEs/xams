@@ -1,29 +1,35 @@
-import { GrommetIconsDropbox, MingcuteAddFill } from "@/components/icons/icons"
+import { GrommetIconsDropbox, MdiBin, MingcuteAddFill } from "@/components/icons/icons"
 import { StepProvider } from "@/components/provider"
 import TextEditor from "@/components/text-editor"
-import { Button, Card, CardBody, CardHeader } from "@nextui-org/react"
+import { Button, Card, CardBody, CardHeader, Tooltip } from "@nextui-org/react"
 import { Formik } from "formik"
-import React, { useState } from "react"
-import {
-    DndContext,
-    DragEndEvent,
-    DragStartEvent,
-    PointerSensor,
-    useSensor,
-    useSensors,
-} from "@dnd-kit/core"
+import React from "react"
 import {
     SortableContext,
-    arrayMove,
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import DraggableQuestion from "./draggable-question"
 import DroppableQuestion from "./droppable-question"
 import { useNestedQuestionsStore } from "@/stores/question.store/nested-question.store"
+import { useQuestionListStore } from "@/stores/question.store/question-list.store"
 
 
 const NestedQuestionForm = () => {
-    const { nestedQuestions } = useNestedQuestionsStore()
+    const { nestedQuestions, setNestedQuestions } = useNestedQuestionsStore()
+    const { setQuestionList } = useQuestionListStore()
+
+    const onDeleteQuestion = (id: number) => {
+        const questionToRemove = nestedQuestions.find((q) => q.id === id)
+
+        if (questionToRemove) {
+            setNestedQuestions((prevQuestions) =>
+                prevQuestions.filter((question) => question.id !== id)
+            )
+            setQuestionList((prevQuestions) => [...prevQuestions, questionToRemove])
+        }
+    }
+
+
     return (
         <Formik
             initialValues={{
@@ -86,13 +92,20 @@ const NestedQuestionForm = () => {
                                                         <DraggableQuestion
                                                             id={question.id}
                                                             question={question}
+                                                            disableDrag={true}
                                                         />
-                                                        <Button
-                                                            size="sm"
-                                                            
-                                                        >
-                                                            Delete
-                                                        </Button>
+                                                        <Tooltip content="Pop the question back">
+                                                            <Button
+                                                                className="hover:animate-pulse"
+                                                                size="sm"
+                                                                variant="flat"
+                                                                color="danger"
+                                                                onPress={() => onDeleteQuestion(question.id)}
+                                                                isIconOnly
+                                                            >
+                                                                <MdiBin fontSize={16} />
+                                                            </Button>
+                                                        </Tooltip>
                                                     </div>
                                                 ))}
                                             </DroppableQuestion>
