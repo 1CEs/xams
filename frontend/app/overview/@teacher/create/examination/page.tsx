@@ -59,7 +59,7 @@ export default function CreateExaminationPage() {
             }
         }
         getExam()
-    }, [])
+    }, [_id])
 
     function handleDragStart(event: DragStartEvent) {
         const { active } = event
