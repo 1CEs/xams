@@ -50,7 +50,6 @@ export default function CreateExaminationPage() {
     )
 
     useEffect(() => {
-        initializeQuestionList([])
         const getExam = async () => {
             try {
                 const res = await clientAPI.get(`exam/${_id}`)

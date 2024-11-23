@@ -12,19 +12,16 @@ export const useQuestionListStore = create<QuestionListState>((set) => ({
     questionList: [],
     setQuestionList: (updateFn) =>
         set((state) => {
-            const updatedList = updateFn(state.questionList)
-            return { questionList: updatedList }
+            const updatedList = updateFn(state.questionList);
+            return { questionList: updatedList };
         }),
     initializeQuestionList: (questions: QuestionWithIdentifier<QuestionForm>[]) =>
-        set((state) => {
-            const existingIds = new Set(state.questionList.map((q) => q._id))
-            const newQuestions = questions
-                .filter((q) => !existingIds.has(q._id))
-                .map((question, index) => ({
-                    ...question,
-                    id: state.questionList.length + index + 1,
-                }));
-            return { questionList: [...state.questionList, ...newQuestions] };
+        set(() => {
+            const newQuestions = questions.map((question, index) => ({
+                ...question,
+                id: index + 1, 
+            }));
+            return { questionList: newQuestions }
         }),
 }))
 
