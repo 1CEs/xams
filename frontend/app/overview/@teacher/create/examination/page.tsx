@@ -8,7 +8,7 @@ import { clientAPI } from "@/config/axios.config"
 import { errorHandler } from "@/utils/error"
 import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Textarea, Tooltip, useDisclosure } from "@nextui-org/react"
 import { useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { ChangeEvent, useEffect, useState } from "react"
 import {
     DndContext,
     DragEndEvent,
@@ -29,6 +29,7 @@ import {
 import { useQuestionListStore } from "@/stores/question.store/question-list.store"
 import { useNestedQuestionsStore } from "@/stores/question.store/nested-question.store"
 import { useCreateQuestionTrigger } from "@/stores/trigger.store"
+import { toast } from "react-toastify"
 
 export default function CreateExaminationPage() {
     const params = useSearchParams()
@@ -39,7 +40,7 @@ export default function CreateExaminationPage() {
     const { questionList, setQuestionList, initializeQuestionList } = useQuestionListStore()
     const { nestedQuestions, setNestedQuestions } = useNestedQuestionsStore()
     const [activeId, setActiveId] = useState<number | null>(null)
-    const { trigger } = useCreateQuestionTrigger()
+    const { trigger, setTrigger } = useCreateQuestionTrigger()
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -49,6 +50,7 @@ export default function CreateExaminationPage() {
     )
 
     useEffect(() => {
+        initializeQuestionList([])
         const getExam = async () => {
             try {
                 const res = await clientAPI.get(`exam/${_id}`)
@@ -96,11 +98,39 @@ export default function CreateExaminationPage() {
     }
 
     const onAikenImportClick = () => {
-        console.log('first')
         const el = document.getElementById('aiken-import')
-        el?.click()
-    }
+        if (el) {
+            el.click()
+            el.addEventListener('change', async (e: Event) => {
+                const file = (e as unknown as ChangeEvent<HTMLInputElement>).target.files?.[0]
+                if (file) {
+                    const formData = new FormData()
+                    formData.append('file', file)
+                    try {
+                        const res = await clientAPI.post('/upload/aiken', formData, {
+                            headers: {
+                                "Content-Type": "multipart/form-data",
+                            },
+                        })
+                        
+                        const { message, code, data } = res.data
 
+                        for(let i = 0; i < data.length; i++) {
+                            const update = await clientAPI.post(`exam/question/${_id}`, res.data.data[i])
+                            if(code == 200) {
+                                toast.success(update.data.message)
+                            }
+                        }
+
+                        setTrigger(!trigger)
+                        
+                    } catch (error) {
+                        console.error('Error uploading file:', error)
+                    }
+                }
+            })
+        }
+    }
     if (exam) {
         return (
             <DndContext
@@ -160,7 +190,7 @@ export default function CreateExaminationPage() {
                                                 <Input
                                                     className="absolute inset-0 opacity-0"
                                                     id="aiken-import" type="file" variant="faded"
-                                                    size="sm" accept=".aiken"
+                                                    size="sm" accept=".txt"
                                                 />
                                             </label>
 
