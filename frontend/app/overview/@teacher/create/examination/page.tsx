@@ -1,13 +1,12 @@
 "use client"
-
 import NewQuestionForm from "@/components/exam/new-question-form"
 import DraggableQuestion from "@/components/exam/question/draggable-question"
 import NestedQuestionForm from "@/components/exam/question/nested-question"
-import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, IcRoundFolder, MdiBin, MingcuteAddFill, MingcuteFileNewFill, SystemUiconsReuse } from "@/components/icons/icons"
+import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, IcRoundFolder, MdiBin, MingcuteAddFill, MingcuteFileNewFill, PhEyeDuotone, SystemUiconsReuse } from "@/components/icons/icons"
 import { clientAPI } from "@/config/axios.config"
 import { errorHandler } from "@/utils/error"
 import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Textarea, Tooltip, useDisclosure } from "@nextui-org/react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { ChangeEvent, useEffect, useState } from "react"
 import {
     DndContext,
@@ -32,6 +31,7 @@ import { useCreateQuestionTrigger } from "@/stores/trigger.store"
 import { toast } from "react-toastify"
 
 export default function CreateExaminationPage() {
+    const router = useRouter()
     const params = useSearchParams()
     const _id = params.get('id')
     const [exam, setExam] = useState<ExamResponse | null>(null)
@@ -111,18 +111,18 @@ export default function CreateExaminationPage() {
                                 "Content-Type": "multipart/form-data",
                             },
                         })
-                        
+
                         const { message, code, data } = res.data
 
-                        for(let i = 0; i < data.length; i++) {
+                        for (let i = 0; i < data.length; i++) {
                             const update = await clientAPI.post(`exam/question/${_id}`, res.data.data[i])
-                            if(code == 200) {
+                            if (code == 200) {
                                 toast.success(update.data.message)
                             }
                         }
 
                         setTrigger(!trigger)
-                        
+
                     } catch (error) {
                         console.error('Error uploading file:', error)
                     }
@@ -203,12 +203,27 @@ export default function CreateExaminationPage() {
                                     color='danger'
                                     size="sm"
                                 > Delete </Button>
-                                <Button
-                                    startContent={<IconParkOutlineCheckCorrect fontSize={14} />}
-                                    variant="flat"
-                                    className="text-blue-300 bg-blue-500/30"
-                                    size="sm"
-                                > Finish </Button>
+                                <div className="flex gap-x-2">
+                                    <Button
+                                        startContent={<IconParkOutlineCheckCorrect fontSize={14} />}
+                                        variant="flat"
+                                        className="text-blue-300 bg-blue-500/30 w-full"
+                                        size="sm"
+                                    > Finish </Button>
+                                    <Tooltip content='Preview your examination'>
+                                        <Button
+                                            onPress={() => {
+                                                window.location.href = `http://localhost:8080/overview/preview/examination?id=${_id}`
+                                            }}
+                                            startContent={<PhEyeDuotone fontSize={14} />}
+                                            variant="flat"
+                                            size="sm"
+                                            isIconOnly
+                                        > </Button>
+                                    </Tooltip>
+
+                                </div>
+
                             </div>
                             <form className="w-full">
                                 <Card>
