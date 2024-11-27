@@ -33,5 +33,4 @@ COPY --from=build /usr/src/xams/frontend/package.json ./package.json
 EXPOSE 8080
 
 # Run the application using Bun
-CMD ["bun", "next", "start", "--port", "${PORT}"]
-
+CMD ["sh", "-c", "bun next start --port ${PORT}"]
