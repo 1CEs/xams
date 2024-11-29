@@ -1,4 +1,4 @@
-import { MdiDrag } from "@/components/icons/icons"
+import { CarbonTextLongParagraph, HealthiconsIExamMultipleChoice, MdiDrag, PajamasFalsePositive, UilParagraph } from "@/components/icons/icons"
 import { useDndContext } from "@dnd-kit/core"
 import { useSortable } from "@dnd-kit/sortable"
 import { Accordion, AccordionItem } from "@nextui-org/react"
@@ -52,6 +52,13 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
         }
     }
 
+    const matchIconType = {
+        tf: <PajamasFalsePositive />,
+        les: <CarbonTextLongParagraph />,
+        mc: <HealthiconsIExamMultipleChoice />,
+        ses: <UilParagraph />
+    }
+
     return (
         <div
             ref={setNodeRef}
@@ -60,6 +67,7 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
         >
             <Accordion variant="splitted" isCompact className="w-full">
                 <AccordionItem
+                    startContent={matchIconType[question.type]}
                     title={
                         <div className="flex justify-between items-center">
                             <span className="truncate w-5/6 text-sm font-medium">
