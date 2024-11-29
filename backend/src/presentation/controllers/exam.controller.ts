@@ -68,4 +68,9 @@ export class ExaminationController implements IExaminationController {
         const exam = await this._service.updateQuestion(id, question_id, payload)
         return this._response<typeof exam>('Update Question Successfully', 200, exam)
     }
+
+    async deleteQuestion (id: string, question_id: string){
+        const exam = await this._service.deleteQuestion(id, question_id)
+        return this._response<typeof exam>('Delete Question Successfully', 200, exam)
+    }
 }

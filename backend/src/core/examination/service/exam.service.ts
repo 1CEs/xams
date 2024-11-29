@@ -50,4 +50,9 @@ export class ExaminationService implements IExaminationService {
         const result = await this._repository.updateQuestion(id, question_id, payload)
         return result
     }
+
+    async deleteQuestion(id: string, question_id: string) {
+        const result = await this._repository.deleteQuestion(id, question_id)
+        return result
+    }
 }

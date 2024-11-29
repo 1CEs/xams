@@ -14,4 +14,5 @@ export interface IExaminationController {
     // Question-Only methods
     addExaminationQuestion: (id: string, payload: Omit<IQuestion, '_id'>) => Promise<ControllerResponse<IExamination | null>>
     updateQuestion: (id: string, question_id: string, payload: Partial<IQuestion>) => Promise<ControllerResponse<IExamination | null>>
+    deleteQuestion: (id: string, question_id: string) => Promise<ControllerResponse<IExamination | null>>
 }

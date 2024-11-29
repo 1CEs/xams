@@ -13,4 +13,5 @@ export interface IExaminationService {
     // Question-Only methods
     addExaminationQuestion: (id: string, payload: Omit<IQuestion, '_id'>) => Promise<IExamination | null>
     updateQuestion: (id: string, question_id: string, payload: Partial<IQuestion>) => Promise<IExamination | null>
+    deleteQuestion: (id: string, question_id: string) => Promise<IExamination | null>
 }
