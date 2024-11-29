@@ -33,13 +33,13 @@ export class ExaminationRepository
         return result
     }
 
-    async deleteQuestion (id: string, question_id: string) {
+    async deleteQuestion(id: string, question_id: string) {
         const result = await this._model.findOneAndUpdate(
             { _id: id, 'questions._id': question_id },
-            { $pull: { 'questions._id': question_id } },
+            { $pull: { questions: { _id: question_id } } },
             { new: true }
-        ).exec()
-        return result
+        ).exec();
+        return result;
     }
 
 }
