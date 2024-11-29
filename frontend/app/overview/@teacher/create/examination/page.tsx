@@ -130,6 +130,14 @@ export default function CreateExaminationPage() {
             })
         }
     }
+
+    const onDeleteQuestion = async (id: string) => {
+        console.log(id)
+        const res = await clientAPI.delete(`exam/question/${id}`)
+        console.log(res)
+        setTrigger(!trigger)
+    }
+
     if (exam) {
         return (
             <DndContext
@@ -258,6 +266,7 @@ export default function CreateExaminationPage() {
                                                         variant="flat"
                                                         color="danger"
                                                         className="hover:animate-pulse"
+                                                        onPress={() => onDeleteQuestion(question._id)}
                                                     >
                                                         <MdiBin fontSize={16} />
                                                     </Button>

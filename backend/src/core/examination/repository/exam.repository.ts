@@ -34,8 +34,9 @@ export class ExaminationRepository
     }
 
     async deleteQuestion(id: string, question_id: string) {
+        console.log('deleting')
         const result = await this._model.findOneAndUpdate(
-            { _id: id, 'questions._id': question_id },
+            { instructor_id: id, 'questions._id': question_id },
             { $pull: { questions: { _id: question_id } } },
             { new: true }
         ).exec();
