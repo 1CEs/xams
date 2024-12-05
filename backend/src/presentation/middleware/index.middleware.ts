@@ -4,6 +4,6 @@ import { errorMiddleware } from "./error.middleware";
 import { swagger } from '@elysiajs/swagger'
 
 export const indexMiddleware = new Elysia()
-    .use(cors({ origin: 'http://localhost:8080' }))
+    .use(cors())
     .use(swagger())
     .use(errorMiddleware)
