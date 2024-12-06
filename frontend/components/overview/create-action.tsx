@@ -49,13 +49,6 @@ const CreateAction = (props: Props) => {
                         New Examination
                     </DropdownItem>
                     <DropdownItem
-                        key="edit"
-                        description="Create a new assignment"
-                        startContent={<MaterialSymbolsAssignment fontSize={24} />}
-                    >
-                        New Assignment
-                    </DropdownItem>
-                    <DropdownItem
                         key="category"
                         description="Create a new category"
                         startContent={<MaterialSymbolsAssignment fontSize={24} />}
