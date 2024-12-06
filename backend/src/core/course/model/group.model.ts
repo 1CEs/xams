@@ -1,23 +1,23 @@
 import mongoose from "mongoose";
-import { GroupSchema } from "./group.model";
+import { SettingSchema } from "./setting.model";
 
 const { Schema } = mongoose
 
-export const CourseSchema = new Schema ({
-    instructor_id: {
+export const GroupSchema = new Schema ({
+    group_name: {
         type: Schema.Types.String,
         required: true
     },
-    course_name: {
+    join_code: {
         type: Schema.Types.String,
         required: true
     },
-    description: {
-        type: Schema.Types.String,
+    students: {
+        type: [Schema.Types.String],
         required: true
     },
-    groups: {
-        type: [GroupSchema],
+    exam_setting: {
+        type: [SettingSchema],
         required: true
     }
-})
+}, { _id: true })
