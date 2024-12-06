@@ -1,2 +1,1 @@
-export const baseAPIPath = 'http://localhost:3000/api/'
-export const prodBaseAPIPath = 'https://api.xams.online'
+export const baseAPIPath = process.env.MODE == 'Development' ? process.env.DEVELOPMENT_BASE_API : process.env.PRODUCTION_BASE_API
