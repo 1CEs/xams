@@ -6,5 +6,5 @@ export interface ICourse {
     instructor_id: string
     course_name: string
     description: string
-    questions: IGroup[]
+    groups: IGroup[]
 }
