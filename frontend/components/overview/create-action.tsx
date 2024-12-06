@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { FluentClass24Filled, HealthiconsIExamMultipleChoice, MaterialSymbolsAssignment } from '../icons/icons'
 import ExamFormModal from './modals/exam-form-modal'
 import CategoryFormModal from './modals/category-form-modal'
+import CourseFormModal from './modals/course-form-modal'
 
 type Props = {}
 
@@ -10,7 +11,8 @@ const CreateAction = (props: Props) => {
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const modalRenderer = {
         category: <CategoryFormModal />,
-        exam: <ExamFormModal />
+        exam: <ExamFormModal />,
+        course: <CourseFormModal />
 
     }
     const [modalSelector, setModalSelector] = useState<keyof typeof modalRenderer>('exam')
@@ -36,7 +38,7 @@ const CreateAction = (props: Props) => {
                         key="new"
                         startContent={<FluentClass24Filled fontSize={24} />}
                         description="Create a new course"
-
+                        onPress={() => onModalOpen('course')}
                     >
                         New Course
                     </DropdownItem>
@@ -47,13 +49,6 @@ const CreateAction = (props: Props) => {
                         onPress={() => onModalOpen('exam')}
                     >
                         New Examination
-                    </DropdownItem>
-                    <DropdownItem
-                        key="edit"
-                        description="Create a new assignment"
-                        startContent={<MaterialSymbolsAssignment fontSize={24} />}
-                    >
-                        New Assignment
                     </DropdownItem>
                     <DropdownItem
                         key="category"
