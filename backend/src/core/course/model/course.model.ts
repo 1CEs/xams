@@ -16,7 +16,7 @@ export const CourseSchema = new Schema ({
         type: Schema.Types.String,
         required: true
     },
-    questions: {
+    groups: {
         type: [GroupSchema],
         required: true
     }
