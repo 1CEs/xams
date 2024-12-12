@@ -1,6 +1,7 @@
-import { Card, CardBody, CardFooter, CardHeader, Image, CardProps, Chip, Button, Tooltip } from '@nextui-org/react'
+import { Card, CardBody, CardFooter, CardHeader, Image, CardProps, Button, Tooltip, Link } from '@nextui-org/react'
 import React from 'react'
 import { FaGroup, FluentArrowRight12Filled, FluentSettings16Filled, HealthiconsIExamMultipleChoice, PhStudentFill } from './icons/icons'
+import { useRouter } from 'next/navigation'
 
 type Props = {
   title: string
@@ -12,6 +13,7 @@ type Props = {
 
 const CourseCard = (props: Props) => {
   const coverAddress = 'https://img.freepik.com/free-psd/3d-illustration-nocturnal-person-staying-up_23-2150944847.jpg?t=st=1729758457~exp=1729762057~hmac=df0b032ff22d3c02c2b0cb2f7d53fa07236e2c04cf30a9df498fb91df6c46c10&w=1060'
+  const router = useRouter()
   return (
     <Card className={props.className + ' transition duration-500 hover:-translate-y-3 '}>
       <CardHeader className='p-0 rounded-b-none'>
@@ -37,7 +39,7 @@ const CourseCard = (props: Props) => {
         </div>
         <div className='flex gap-x-2'>
           <Button startContent={<FluentSettings16Filled />} className='text-2xl' variant='light' color='primary' size='sm' isIconOnly></Button>
-          <Button startContent={<FluentArrowRight12Filled />} variant='faded' color='primary' size='sm' isIconOnly></Button>
+          <Button as={Link} href={`overview/course?id=${"12345"}`} startContent={<FluentArrowRight12Filled />} variant='faded' color='primary' size='sm' isIconOnly></Button>
         </div>
       </CardFooter>
     </Card>

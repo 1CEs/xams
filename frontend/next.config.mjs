@@ -1,5 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    images: {
+        remotePatterns: [
+          {
+            protocol: "https",
+            hostname: "**",
+          },
+        ],
+    },
     env: {
         DEVELOPMENT_BASE_API: 'http://localhost:3000/api/',
         PRODUCTION_BASE_API: 'http://api.xams.online/api/',

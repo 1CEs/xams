@@ -60,7 +60,7 @@ const CreateAction = (props: Props) => {
                     </DropdownItem>
                 </DropdownMenu>
             </Dropdown>
-            <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
+            <Modal size='2xl' isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
                 {modalRenderer[modalSelector]}
             </Modal>
 
