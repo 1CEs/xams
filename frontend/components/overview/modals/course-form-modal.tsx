@@ -1,13 +1,13 @@
-import { ModalContent, ModalHeader, ModalBody, Textarea, ModalFooter, Button, Input, useDisclosure } from '@nextui-org/react'
+import { ModalContent, ModalHeader, ModalBody, Textarea, ModalFooter, Button, Input, useDisclosure, Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from '@nextui-org/react'
 import Image from 'next/image'
-import React, { FormEvent } from 'react'
+import React, { FormEvent, SetStateAction, useState } from 'react'
 
-type Props = {}
+type ImageChooserDrawerProps = {
+    setBackground: React.Dispatch<SetStateAction<string>>
+    background: string
+}
 
-const ImageChooserDrawer = () => {}
-
-const CourseFormModal = (props: Props) => {
-    const {isOpen, onOpen, onOpenChange} = useDisclosure();
+const ImageChooserDrawer: React.FC<ImageChooserDrawerProps> = ({ background, setBackground }) => {
     const backgroundImage = [
         "https://wallpapers.com/images/featured/math-background-jbcyizvw0ckuvcro.jpg",
         "https://slidechef.net/wp-content/uploads/2023/10/Math-Background.jpg",
@@ -20,6 +20,45 @@ const CourseFormModal = (props: Props) => {
         "https://images.rawpixel.com/image_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIyLTA1L3Y5NDQtYmItMTYtam9iNTk4LmpwZw.jpg",
         "https://static.vecteezy.com/system/resources/previews/001/427/153/non_2x/modern-liquid-blue-background-free-vector.jpg",
     ]
+    return (
+        <DrawerContent>
+            {(onClose) => (
+                <>
+                    <DrawerHeader className="flex flex-col gap-1">Background Images</DrawerHeader>
+                    <DrawerBody>
+                        <ul className='flex flex-col gap-y-3'>
+                            {
+                                backgroundImage.map((srcImage: string, idx: number) => (
+                                    <li
+                                        onClick={() => setBackground(srcImage)}
+                                        className={`p-3 cursor-pointer w-full h-fit rounded-lg ${srcImage == background && 'border border-secondary' }`}
+                                        key={idx}
+                                    >
+                                        <Image className='object-cover w-full h-auto rounded-md' width={300} height={90} src={srcImage} alt='background image' />
+                                    </li>
+                                ))
+                            }
+                        </ul>
+                    </DrawerBody>
+                    <DrawerFooter>
+                        <Button color="danger" variant="light" onPress={onClose}>
+                            Close
+                        </Button>
+                        <Button color="success" onPress={onClose}>
+                            Success
+                        </Button>
+                    </DrawerFooter>
+                </>
+            )}
+        </DrawerContent>
+    )
+}
+
+type Props = {}
+
+const CourseFormModal = (props: Props) => {
+    const { isOpen, onOpen, onOpenChange } = useDisclosure();
+    const [backgroundSelector, setBackgroundSelector] = useState<string>("https://wallpapers.com/images/featured/math-background-jbcyizvw0ckuvcro.jpg")
 
     const onCreateCourse = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -33,16 +72,14 @@ const CourseFormModal = (props: Props) => {
                     <form onSubmit={onCreateCourse}>
                         <ModalHeader><h1>New Course</h1></ModalHeader>
                         <ModalBody>
-                            <ul className='overflow-x-auto flex gap-x-3'>
-                                {
-                                    backgroundImage.map((srcImage: string, idx: number) => (
-                                        <li className='cursor-pointer w-fit h-fit' key={idx}>
-                                            <Image className='object-cover' width={300} height={90} src={srcImage} alt='background image'/>
-                                        </li>
-                                    ))
-                                }
-                            </ul>
-                            <Button>Choose Image</Button>
+                            <div className='flex justify-center'>
+                                <Image src={backgroundSelector} className='w-2/3 rounded-lg' width={300} height={120} alt='image background' />
+                            </div>
+
+                            <Button onPress={onOpen}>Choose Background</Button>
+                            <Drawer isOpen={isOpen} onOpenChange={onOpenChange}>
+                                <ImageChooserDrawer background={backgroundSelector} setBackground={setBackgroundSelector}/>
+                            </Drawer>
                             <Input name='course_name' label='Couse Name' isRequired />
                             <Textarea name='description' label='description' />
                         </ModalBody>
