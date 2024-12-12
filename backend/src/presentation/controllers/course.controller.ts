@@ -22,7 +22,7 @@ export class CourseController implements ICourseController {
     }
 
     // Course-Only methods
-    async addCourse(payload: Omit<ICourse, "_id" | "questions">, user: IInstructor) {
+    async addCourse(payload: Omit<ICourse, "_id">, user: IInstructor) {
         console.log(user)
         const course = await this._service.addCourse(payload)
         const service = new UserServiceFactory().createService(user.role)
