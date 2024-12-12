@@ -1,6 +1,10 @@
+import { clientAPI } from '@/config/axios.config'
+import { baseAPIPath } from '@/constants/base'
+import { errorHandler } from '@/utils/error'
 import { ModalContent, ModalHeader, ModalBody, Textarea, ModalFooter, Button, Input, useDisclosure, Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from '@nextui-org/react'
 import Image from 'next/image'
 import React, { FormEvent, SetStateAction, useState } from 'react'
+import { toast } from 'react-toastify'
 
 type ImageChooserDrawerProps = {
     setBackground: React.Dispatch<SetStateAction<string>>
@@ -31,7 +35,7 @@ const ImageChooserDrawer: React.FC<ImageChooserDrawerProps> = ({ background, set
                                 backgroundImage.map((srcImage: string, idx: number) => (
                                     <li
                                         onClick={() => setBackground(srcImage)}
-                                        className={`p-3 cursor-pointer w-full h-fit rounded-lg ${srcImage == background && 'border border-secondary' }`}
+                                        className={`p-3 cursor-pointer w-full h-fit rounded-lg ${srcImage == background && 'border border-secondary'}`}
                                         key={idx}
                                     >
                                         <Image className='object-cover w-full h-auto rounded-md' width={300} height={90} src={srcImage} alt='background image' />
@@ -59,10 +63,25 @@ type Props = {}
 const CourseFormModal = (props: Props) => {
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const [backgroundSelector, setBackgroundSelector] = useState<string>("https://wallpapers.com/images/featured/math-background-jbcyizvw0ckuvcro.jpg")
-
-    const onCreateCourse = (e: FormEvent<HTMLFormElement>) => {
+    const [courseForm, setCourseForm] = useState<{
+        course_name: string;
+        description: string;
+    }>({
+        course_name: "",
+        description: "",
+    });
+    const onCreateCourse = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        console.log('first')
+        try {
+            const res = await clientAPI.post(baseAPIPath + "course", {
+                ...courseForm, background_src: backgroundSelector
+            })
+            console.log(res)
+            toast.success('Create Course successfully')
+        } catch (error) {
+            console.log(error)
+            errorHandler(error)
+        }
     }
 
     return (
@@ -78,10 +97,10 @@ const CourseFormModal = (props: Props) => {
 
                             <Button onPress={onOpen}>Choose Background</Button>
                             <Drawer isOpen={isOpen} onOpenChange={onOpenChange}>
-                                <ImageChooserDrawer background={backgroundSelector} setBackground={setBackgroundSelector}/>
+                                <ImageChooserDrawer background={backgroundSelector} setBackground={setBackgroundSelector} />
                             </Drawer>
-                            <Input name='course_name' label='Couse Name' isRequired />
-                            <Textarea name='description' label='description' />
+                            <Input onValueChange={(course_name: string) => setCourseForm(prev => ({ ...prev, course_name }))} label='Couse Name' isRequired />
+                            <Textarea onValueChange={(description: string) => setCourseForm(prev => ({ ...prev, description }))} name='description' label='description' />
                         </ModalBody>
                         <ModalFooter>
                             <Button color="danger" variant="light" onPress={onClose}>

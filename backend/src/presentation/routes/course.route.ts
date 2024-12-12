@@ -4,7 +4,7 @@ import { tokenVerifier } from "../middleware/token-verify.middleware";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
 import { AddCourseSchema, updateCourseSchema } from "./schema/course.schema";
 
-export const CourseRoute = new Elysia({ prefix: '/exam' })
+export const CourseRoute = new Elysia({ prefix: '/course' })
     .derive(() => { 
         return { controller : new CourseController() } 
     })
