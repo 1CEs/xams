@@ -1,10 +1,15 @@
-import mongoose from "mongoose";
+import mongoose, { Document } from "mongoose";
 import { GroupSchema } from "./group.model";
+import { ICourse } from "./interface/icourse";
 
-const { Schema } = mongoose
+const { Schema, model } = mongoose
 
-export const CourseSchema = new Schema ({
+export const CourseSchema = new Schema<ICourse & Document>({
     instructor_id: {
+        type: Schema.Types.String,
+        required: true
+    },
+    background_src: {
         type: Schema.Types.String,
         required: true
     },
@@ -18,6 +23,7 @@ export const CourseSchema = new Schema ({
     },
     groups: {
         type: [GroupSchema],
-        required: true
     }
 })
+
+export const CourseModel = model('courses', CourseSchema)

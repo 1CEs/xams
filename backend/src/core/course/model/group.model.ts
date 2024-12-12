@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
 import { SettingSchema } from "./setting.model";
+import { IGroup } from "./interface/igroup";
 
 const { Schema } = mongoose
 
-export const GroupSchema = new Schema ({
+export const GroupSchema = new Schema<IGroup>({
     group_name: {
         type: Schema.Types.String,
         required: true
