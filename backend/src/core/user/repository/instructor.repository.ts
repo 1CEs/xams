@@ -24,6 +24,14 @@ export class InstructorRepository
         return result
     }
 
+    async updateCourse(instructor_id: string, course_id: string) {
+        const result = await this._model.updateOne(
+            { _id: instructor_id }, 
+            { $push: { courses: course_id } }
+        ).exec()
+        return result
+    }
+
     async updateCategory(instructor_id: string, category: CategoryPayload) {
         const result = await this._model.updateOne(
             { _id: instructor_id },

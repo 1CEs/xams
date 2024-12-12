@@ -1,8 +1,9 @@
 import mongoose from "mongoose";
+import { ISetting } from "./interface/setting";
 
 const { Schema } = mongoose
 
-export const SettingSchema = new Schema ({
+export const SettingSchema = new Schema<ISetting>({
     exam_id: {
         type: Schema.Types.String,
         required: true
