@@ -1,45 +1,56 @@
-import { Card, CardBody, CardFooter, CardHeader, Image, CardProps, Button, Tooltip, Link } from '@nextui-org/react'
+import { Card, CardBody, CardFooter, CardHeader, Image, CardProps, Button, Tooltip, Link, AvatarGroup, Avatar } from '@nextui-org/react'
 import React from 'react'
-import { FaGroup, FluentArrowRight12Filled, FluentSettings16Filled, HealthiconsIExamMultipleChoice, PhStudentFill } from './icons/icons'
-import { useRouter } from 'next/navigation'
+import { FluentSettings16Filled } from './icons/icons'
 
-type Props = {
+type CourseCardProps = {
+  id: string
   title: string
   description: string
-  examCount: number
-  groupCount: number
-  studentCount: number
+  bgSrc: string
 } & CardProps
 
-const CourseCard = (props: Props) => {
-  const coverAddress = 'https://img.freepik.com/free-psd/3d-illustration-nocturnal-person-staying-up_23-2150944847.jpg?t=st=1729758457~exp=1729762057~hmac=df0b032ff22d3c02c2b0cb2f7d53fa07236e2c04cf30a9df498fb91df6c46c10&w=1060'
-  const router = useRouter()
+const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, ...props }) => {
   return (
-    <Card className={props.className + ' transition duration-500 hover:-translate-y-3 '}>
+    <Card {...props} className={' transition duration-500 hover:-translate-y-2 '}>
       <CardHeader className='p-0 rounded-b-none'>
-        <Image className='min-w-full rounded-b-none' src={coverAddress} height={150} alt='course cover' />
+        <Card isFooterBlurred className="border-none" radius="lg">
+          <Image
+            alt="Woman listing to music"
+            className="object-cover"
+            height={175}
+            src={bgSrc}
+            width={250}
+          />
+          <CardFooter className="justify-center before:bg-white/10 border-white/20 border-1 overflow-hidden py-2 absolute before:rounded-xl rounded-large bottom-1 w-[calc(100%_-_8px)] shadow-small ml-1 z-10">
+            <AvatarGroup max={3} isBordered size='sm'>
+              {
+                Array.from({ length: Math.random() * 10 + 1 }).map((_, idx: number) => (
+                  <Avatar src='https://pic.re/image' key={id} />
+                ))
+              }
+            </AvatarGroup>
+          </CardFooter>
+        </Card>
       </CardHeader>
       <CardBody>
         <div>
-          <h1 className='font-bold'>{props.title}</h1>
-          <p className='text-sm text-white/50'>{props.description}</p>
+          <h1 className='font-bold'>{title}</h1>
+          <p className='text-sm text-white/50'>{description}</p>
         </div>
       </CardBody>
       <CardFooter className='justify-between'>
-        <div className='flex gap-x-2'>
-          <Tooltip content={`Examinations: ${props.examCount}`}>
-            <Button variant='flat' radius='full' className='cursor-default' startContent={<HealthiconsIExamMultipleChoice />} size='sm' isIconOnly />
-          </Tooltip>
-          <Tooltip content={`Groups: ${props.groupCount}`}>
-            <Button variant='flat' radius='full' className='cursor-default' startContent={<FaGroup />} size='sm' isIconOnly />
-          </Tooltip>
-          <Tooltip content={`Students: ${props.studentCount}`}>
-            <Button variant='flat' radius='full' className='cursor-default' startContent={<PhStudentFill />} size='sm' isIconOnly />
-          </Tooltip>
-        </div>
-        <div className='flex gap-x-2'>
-          <Button startContent={<FluentSettings16Filled />} className='text-2xl' variant='light' color='primary' size='sm' isIconOnly></Button>
-          <Button as={Link} href={`overview/course?id=${"12345"}`} startContent={<FluentArrowRight12Filled />} variant='faded' color='primary' size='sm' isIconOnly></Button>
+        <div className='w-full flex items-center gap-x-3'>
+          <Button
+            className='w-full text-secondary hover:text-white'
+            as={Link}
+            href={`overview/course?id=${id}`}
+            variant='ghost'
+            color='secondary'
+            size='sm'
+          >
+            Visit
+          </Button>
+          <Button size='sm' isIconOnly><FluentSettings16Filled fontSize={20} /></Button>
         </div>
       </CardFooter>
     </Card>
