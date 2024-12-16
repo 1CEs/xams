@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import CourseCard from "../course-card";
+import CourseCard from "../course/course-card";
 import { useFetch } from "@/hooks/use-fetch";
 import { useUserStore } from "@/stores/user.store";
 import { SolarRefreshLineDuotone } from "../icons/icons";
