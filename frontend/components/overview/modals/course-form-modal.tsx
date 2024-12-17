@@ -38,7 +38,7 @@ const ImageChooserDrawer: React.FC<ImageChooserDrawerProps> = ({ background, set
                                         className={`p-3 cursor-pointer w-full h-fit rounded-lg ${srcImage == background && 'border border-secondary'}`}
                                         key={idx}
                                     >
-                                        <Image className='object-cover w-full h-auto rounded-md' width={300} height={90} src={srcImage} alt='background image' />
+                                        <Image unoptimized className='object-cover w-full h-auto rounded-md' width={300} height={90} src={srcImage} alt='background image' />
                                     </li>
                                 ))
                             }
@@ -92,7 +92,7 @@ const CourseFormModal = (props: Props) => {
                         <ModalHeader><h1>New Course</h1></ModalHeader>
                         <ModalBody>
                             <div className='flex justify-center'>
-                                <Image src={backgroundSelector} className='w-2/3 rounded-lg' width={300} height={120} alt='image background' />
+                                <Image unoptimized src={backgroundSelector} className='w-2/3 rounded-lg' width={300} height={120} alt='image background' />
                             </div>
 
                             <Button onPress={onOpen}>Choose Background</Button>

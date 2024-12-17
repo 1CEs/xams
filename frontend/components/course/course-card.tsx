@@ -1,6 +1,6 @@
 import { Card, CardBody, CardFooter, CardHeader, Image, CardProps, Button, Tooltip, Link, AvatarGroup, Avatar } from '@nextui-org/react'
 import React from 'react'
-import { FluentSettings16Filled } from './icons/icons'
+import { FluentSettings16Filled } from '../icons/icons'
 
 type CourseCardProps = {
   id: string

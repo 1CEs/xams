@@ -4,6 +4,7 @@ import { indexMiddleware } from "./presentation/middleware/index.middleware"
 import { indexRouter } from "./presentation/routes/index.route"
 
 const runServer = async () => {
+  console.log(process.env.DB_CONN!)
   const { db, err } = await new Database().connect(process.env.DB_CONN!)
 
   if(err != null) {

@@ -1,5 +1,5 @@
 "use client"
-import Loading from "@/components/loading"
+import Loading from "@/components/state/loading"
 import HeaderSection from "@/components/overview/header-section"
 import { useUserStore } from "@/stores/user.store"
 import { Suspense } from "react"
