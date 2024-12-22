@@ -1,5 +1,6 @@
 import { clientAPI } from '@/config/axios.config'
 import { baseAPIPath } from '@/constants/base'
+import { useTrigger } from '@/stores/trigger.store'
 import { errorHandler } from '@/utils/error'
 import { ModalContent, ModalHeader, ModalBody, Textarea, ModalFooter, Button, Input, useDisclosure, Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from '@nextui-org/react'
 import Image from 'next/image'
@@ -63,6 +64,7 @@ type Props = {}
 const CourseFormModal = (props: Props) => {
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const [backgroundSelector, setBackgroundSelector] = useState<string>("https://wallpapers.com/images/featured/math-background-jbcyizvw0ckuvcro.jpg")
+    const { trigger, setTrigger } = useTrigger()
     const [courseForm, setCourseForm] = useState<{
         course_name: string;
         description: string;
@@ -78,6 +80,7 @@ const CourseFormModal = (props: Props) => {
             })
             console.log(res)
             toast.success('Create Course successfully')
+            setTrigger(!trigger)
         } catch (error) {
             console.log(error)
             errorHandler(error)

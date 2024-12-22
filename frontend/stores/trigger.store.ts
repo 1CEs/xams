@@ -1,11 +1,11 @@
 import { create } from "zustand";
 
-interface CreateQuestionTrigger {
+interface ITrigger {
     trigger: boolean;
     setTrigger: (trigger: boolean) => void;
 }
 
-export const useCreateQuestionTrigger = create<CreateQuestionTrigger>((set) => ({
+export const useTrigger = create<ITrigger>((set) => ({
     trigger: false,
     setTrigger: (trigger: boolean) => set(() => ({ trigger })),
 }))

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { clientAPI } from "@/config/axios.config"
+import { useTrigger } from "@/stores/trigger.store"
 
 interface FetchResult<T> {
   data: T | null
@@ -11,6 +12,7 @@ export const useFetch = <T extends any>(url: string): FetchResult<T> => {
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
+  const { trigger } = useTrigger()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,7 +29,7 @@ export const useFetch = <T extends any>(url: string): FetchResult<T> => {
     }
 
     fetchData()
-  }, [url])
+  }, [url, trigger])
 
   return { data, error, isLoading }
 }
