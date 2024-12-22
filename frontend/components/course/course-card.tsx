@@ -1,6 +1,11 @@
-import { Card, CardBody, CardFooter, CardHeader, Image, CardProps, Button, Tooltip, Link, AvatarGroup, Avatar } from '@nextui-org/react'
+import { Card, CardBody, CardFooter, CardHeader, Image, CardProps, Button, Tooltip, Modal, Link, AvatarGroup, Avatar, DropdownTrigger, Dropdown, DropdownItem, DropdownMenu, useDisclosure } from '@nextui-org/react'
 import React from 'react'
-import { FluentSettings16Filled } from '../icons/icons'
+import { FluentSettings16Filled, MdiBin } from '../icons/icons'
+import ConfirmModal from '../modals/confirm-modal'
+import { errorHandler } from '@/utils/error'
+import { clientAPI } from '@/config/axios.config'
+import { toast } from 'react-toastify'
+import { useTrigger } from '@/stores/trigger.store'
 
 type CourseCardProps = {
   id: string
@@ -10,6 +15,19 @@ type CourseCardProps = {
 } & CardProps
 
 const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, ...props }) => {
+  const {isOpen, onOpen, onOpenChange} = useDisclosure()
+  const { trigger, setTrigger } = useTrigger()
+
+  const onCourseDelete = async () => {
+    try {
+      const res = await clientAPI.delete(`course/${id}`)
+      toast.success(res.data.message)
+      setTrigger(!trigger)
+    } catch (error) {
+      errorHandler(error)
+    }
+  }
+
   return (
     <Card {...props} className={' transition duration-500 hover:-translate-y-2 '}>
       <CardHeader className='p-0 rounded-b-none'>
@@ -50,7 +68,24 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
           >
             Visit
           </Button>
-          <Button size='sm' isIconOnly><FluentSettings16Filled fontSize={20} /></Button>
+          <Dropdown>
+            <DropdownTrigger>
+              <Button size='sm' isIconOnly><FluentSettings16Filled fontSize={20} /></Button>
+            </DropdownTrigger>
+            <DropdownMenu aria-label="Static Actions">
+              <DropdownItem onPress={onOpen} startContent={<MdiBin fontSize={20} />} key="delete" className="text-danger" color="danger">
+                Delete Course
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+          <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+            <ConfirmModal
+              content={`${title} will be delete after you confirm it.`}
+              header={`Delete ${title}`}
+              subHeader={`After you confirm it won't be revert.`}
+              onAction={onCourseDelete}
+            />
+          </Modal>
         </div>
       </CardFooter>
     </Card>

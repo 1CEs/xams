@@ -1,4 +1,5 @@
 import { clientAPI } from '@/config/axios.config'
+import { useTrigger } from '@/stores/trigger.store'
 import { errorHandler } from '@/utils/error'
 import { Button, Input, ModalBody, ModalContent, ModalFooter, ModalHeader, Textarea } from '@nextui-org/react'
 import React, { FormEvent } from 'react'
@@ -7,6 +8,7 @@ import { toast } from 'react-toastify'
 type Props = {}
 
 const ExamFormModal = (props: Props) => {
+  const { trigger, setTrigger } = useTrigger()
   const onCreateExam = async (e: FormEvent<HTMLFormElement>) => {
     try {
       e.preventDefault()
@@ -18,6 +20,7 @@ const ExamFormModal = (props: Props) => {
       })
       console.log(res)
       toast.success('Create examination successfully')
+      setTrigger(!trigger)
     } catch (error) {
       console.log(error)
       errorHandler(error)

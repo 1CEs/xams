@@ -32,7 +32,7 @@ export default function CoursePage() {
     }
 
     return (
-        <div className="flex size-full gap-y-8 gap-x-8 px-32">
+        <div className="flex size-full gap-y-8 gap-x-14 px-32">
             <div className="flex flex-col basis-5/6 gap-y-8">
                 <Image unoptimized className="h-[24rem] w-full rounded-lg" src={data.data.background_src} width={900} height={600} alt="course background" />
                 <Tabs>

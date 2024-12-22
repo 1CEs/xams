@@ -1,6 +1,6 @@
 import { clientAPI } from '@/config/axios.config'
 import { popularColors } from '@/constants/color'
-import { errorHandler } from '@/utils/error'
+import { useTrigger } from '@/stores/trigger.store'
 import { Avatar, Button, Divider, Input, ModalBody, ModalContent, ModalFooter, ModalHeader } from '@nextui-org/react'
 import React, { FormEvent, useState } from 'react'
 import { toast } from 'react-toastify'
@@ -10,7 +10,7 @@ type Props = {}
 const CategoryFormModal = (props: Props) => {
     const [selectedColor, setSelectedColor] = useState<string>(popularColors[0])
     const [customColor, setCustomColor] = useState<string>('')
-    const [error, setError] = useState<string>('')
+    const { trigger, setTrigger } = useTrigger()
 
     const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const color = e.target.value
@@ -27,7 +27,7 @@ const CategoryFormModal = (props: Props) => {
             const res = await clientAPI.patch('user/category', formEntries)
             console.log(res.data)
             toast.success('Create examination successfully')
-            
+            setTrigger(!trigger)
         } catch (error) {
             console.log(error)
             toast.error('' + error)

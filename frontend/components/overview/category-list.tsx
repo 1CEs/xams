@@ -6,6 +6,7 @@ import { FeEdit, MdiBin } from '../icons/icons';
 import { errorHandler } from '@/utils/error';
 import ConfirmModal from '../modals/confirm-modal';
 import { useUserStore } from '@/stores/user.store';
+import { useTrigger } from '@/stores/trigger.store';
 
 type Props = {}
 
@@ -16,6 +17,7 @@ const CategoryList = (props: Props) => {
     const [selectedCategory, setSelectedCategory] = useState<CategoryResponse | null>(null);
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const { user } = useUserStore()
+    const { trigger } = useTrigger() 
 
     const onDeleteCategory = async () => {
         console.log('wtf')
@@ -70,7 +72,7 @@ const CategoryList = (props: Props) => {
             console.log(res.data);
         };
         getCategory();
-    }, []);
+    }, [trigger]);
 
     return (
         <div className='pl-24'>
