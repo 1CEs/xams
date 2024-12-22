@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import CourseCard from "../course/course-card";
 import { useFetch } from "@/hooks/use-fetch";
 import { useUserStore } from "@/stores/user.store";
 import { SolarRefreshLineDuotone } from "../icons/icons";
 import { Alert } from "@nextui-org/react";
+import { useTrigger } from "@/stores/trigger.store";
 
 type Props = {};
 
@@ -15,11 +16,9 @@ const CourseList = (props: Props) => {
     `course?instructor_id=${user?._id}`
   );
 
-  console.log(data);
-
   if (isLoading) {
     return (
-      <div className="w-fit flex gap-4 justify-center items-center">
+      <div className="size-full flex gap-4 justify-center items-center">
         <SolarRefreshLineDuotone className="text-secondary animate-spin" />
       </div>
     );
@@ -27,7 +26,7 @@ const CourseList = (props: Props) => {
 
   if (error) {
     return (
-      <div className="w-fit flex gap-4 justify-center items-center">
+      <div className="size-full flex gap-4 justify-center items-center">
         <Alert color="danger" title={error} />
       </div>
     );
@@ -35,14 +34,14 @@ const CourseList = (props: Props) => {
 
   if (!data || data.data.length === 0) {
     return (
-      <div className="w-fit flex gap-4 justify-center items-center">
+      <div className="size-full flex gap-4 justify-center items-center">
         <h1>No Course Created</h1>
       </div>
     );
   }
 
   return (
-    <div className="w-fit p-4 flex gap-4 flex-wrap justify-end">
+    <div className="w-fit p-4 flex gap-4 flex-wrap justify-start">
       {data.data.map((course, idx: number) => (
         <CourseCard
           id={course._id}

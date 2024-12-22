@@ -12,7 +12,7 @@ import LongEssayForm from './question/long-essay'
 import { clientAPI } from '@/config/axios.config'
 import { errorHandler } from '@/utils/error'
 import { toast } from 'react-toastify'
-import { useCreateQuestionTrigger } from '@/stores/trigger.store'
+import { useTrigger } from '@/stores/trigger.store'
 
 export const HeadLine = ({ number, content, isOptional }: { number: number, content: string, isOptional?: boolean }) => {
     return (
@@ -28,7 +28,7 @@ type Props = {
 }
 
 const NewQuestionForm = ({ examination_id }: Props) => {
-    const { trigger, setTrigger } = useCreateQuestionTrigger()
+    const { trigger, setTrigger } = useTrigger()
     const formRenderer = {
         mc: {
             form: <MultipleChoiceForm />,
