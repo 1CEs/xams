@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import CourseCard from "../course/course-card";
 import { useFetch } from "@/hooks/use-fetch";
 import { useUserStore } from "@/stores/user.store";
 import { SolarRefreshLineDuotone } from "../icons/icons";
 import { Alert } from "@nextui-org/react";
-import { useTrigger } from "@/stores/trigger.store";
 
 type Props = {};
 

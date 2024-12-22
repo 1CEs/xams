@@ -74,7 +74,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
             </DropdownTrigger>
             <DropdownMenu aria-label="Static Actions">
               <DropdownItem onPress={onOpen} startContent={<MdiBin fontSize={20} />} key="delete" className="text-danger" color="danger">
-                Delete file
+                Delete Course
               </DropdownItem>
             </DropdownMenu>
           </Dropdown>

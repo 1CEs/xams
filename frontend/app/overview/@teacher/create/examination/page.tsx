@@ -27,7 +27,7 @@ import {
 } from '@dnd-kit/sortable'
 import { useQuestionListStore } from "@/stores/question.store/question-list.store"
 import { useNestedQuestionsStore } from "@/stores/question.store/nested-question.store"
-import { useCreateQuestionTrigger } from "@/stores/trigger.store"
+import { useTrigger } from "@/stores/trigger.store"
 import { toast } from "react-toastify"
 
 export default function CreateExaminationPage() {
@@ -40,7 +40,7 @@ export default function CreateExaminationPage() {
     const { questionList, setQuestionList, initializeQuestionList } = useQuestionListStore()
     const { nestedQuestions, setNestedQuestions } = useNestedQuestionsStore()
     const [activeId, setActiveId] = useState<number | null>(null)
-    const { trigger, setTrigger } = useCreateQuestionTrigger()
+    const { trigger, setTrigger } = useTrigger()
 
     const sensors = useSensors(
         useSensor(PointerSensor),
