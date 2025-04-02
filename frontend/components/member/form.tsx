@@ -29,8 +29,6 @@ const Form = (props: Props) => {
             const formData = new FormData(e.currentTarget)
             if (props.isSignUp) {
                 const signUpFormEntries = Object.fromEntries(formData.entries())
-                
-                const randomProfile = await axios.get('https://api.nekosapi.com/v3/images/random?limit=1')
 
                 const signUpPayload: UserSignUpPayload | any = {
                     ...signUpFormEntries,
@@ -39,7 +37,7 @@ const Form = (props: Props) => {
                         last_name: signUpFormEntries.last_name as string,
                         birth: signUpFormEntries.birth
                     },
-                    profile_url: randomProfile.data.items[0].image_url || 'https://miscmedia-9gag-fun.9cache.com/images/thumbnail-facebook/1656473044.0987_Y3UVY8_n.jpg'
+                    profile_url: 'https://miscmedia-9gag-fun.9cache.com/images/thumbnail-facebook/1656473044.0987_Y3UVY8_n.jpg'
                 }
 
                 delete signUpPayload.first_name
