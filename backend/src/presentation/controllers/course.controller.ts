@@ -1,5 +1,6 @@
 import { ICourse } from "../../core/course/model/interface/icourse";
 import { IGroup } from "../../core/course/model/interface/igroup";
+import { ISetting } from "../../core/course/model/interface/setting";
 import { CourseService } from "../../core/course/service/course.service";
 import { ICourseService } from "../../core/course/service/interface/icourse.service";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
@@ -134,5 +135,83 @@ export class CourseController implements ICourseController {
         const updated = await this._service.updateCourse(courseId, { groups: course.groups })
         
         return this._response('Group deleted successfully', 200, updated)
+    }
+
+    // Setting methods
+    async addGroupExamSetting(courseId: string, groupName: string, examSetting: ISetting) {
+        const course = await this._service.getCourseById(courseId)
+        
+        if (!course) {
+            return this._response('Course not found', 404, null)
+        }
+
+        // Check if the course has groups
+        if (!course.groups || course.groups.length === 0) {
+            return this._response('No groups found in this course', 404, null)
+        }
+
+        // Find the group with the given name
+        const groupIndex = course.groups.findIndex(group => 
+            group.group_name === groupName
+        )
+
+        // If group not found
+        if (groupIndex === -1) {
+            return this._response('Group not found', 404, null)
+        }
+
+        // Initialize exam_setting array if it doesn't exist
+        if (!course.groups[groupIndex].exam_setting) {
+            course.groups[groupIndex].exam_setting = []
+        }
+
+        // Always add a new exam setting, allowing multiple schedules for the same exam
+        course.groups[groupIndex].exam_setting.push(examSetting)
+        
+        // Update the course with the modified groups array
+        const updated = await this._service.updateCourse(courseId, { groups: course.groups })
+        
+        return this._response('Exam setting added successfully', 200, updated)
+    }
+
+    async deleteGroupExamSetting(courseId: string, groupName: string, examSettingIndex: number) {
+        const course = await this._service.getCourseById(courseId)
+        
+        if (!course) {
+            return this._response('Course not found', 404, null)
+        }
+
+        // Check if the course has groups
+        if (!course.groups || course.groups.length === 0) {
+            return this._response('No groups found in this course', 404, null)
+        }
+
+        // Find the group with the given name
+        const groupIndex = course.groups.findIndex(group => 
+            group.group_name === groupName
+        )
+
+        // If group not found
+        if (groupIndex === -1) {
+            return this._response('Group not found', 404, null)
+        }
+
+        // Check if the group has exam settings
+        if (!course.groups[groupIndex].exam_setting || course.groups[groupIndex].exam_setting.length === 0) {
+            return this._response('No exam settings found for this group', 404, null)
+        }
+
+        // Check if the exam setting index is valid
+        if (examSettingIndex < 0 || examSettingIndex >= course.groups[groupIndex].exam_setting.length) {
+            return this._response('Invalid exam setting index', 404, null)
+        }
+
+        // Remove the exam setting from the array
+        course.groups[groupIndex].exam_setting.splice(examSettingIndex, 1)
+        
+        // Update the course with the modified groups array
+        const updated = await this._service.updateCourse(courseId, { groups: course.groups })
+        
+        return this._response('Exam setting deleted successfully', 200, updated)
     }
 }

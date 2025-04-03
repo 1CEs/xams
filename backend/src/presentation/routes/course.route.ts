@@ -2,7 +2,7 @@ import Elysia, { t } from "elysia";
 import { CourseController } from "../controllers/course.controller";
 import { tokenVerifier } from "../middleware/token-verify.middleware";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
-import { AddCourseSchema, AddGroupSchema, updateCourseSchema } from "./schema/course.schema";
+import { AddCourseSchema, AddGroupSchema, ExamSettingSchema, updateCourseSchema } from "./schema/course.schema";
 
 export const CourseRoute = new Elysia({ prefix: '/course' })
     .derive(() => { 
@@ -48,5 +48,36 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
             })
             .delete('/:id/group/:groupName', async ({ params, controller }) => {
                 return await controller.deleteGroup(params.id, params.groupName);
+            })
+            // Exam setting routes
+            .post('/:id/group/:groupName/exam-setting', async ({ params, body, controller }) => {
+                // Convert date strings to Date objects and ensure all required fields are present
+                const examSetting = {
+                    exam_id: body.exam_id,
+                    open_time: new Date(body.open_time),
+                    close_time: new Date(body.close_time),
+                    ip_range: body.ip_range || '',
+                    exam_code: body.exam_code || '',
+                    allowed_attempts: body.allowed_attempts,
+                    allowed_review: body.allowed_review,
+                    show_answer: body.show_answer,
+                    randomize_question: body.randomize_question,
+                    randomize_choice: body.randomize_choice
+                };
+                return await controller.addGroupExamSetting(params.id, params.groupName, examSetting);
+            }, {
+                body: ExamSettingSchema
+            })
+            .delete('/:id/group/:groupName/exam-setting/:examSettingIndex', async ({ params, controller }) => {
+                // Parse the index parameter as a number
+                const index = parseInt(params.examSettingIndex, 10);
+                if (isNaN(index)) {
+                    return {
+                        message: 'Invalid exam setting index',
+                        code: 400,
+                        data: null
+                    };
+                }
+                return await controller.deleteGroupExamSetting(params.id, params.groupName, index);
             })
     )

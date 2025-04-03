@@ -1,4 +1,4 @@
-import React, { SVGProps } from "react";
+import React, { SVGProps, useEffect, useState } from "react";
 import {
   Table,
   TableHeader,
@@ -9,84 +9,33 @@ import {
   User,
   Chip,
   Tooltip,
+  Spinner
 } from "@nextui-org/react";
+import { clientAPI } from "@/config/axios.config";
+import { errorHandler } from "@/utils/error";
 
 type Column = {
   name: string;
-  uid: keyof UserData | "actions";
+  uid: string;
 };
 
-type UserData = {
-  id: number;
-  name: string;
-  role: string;
-  team: string;
-  status: "active" | "paused" | "vacation";
-  age: string;
-  avatar: string;
+type StudentData = {
+  _id: string;
+  username: string;
   email: string;
-  actions?: string
+  role: string;
+  status: "active" | "inactive";
+  profile_url?: string;
 };
 
 export const columns: Column[] = [
   { name: "NAME", uid: "name" },
+  { name: "EMAIL", uid: "email" },
   { name: "ROLE", uid: "role" },
   { name: "STATUS", uid: "status" },
   { name: "ACTIONS", uid: "actions" },
 ];
 
-export const users: UserData[] = [
-  {
-    id: 1,
-    name: "Tony Reichert",
-    role: "CEO",
-    team: "Management",
-    status: "active",
-    age: "29",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
-    email: "tony.reichert@example.com",
-  },
-  {
-    id: 2,
-    name: "Zoey Lang",
-    role: "Technical Lead",
-    team: "Development",
-    status: "paused",
-    age: "25",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-    email: "zoey.lang@example.com",
-  },
-  {
-    id: 3,
-    name: "Jane Fisher",
-    role: "Senior Developer",
-    team: "Development",
-    status: "active",
-    age: "22",
-    avatar: "https://i.pravatar.cc/150?u=a04258114e29026702d",
-    email: "jane.fisher@example.com",
-  },
-  {
-    id: 4,
-    name: "William Howard",
-    role: "Community Manager",
-    team: "Marketing",
-    status: "vacation",
-    age: "28",
-    avatar: "https://i.pravatar.cc/150?u=a048581f4e29026701d",
-    email: "william.howard@example.com",
-  },
-  {
-    id: 5,
-    name: "Kristen Copper",
-    role: "Sales Manager",
-    team: "Sales",
-    status: "active",
-    age: "24",
-    avatar: "https://i.pravatar.cc/150?u=a092581d4ef9026700d",
-    email: "kristen.cooper@example.com",
-  },
-];
 export const EyeIcon = (props: SVGProps<SVGSVGElement>) => {
   return (
     <svg
@@ -210,52 +159,103 @@ export const EditIcon = (props: SVGProps<SVGSVGElement>) => {
 
 const statusColorMap = {
   active: "success",
-  paused: "danger",
-  vacation: "warning",
+  inactive: "danger"
 };
 
-export const LearnersTable = () => {
-  const renderCell = React.useCallback((user:UserData , columnKey: keyof UserData) => {
-    const cellValue = user[columnKey];
+type LearnersTableProps = {
+  studentIds: string[];
+};
+
+export const LearnersTable = ({ studentIds }: LearnersTableProps) => {
+  const [students, setStudents] = useState<StudentData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      if (!studentIds || studentIds.length === 0) {
+        setStudents([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        // Fetch student data for each student ID
+        const promises = studentIds.map(id => clientAPI.get(`/user/${id}`));
+        const responses = await Promise.all(promises);
+        
+        // Extract student data from responses
+        const fetchedStudents = responses.map(response => {
+          const userData = response.data.data;
+          return {
+            _id: userData._id,
+            name: userData.username || 'Unknown',
+            email: userData.email || 'No email',
+            role: userData.role || 'Student',
+            status: userData.status || 'active',
+            profile_url: userData.profile_url || `https://i.pravatar.cc/150?u=${userData._id}`
+          };
+        });
+        
+        setStudents(fetchedStudents as any);
+      } catch (err) {
+        console.error('Error fetching students:', err);
+        setError('Failed to load student data');
+        errorHandler(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, [studentIds]);
+
+  const renderCell = React.useCallback((student: StudentData, columnKey: string) => {
+    const cellValue = columnKey !== "actions" ? student[columnKey as keyof StudentData] : null;
 
     switch (columnKey) {
       case "name":
         return (
           <User
-            avatarProps={{radius: "lg", src: user.avatar}}
-            description={user.email}
+            avatarProps={{ radius: "lg", src: student.profile_url }}
+            description={student.email}
             name={cellValue}
           >
-            {user.email}
+            {student.email}
           </User>
         );
       case "role":
         return (
           <div className="flex flex-col">
             <p className="text-bold text-sm capitalize">{cellValue}</p>
-            <p className="text-bold text-sm capitalize text-default-400">{user.team}</p>
           </div>
         );
       case "status":
         return (
-          <Chip className="capitalize" color={statusColorMap[user.status as keyof typeof statusColorMap] as any} size="sm" variant="flat">
+          <Chip 
+            className="capitalize" 
+            color={statusColorMap[student.status as keyof typeof statusColorMap] as any} 
+            size="sm" 
+            variant="flat"
+          >
             {cellValue}
           </Chip>
         );
       case "actions":
         return (
           <div className="relative flex items-center gap-2">
-            <Tooltip content="Details">
+            <Tooltip content="View Details">
               <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
                 <EyeIcon />
               </span>
             </Tooltip>
-            <Tooltip content="Edit user">
+            <Tooltip content="Edit Student">
               <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
                 <EditIcon />
               </span>
             </Tooltip>
-            <Tooltip color="danger" content="Delete user">
+            <Tooltip color="danger" content="Remove from Group">
               <span className="text-lg text-danger cursor-pointer active:opacity-50">
                 <DeleteIcon />
               </span>
@@ -267,8 +267,32 @@ export const LearnersTable = () => {
     }
   }, []);
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center p-4">
+        <Spinner color="secondary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-danger p-4 text-center">
+        {error}
+      </div>
+    );
+  }
+
+  if (students.length === 0) {
+    return (
+      <div className="text-gray-500 p-4 text-center">
+        No student data available
+      </div>
+    );
+  }
+
   return (
-    <Table aria-label="Example table with custom cells">
+    <Table aria-label="Students table with custom cells">
       <TableHeader columns={columns}>
         {(column) => (
           <TableColumn key={column.uid} align={column.uid === "actions" ? "center" : "start"}>
@@ -276,14 +300,13 @@ export const LearnersTable = () => {
           </TableColumn>
         )}
       </TableHeader>
-      <TableBody items={users}>
+      <TableBody items={students}>
         {(item) => (
-          <TableRow key={item.id}>
+          <TableRow key={item._id}>
             {(columnKey: any) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
           </TableRow>
         )}
       </TableBody>
     </Table>
   );
-}
-
+};
