@@ -3,7 +3,7 @@ import { t } from "elysia"
 export const AddExaminationSchema = t.Object({
     title: t.String({ description: 'Title is required' }),
     description: t.String({ description: 'Description is required' }),
-    category: t.Array(t.String({ description: 'Category is required' })),
+    category: t.Array(t.String({ description: 'Category is required', default: []})),
 })
 
 export const QuestionFormSchema = t.Object({

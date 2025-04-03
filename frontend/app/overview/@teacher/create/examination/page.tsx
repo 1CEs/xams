@@ -3,10 +3,11 @@ import NewQuestionForm from "@/components/exam/new-question-form"
 import DraggableQuestion from "@/components/exam/question/draggable-question"
 import NestedQuestionForm from "@/components/exam/question/nested-question"
 import CategorySelector from "@/components/exam/category-selector"
+import ConfirmModal from "@/components/modals/confirm-modal"
 import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, IcRoundFolder, MdiBin, MingcuteAddFill, MingcuteFileNewFill, PhEyeDuotone, SystemUiconsReuse } from "@/components/icons/icons"
 import { clientAPI } from "@/config/axios.config"
 import { errorHandler } from "@/utils/error"
-import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Textarea, Tooltip, useDisclosure } from "@nextui-org/react"
+import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Modal, Textarea, Tooltip, useDisclosure } from "@nextui-org/react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { ChangeEvent, useEffect, useState } from "react"
 import {
@@ -43,6 +44,7 @@ export default function CreateExaminationPage() {
     const [activeId, setActiveId] = useState<number | null>(null)
     const { trigger, setTrigger } = useTrigger()
     const [isEditing, setIsEditing] = useState<boolean>(false)
+    const { isOpen, onOpen, onClose, onOpenChange } = useDisclosure()
     const [formValues, setFormValues] = useState({
         title: '',
         description: '',
@@ -153,6 +155,17 @@ export default function CreateExaminationPage() {
         setTrigger(!trigger)
     }
 
+    const handleDeleteExamination = async () => {
+        try {
+            const res = await clientAPI.delete(`exam/${_id}`)
+            toast.success(res.data.message || "Examination deleted successfully")
+            router.push('/overview') // Redirect to overview page
+        } catch (error) {
+            console.error('Error deleting examination:', error)
+            errorHandler(error)
+        }
+    }
+
     if (exam) {
         return (
             <DndContext
@@ -225,6 +238,7 @@ export default function CreateExaminationPage() {
                                     variant="flat"
                                     color='danger'
                                     size="sm"
+                                    onPress={onOpen}
                                 > Delete </Button>
                                 <div className="flex gap-x-2">
                                     <Button
@@ -349,6 +363,16 @@ export default function CreateExaminationPage() {
                         : null
                     }
                 </div>
+
+                {/* Delete Confirmation Modal */}
+                <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+                    <ConfirmModal 
+                        header="Delete Examination" 
+                        subHeader="Are you sure you want to delete this examination?" 
+                        content="This action cannot be undone. All questions and data associated with this examination will be permanently deleted."
+                        onAction={handleDeleteExamination}
+                    />
+                </Modal>
             </DndContext>
         )
     } else {
