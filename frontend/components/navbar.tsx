@@ -125,7 +125,9 @@ const Navbar = () => {
                                             </div>
                                         </div>
                                         <Button variant="light" className="text-2xl text-foreground/60 hover:text-foreground" isIconOnly>
-                                            <FluentSettings16Filled />
+                                            <Link href="/settings">
+                                                <FluentSettings16Filled />
+                                            </Link>
                                         </Button>
                                     </div>
                                     <Divider />

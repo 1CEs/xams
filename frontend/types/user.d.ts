@@ -16,5 +16,10 @@ type UserResponse = {
     username: string
     email: string
     role: string
+    info: {
+        first_name: string
+        last_name: string
+        birth: Date
+    }
     profile_url: string
 }
