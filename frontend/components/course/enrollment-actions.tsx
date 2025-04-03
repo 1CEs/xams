@@ -52,7 +52,7 @@ const EnrollmentActions = ({
   };
 
   return (
-    <>
+    <div className={`${!isEnrolled && "w-full"}`}>
       {isEnrolled ? (
         <Button
           color="danger"
@@ -65,6 +65,7 @@ const EnrollmentActions = ({
         </Button>
       ) : (
         <Button
+          className={`${!isEnrolled && "w-full"}`}
           color="primary"
           variant="flat"
           size="sm"
@@ -92,7 +93,7 @@ const EnrollmentActions = ({
         groups={groups}
         courseName={courseName}
       />
-    </>
+    </div>
   );
 };
 

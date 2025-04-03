@@ -71,7 +71,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
       </CardBody>
       <CardFooter className='justify-between'>
         <div className='w-full flex items-center gap-x-3'>
-          <Button
+          {isEnrolled || !isStudent && (<Button
             className='w-full text-secondary hover:text-white'
             as={Link}
             href={`overview/course?id=${id}`}
@@ -80,7 +80,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
             size='sm'
           >
             Visit
-          </Button>
+          </Button>)
+          }
           
           {/* Show different actions based on user role */}
           {isStudent ? (
