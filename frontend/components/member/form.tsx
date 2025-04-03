@@ -1,7 +1,7 @@
 import { Button, Card, CardBody, CardFooter, CardHeader, Divider, Image, Link, Radio, RadioGroup } from '@nextui-org/react'
 import React, { FormEvent, useState } from 'react'
 import fullLogo from '@/public/images/logo/full-logo.png'
-import axios, { isAxiosError } from 'axios'
+import { isAxiosError } from 'axios'
 import { useUserStore } from '@/stores/user.store'
 import { useRouter } from 'nextjs-toploader/app'
 import { useCookies } from 'next-client-cookies'
@@ -46,16 +46,22 @@ const Form = (props: Props) => {
 
                 const res = await clientAPI.post('auth/sign-up', signUpPayload)
                 console.log(res.data)
-                setUser(res.data.data as UserResponse)
+                const userData = res.data.data as UserResponse
+                setUser(userData)
                 
+                // Set cookie with the user data from the API response
+                const oneDay = 24 * 60 * 60 * 1000
+                cookies.set('user', JSON.stringify(userData), { expires: Date.now() + oneDay})
             } else {
                 const signInFormEntries = Object.fromEntries(formData.entries())
                 const res = await clientAPI.post('auth/sign-in', signInFormEntries)
-                setUser(res.data.data as UserResponse)
+                const userData = res.data.data as UserResponse
+                setUser(userData)
                 
+                // Set cookie with the user data from the API response
+                const oneDay = 24 * 60 * 60 * 1000
+                cookies.set('user', JSON.stringify(userData), { expires: Date.now() + oneDay})
             }
-            const oneDay = 24 * 60 * 60 * 1000
-            cookies.set('user', JSON.stringify(user), { expires: Date.now() - oneDay})
             router.push('/overview')
         } catch (error) {
             if (isAxiosError(error)) {
