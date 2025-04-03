@@ -2,7 +2,7 @@ import Elysia, { t } from "elysia";
 import { CourseController } from "../controllers/course.controller";
 import { tokenVerifier } from "../middleware/token-verify.middleware";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
-import { AddCourseSchema, updateCourseSchema } from "./schema/course.schema";
+import { AddCourseSchema, AddGroupSchema, updateCourseSchema } from "./schema/course.schema";
 
 export const CourseRoute = new Elysia({ prefix: '/course' })
     .derive(() => { 
@@ -26,4 +26,23 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
                 body: updateCourseSchema
             })
             .delete('/:id', async ({ params, controller }) => await controller.deleteCourse(params.id))
+            // Group routes
+            .post('/:id/group', async ({ params, body, controller }) => {
+                // Ensure required fields are present and convert date strings to Date objects
+                const groupData = {
+                    ...body,
+                    students: body.students || [],
+                    exam_setting: (body.exam_setting || []).map((setting: any) => ({
+                        ...setting,
+                        open_time: new Date(setting.open_time),
+                        close_time: new Date(setting.close_time)
+                    }))
+                };
+                return await controller.addGroup(params.id, groupData);
+            }, {
+                body: AddGroupSchema
+            })
+            .delete('/:id/group/:groupName', async ({ params, controller }) => {
+                return await controller.deleteGroup(params.id, params.groupName);
+            })
     )

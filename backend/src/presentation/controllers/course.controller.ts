@@ -1,4 +1,5 @@
 import { ICourse } from "../../core/course/model/interface/icourse";
+import { IGroup } from "../../core/course/model/interface/igroup";
 import { CourseService } from "../../core/course/service/course.service";
 import { ICourseService } from "../../core/course/service/interface/icourse.service";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
@@ -55,5 +56,67 @@ export class CourseController implements ICourseController {
     async deleteCourse(id: string) {
         const deleted = await this._service.deleteCourse(id)
         return this._response<typeof deleted>('Delete Course Successfully', 200, deleted)
+    }
+
+    // Group methods
+    async addGroup(courseId: string, groupData: Omit<IGroup, "_id">) {
+        const course = await this._service.getCourseById(courseId)
+        
+        if (!course) {
+            return this._response('Course not found', 404, null)
+        }
+
+        // Initialize groups array if it doesn't exist
+        if (!course.groups) {
+            course.groups = []
+        }
+
+        // Check if a group with the same name already exists
+        const groupNameExists = course.groups.some(group => 
+            group.group_name.toLowerCase() === groupData.group_name.toLowerCase()
+        )
+
+        if (groupNameExists) {
+            return this._response('A group with this name already exists', 400, null)
+        }
+
+        // Add the new group to the course
+        course.groups.push(groupData as IGroup)
+        
+        // Update the course with the new group
+        const updated = await this._service.updateCourse(courseId, { groups: course.groups })
+        
+        return this._response('Group added successfully', 200, updated)
+    }
+
+    async deleteGroup(courseId: string, groupName: string) {
+        const course = await this._service.getCourseById(courseId)
+        
+        if (!course) {
+            return this._response('Course not found', 404, null)
+        }
+
+        // Check if the course has groups
+        if (!course.groups || course.groups.length === 0) {
+            return this._response('No groups found in this course', 404, null)
+        }
+
+        // Find the index of the group with the given name
+        const groupIndex = course.groups.findIndex(group => 
+            group.group_name === groupName
+        )
+
+        // If group not found
+        if (groupIndex === -1) {
+            return this._response('Group not found', 404, null)
+        }
+
+        // Remove the group from the array
+        course.groups.splice(groupIndex, 1)
+        
+        // Update the course with the modified groups array
+        const updated = await this._service.updateCourse(courseId, { groups: course.groups })
+        
+        return this._response('Group deleted successfully', 200, updated)
     }
 }
