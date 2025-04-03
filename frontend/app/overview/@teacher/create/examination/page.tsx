@@ -2,6 +2,7 @@
 import NewQuestionForm from "@/components/exam/new-question-form"
 import DraggableQuestion from "@/components/exam/question/draggable-question"
 import NestedQuestionForm from "@/components/exam/question/nested-question"
+import CategorySelector from "@/components/exam/category-selector"
 import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, IcRoundFolder, MdiBin, MingcuteAddFill, MingcuteFileNewFill, PhEyeDuotone, SystemUiconsReuse } from "@/components/icons/icons"
 import { clientAPI } from "@/config/axios.config"
 import { errorHandler } from "@/utils/error"
@@ -41,6 +42,12 @@ export default function CreateExaminationPage() {
     const { nestedQuestions, setNestedQuestions } = useNestedQuestionsStore()
     const [activeId, setActiveId] = useState<number | null>(null)
     const { trigger, setTrigger } = useTrigger()
+    const [isEditing, setIsEditing] = useState<boolean>(false)
+    const [formValues, setFormValues] = useState({
+        title: '',
+        description: '',
+        category: [] as string[]
+    })
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -55,6 +62,14 @@ export default function CreateExaminationPage() {
                 const res = await clientAPI.get(`exam/${_id}`)
                 setExam(res.data.data)
                 initializeQuestionList(res.data.data.questions)
+
+                // Initialize form values
+                setFormValues({
+                    title: res.data.data.title || '',
+                    description: res.data.data.description || '',
+                    category: res.data.data.category || []
+                })
+
                 console.log(res.data)
             } catch (error) {
                 console.log(error)
@@ -233,15 +248,61 @@ export default function CreateExaminationPage() {
                                 </div>
 
                             </div>
-                            <form className="w-full">
+                            <form className="w-full" onSubmit={async (e) => {
+                                e.preventDefault();
+                                try {
+                                    const res = await clientAPI.put(`exam/${_id}`, formValues);
+                                    toast.success(res.data.message);
+                                    setIsEditing(false);
+                                    setTrigger(!trigger);
+                                } catch (error) {
+                                    errorHandler(error);
+                                }
+                            }}>
                                 <Card>
                                     <CardBody className="gap-y-3">
-                                        <Input size='sm' label='Examination Name' defaultValue={exam.title} isDisabled />
-                                        <Textarea label="Description" description='Limit 1,000 characters.' defaultValue={exam.description} isDisabled />
+                                        <Input
+                                            size='sm'
+                                            label='Examination Name'
+                                            value={formValues.title}
+                                            onChange={(e) => setFormValues({ ...formValues, title: e.target.value })}
+                                            isDisabled={!isEditing}
+                                        />
+                                        <Textarea
+                                            label="Description"
+                                            placeholder="Limit 1,000 characters."
+                                            value={formValues.description}
+                                            onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
+                                            isDisabled={!isEditing}
+                                        />
+                                        <div className="w-full">
+                                            <CategorySelector
+                                                isDisable={!isEditing}
+                                                handleChange={(e) => {
+                                                    // Category selection is handled by the CategorySelector component
+                                                    // which will update the formValues.category array
+                                                    const selectedCategories = Array.from(e.target.value || []) as string[];
+                                                    setFormValues({ ...formValues, category: selectedCategories });
+                                                }}
+                                            />
+                                        </div>
                                     </CardBody>
                                     <CardFooter className="pt-0 flex justify-between">
-                                        <Button size="sm" color="success" isDisabled>Save</Button>
-                                        <Button size="sm" color="warning" >Edit</Button>
+                                        <Button
+                                            size="sm"
+                                            color="success"
+                                            isDisabled={!isEditing}
+                                            type="submit"
+                                        >
+                                            Save
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            color="warning"
+                                            onPress={() => setIsEditing(!isEditing)}
+                                        >
+                                            {isEditing ? 'Cancel' : 'Edit'}
+                                        </Button>
                                     </CardFooter>
                                 </Card>
                             </form>

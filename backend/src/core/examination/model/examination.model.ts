@@ -14,6 +14,7 @@ export const ExaminationSchema = new Schema<ExaminationDocument>({
         required: true
     },
     description: { type: Schema.Types.String },
+    category: { type: [Schema.Types.String] },
     questions: { type: [QuestionSchema] }
 
 }, { timestamps: true })

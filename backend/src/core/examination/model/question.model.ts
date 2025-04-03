@@ -14,7 +14,6 @@ export const QuestionSchema = new Schema<QuestionDocument>({
     },
     choices: { type: [Schema.Types.String] },
     answer: { type: [Schema.Types.String] },
-    category: { type: [Schema.Types.String] },
     score: {
         type: Schema.Types.Number,
         required: true

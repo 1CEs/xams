@@ -3,6 +3,7 @@ import { t } from "elysia"
 export const AddExaminationSchema = t.Object({
     title: t.String({ description: 'Title is required' }),
     description: t.String({ description: 'Description is required' }),
+    category: t.Array(t.String({ description: 'Category is required' })),
 })
 
 export const QuestionFormSchema = t.Object({
@@ -15,13 +16,13 @@ export const QuestionFormSchema = t.Object({
     ], { description: 'Question type is required' }),
     choices: t.Array(t.String({ description: 'Choices are required' })),
     answer: t.Array(t.String({ description: 'Answer is required' }), { min: 1, max: 4 }),
-    category: t.Array(t.String({ description: 'Category is required' })),
     score: t.Number({ description: 'Score is required' })
 })
 
 export const updateExaminationSchema = t.Object({
     title: t.Optional(t.String()),
     description: t.Optional(t.String()),
-    questions: t.Optional(t.Array(QuestionFormSchema))
+    questions: t.Optional(t.Array(QuestionFormSchema)),
+    category: t.Array(t.String({ description: 'Category is required' })),
 })
 

@@ -43,7 +43,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
             <AvatarGroup max={3} isBordered size='sm'>
               {
                 Array.from({ length: Math.random() * 10 + 1 }).map((_, idx: number) => (
-                  <Avatar src='https://pic.re/image' key={id} />
+                  <Avatar src='https://pic.re/image' key={idx} />
                 ))
               }
             </AvatarGroup>

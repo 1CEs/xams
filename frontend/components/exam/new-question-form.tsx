@@ -6,7 +6,6 @@ import MultipleChoiceForm from './question/multiple-choice'
 import TrueOrFalseForm from './question/true-or-false'
 import { Formik, FormikHelpers } from 'formik'
 import QuestionTypeSelector from './question-type-selector'
-import CategorySelector from './category-selector'
 import ShortEssayForm from './question/short-essay'
 import LongEssayForm from './question/long-essay'
 import { clientAPI } from '@/config/axios.config'
@@ -55,7 +54,6 @@ const NewQuestionForm = ({ examination_id }: Props) => {
                 type: 'mc',
                 choices: ["", ""],
                 answer: [],
-                category: [''],
                 score: 1
             }}
             onSubmit={async (
@@ -125,13 +123,8 @@ const NewQuestionForm = ({ examination_id }: Props) => {
                                 <StepProvider number={3} content={formRenderer[values.type].content}>
                                     {formRenderer[values.type].form}
                                 </StepProvider>
-                                <StepProvider number={4} content='Category' >
-                                    <CategorySelector handleChange={handleChange} values={values} />
-                                </StepProvider>
                             </CardBody>
-                            <CardFooter>
-
-                            </CardFooter>
+                            <CardFooter></CardFooter>
                         </Card>
                     </form>
                 )

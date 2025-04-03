@@ -16,7 +16,7 @@ export default function InstructorOverview() {
                     <CardBody className="grid grid-cols-3 gap-2">
                         <Input className="col-span-2" placeholder="Enter name" endContent={<MdiSearch fontSize={24} />} />
                         <Select startContent={<IconoirSort fontSize={24} />}>
-                            <SelectItem key={'x'}>Something</SelectItem>
+                            <SelectItem key={'xdsadasd'}>Something</SelectItem>
                         </Select>
                     </CardBody>
                 </Card>

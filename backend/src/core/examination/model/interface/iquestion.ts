@@ -5,6 +5,5 @@ export interface IQuestion {
     type: QuestionType
     choices: string[]
     answer: string[]
-    category: string[]
     score: number
 }

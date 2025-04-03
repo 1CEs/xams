@@ -25,6 +25,11 @@ export class ExaminationController implements IExaminationController {
     // Examination-Only methods
     async addExamination(payload: Omit<IExamination, "_id" | "questions">, user: IInstructor) {
         console.log(user)
+        // Ensure category is set, default to empty array if not provided
+        if (!payload.category) {
+            payload.category = []
+        }
+        
         const exam = await this._service.addExamination(payload)
         const service = new UserServiceFactory().createService(user.role)
 
@@ -49,6 +54,11 @@ export class ExaminationController implements IExaminationController {
     }
 
     async updateExamination(id: string, payload: Partial<IExamination>) {
+        // If category is provided but null, set it to an empty array
+        if (payload.hasOwnProperty('category') && !payload.category) {
+            payload.category = []
+        }
+        
         const updated = await this._service.updateExamination(id, payload)
         return this._response<typeof updated>('Update Examination Successfully', 200, updated)
     }

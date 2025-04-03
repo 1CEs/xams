@@ -14,7 +14,6 @@ type QuestionForm = {
     type: QuestionSelector
     choices: string[]
     answer: string[]
-    category: string[]
     score: number
 }
 
