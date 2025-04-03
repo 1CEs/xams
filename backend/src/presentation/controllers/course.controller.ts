@@ -33,8 +33,24 @@ export class CourseController implements ICourseController {
         return this._response<typeof course>('Create Course Successfully', 200, course)
     }
 
-    async getCourses() {
+    async getCourses(search?: string) {
         const courses = await this._service.getCourses()
+        
+        // Handle case where courses might be null
+        if (!courses) {
+            return this._response<[]>('No courses found', 200, [])
+        }
+        
+        // If search parameter is provided, filter courses by name
+        if (search && search.trim() !== '') {
+            const searchLower = search.toLowerCase()
+            const filteredCourses = courses.filter(course => 
+                course.course_name.toLowerCase().includes(searchLower) ||
+                course.description.toLowerCase().includes(searchLower)
+            )
+            return this._response<typeof filteredCourses>('Done', 200, filteredCourses)
+        }
+        
         return this._response<typeof courses>('Done', 200, courses)
     }
 

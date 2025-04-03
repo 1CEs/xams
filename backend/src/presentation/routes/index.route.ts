@@ -4,6 +4,7 @@ import { UserRoute } from "./user.route"
 import { ExamRoute } from "./exam.route"
 import { UploadRoute } from "./upload.route"
 import { CourseRoute } from "./course.route"
+import { EnrollmentRoute } from "./enrollment.route"
 
 export const indexRouter = new Elysia({ prefix: '/api' })
     .use(AuthRoute)
@@ -11,3 +12,4 @@ export const indexRouter = new Elysia({ prefix: '/api' })
     .use(ExamRoute)
     .use(CourseRoute)
     .use(UploadRoute)
+    .use(EnrollmentRoute)

@@ -12,13 +12,17 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
     .group('', (app) => 
         app
             // Course-Only routes
-            .get('', async ({ controller }) => await controller.getCourses())
-            .get('/:id', async ({ params, controller }) => await controller.getCourseById(params.id))
-            .get('', async ({ query, controller }) => await controller.getCourseByInstructorId(query.instructor_id), {
-                query: t.Object({
-                    instructor_id: t.String()
-                })
+            .get('', async ({ query, controller }) => await controller.getCourses(query.search), {
+                query: t.Optional(t.Object({
+                    search: t.Optional(t.String())
+                }))
             })
+            .get('/:id', async ({ params, controller }) => await controller.getCourseById(params.id))
+            // .get('', async ({ query, controller }) => await controller.getCourseByInstructorId(query.instructor_id), {
+            //     query: t.Object({
+            //         instructor_id: t.String()
+            //     })
+            // })
             .post('', async ({ body, user, controller }) => await controller.addCourse({ ...body, instructor_id: user._id as unknown as string }, user as IInstructor), {
                 body: AddCourseSchema
             })

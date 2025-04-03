@@ -6,17 +6,30 @@ import { errorHandler } from '@/utils/error'
 import { clientAPI } from '@/config/axios.config'
 import { toast } from 'react-toastify'
 import { useTrigger } from '@/stores/trigger.store'
+import { useUserStore } from '@/stores/user.store'
+import EnrollmentActions from './enrollment-actions'
 
 type CourseCardProps = {
   id: string
   title: string
   description: string
   bgSrc: string
+  groups?: IGroup[]
 } & CardProps
 
-const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, ...props }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, groups = [], ...props }) => {
   const {isOpen, onOpen, onOpenChange} = useDisclosure()
   const { trigger, setTrigger } = useTrigger()
+  const { user } = useUserStore()
+
+  // Check if the user is a student and if they're enrolled in any group of this course
+  const isStudent = user?.role === 'student'
+  const isEnrolled = isStudent && groups.some(group => 
+    group.students.includes(user?._id || '')
+  )
+  
+  // Get the first group name for enrollment actions (simplified for this example)
+  const firstGroupName = groups.length > 0 ? groups[0].group_name : ''
 
   const onCourseDelete = async () => {
     try {
@@ -68,24 +81,42 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
           >
             Visit
           </Button>
-          <Dropdown>
-            <DropdownTrigger>
-              <Button size='sm' isIconOnly><FluentSettings16Filled fontSize={20} /></Button>
-            </DropdownTrigger>
-            <DropdownMenu aria-label="Static Actions">
-              <DropdownItem onPress={onOpen} startContent={<MdiBin fontSize={20} />} key="delete" className="text-danger" color="danger">
-                Delete Course
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-          <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-            <ConfirmModal
-              content={`${title} will be delete after you confirm it.`}
-              header={`Delete ${title}`}
-              subHeader={`After you confirm it won't be revert.`}
-              onAction={onCourseDelete}
-            />
-          </Modal>
+          
+          {/* Show different actions based on user role */}
+          {isStudent ? (
+            /* Student actions - show enrollment button if there are groups */
+            groups.length > 0 && (
+              <EnrollmentActions 
+                courseId={id} 
+                groupName={firstGroupName} 
+                isEnrolled={isEnrolled}
+                groups={groups}
+                courseName={title}
+              />
+            )
+          ) : (
+            /* Instructor actions - show settings dropdown with delete option */
+            <>
+              <Dropdown>
+                <DropdownTrigger>
+                  <Button size='sm' isIconOnly><FluentSettings16Filled fontSize={20} /></Button>
+                </DropdownTrigger>
+                <DropdownMenu aria-label="Static Actions">
+                  <DropdownItem onPress={onOpen} startContent={<MdiBin fontSize={20} />} key="delete" className="text-danger" color="danger">
+                    Delete Course
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
+              <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+                <ConfirmModal
+                  content={`${title} will be delete after you confirm it.`}
+                  header={`Delete ${title}`}
+                  subHeader={`After you confirm it won't be revert.`}
+                  onAction={onCourseDelete}
+                />
+              </Modal>
+            </>
+          )}
         </div>
       </CardFooter>
     </Card>
