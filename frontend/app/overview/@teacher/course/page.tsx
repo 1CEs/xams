@@ -19,22 +19,25 @@ import { useState } from "react"
 import { today, getLocalTimeZone } from '@internationalized/date'
 import { LearnersTable } from "@/components/course/learner-table"
 import { useRouter } from "next/navigation"
+import CourseUpdateModal from "@/components/overview/modals/course-update-modal"
 
 export default function CoursePage() {
     const params = useSearchParams()
     const _id = params.get('id')
     const { data, error, isLoading } = useFetch<ServerResponse<CourseResponse>>(`/course/${_id}`)
+    const { data: instructor } = useFetch<ServerResponse<UserResponse>>(`/user/${data?.data.instructor_id}`)
     const { isOpen, onOpen, onOpenChange } = useDisclosure()
     const { trigger, setTrigger } = useTrigger()
     const router = useRouter()
 
     // State for modals
     const [groupToDelete, setGroupToDelete] = useState<string | null>(null)
-    const [examToDelete, setExamToDelete] = useState<{groupName: string, examSettingIndex: number} | null>(null)
+    const [examToDelete, setExamToDelete] = useState<{ groupName: string, examSettingIndex: number } | null>(null)
     const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onOpenChange: onDeleteModalOpenChange } = useDisclosure()
     const { isOpen: isDeleteExamModalOpen, onOpen: onDeleteExamModalOpen, onOpenChange: onDeleteExamModalOpenChange } = useDisclosure()
     const { isOpen: isScheduleModalOpen, onOpen: onScheduleModalOpen, onOpenChange: onScheduleModalOpenChange } = useDisclosure()
     const { isOpen: isDeleteCourseModalOpen, onOpen: onDeleteCourseModalOpen, onOpenChange: onDeleteCourseModalOpenChange } = useDisclosure()
+    const { isOpen: isUpdateModalOpen, onOpen: onUpdateModalOpen, onOpenChange: onUpdateModalOpenChange } = useDisclosure()
 
     const openDeleteConfirmation = (groupName: string) => {
         setGroupToDelete(groupName)
@@ -107,7 +110,35 @@ export default function CoursePage() {
     return (
         <div className="flex size-full gap-y-8 gap-x-14 px-32">
             <div className="flex flex-col basis-9/12 gap-y-4">
-                <Image unoptimized className="h-[24rem] w-full rounded-lg" src={data.data.background_src} width={900} height={600} alt="course background" />
+                <div className="relative h-[24rem] w-full rounded-lg overflow-hidden">
+                    <Image
+                        unoptimized
+                        className="h-full w-full object-cover"
+                        src={data.data.background_src}
+                        width={900}
+                        height={600}
+                        alt="course background"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/25" />
+                    <div className="absolute inset-0 p-8 flex flex-col justify-start">
+                        <div className="h-full w-full flex flex-col justify-between">
+                            <div className="space-y-3">
+                                <h1 className="text-4xl font-bold text-white">{data.data.course_name}</h1>
+                                <p className="text-white/90 indent-16 text-justify">{data.data.description}</p>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 mt-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-white font-bold">{instructor?.data.info.first_name} {instructor?.data.info.last_name}</span>
+                                </div>
+                                <div className="flex items-center gap-2 bg-background/70 p-2 rounded-xl">
+                                    <span className="text-white text-sm">Groups:</span>
+                                    <span className="text-white text-sm">{data.data.groups?.length || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <Tabs aria-label="Course Groups">
                     {data.data.groups && data.data.groups.length > 0 ? (
                         data.data.groups.map((group: IGroup, index: number) => (
@@ -141,7 +172,7 @@ export default function CoursePage() {
                                             <h3 className="text-lg font-semibold mb-4">Students</h3>
                                             {group.students.length > 0 ? (
                                                 <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl overflow-hidden shadow-sm border border-primary/10">
-                                                    <div className="bg-primary/10 px-4 py-3">
+                                                    <div className="bg-secondary/10 px-4 py-3">
                                                         <h4 className="font-medium">Enrolled Students ({group.students.length})</h4>
                                                     </div>
                                                     <div className="p-4">
@@ -189,13 +220,13 @@ export default function CoursePage() {
                                                                     </Tooltip>
                                                                 </div>
                                                             </div>
-                                                            
+
                                                             <div className="p-4">
                                                                 <div className="flex justify-between items-center mb-3">
                                                                     <span className="text-xs font-medium text-gray-500">EXAM ID</span>
                                                                     <span className="font-mono text-sm">{setting.exam_id}</span>
                                                                 </div>
-                                                                
+
                                                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                                                     <div className="bg-secondary/10 p-3 rounded-lg">
                                                                         <div className="text-xs font-medium text-gray-500 mb-1">OPENS</div>
@@ -206,7 +237,7 @@ export default function CoursePage() {
                                                                         <div className="text-sm">{new Date(setting.close_time).toLocaleString()}</div>
                                                                     </div>
                                                                 </div>
-                                                                
+
                                                                 <div className="flex flex-wrap gap-2 mt-3">
                                                                     <Chip size="sm" variant="flat" color="default">
                                                                         {setting.allowed_attempts} attempt{setting.allowed_attempts !== 1 ? 's' : ''}
@@ -221,7 +252,7 @@ export default function CoursePage() {
                                                                         {setting.randomize_question ? 'Random questions' : 'Fixed order'}
                                                                     </Chip>
                                                                 </div>
-                                                                
+
                                                                 {setting.ip_range && (
                                                                     <div className="mt-3 text-xs">
                                                                         <span className="font-medium text-gray-500">IP RANGE: </span>
@@ -244,7 +275,7 @@ export default function CoursePage() {
                             <div className="flex flex-col items-center justify-center p-8 mt-4">
                                 <p className="text-gray-500 mb-4">No groups have been created for this course yet</p>
                                 <Button
-                                    color="primary"
+                                    color="secondary"
                                     startContent={<MingcuteAddFill />}
                                     onPress={onOpen}
                                 >
@@ -370,9 +401,11 @@ export default function CoursePage() {
                         </Button>
                     </Tooltip>
 
-                    <Button color="warning" isIconOnly>
-                        <FluentSettings16Filled fontSize={24} />
-                    </Button>
+                    <Tooltip content="Update Course">
+                        <Button color="warning" isIconOnly onPress={onUpdateModalOpen}>
+                            <FluentSettings16Filled fontSize={24} />
+                        </Button>
+                    </Tooltip>
                     <Tooltip content="Delete Course">
                         <Button color="danger" isIconOnly onPress={onDeleteCourseModalOpen}>
                             <MdiBin fontSize={24} />
@@ -389,6 +422,21 @@ export default function CoursePage() {
                         />
                     )}
                 </Modal>
+
+                {/* Course Update Modal */}
+                <Modal size="2xl" isOpen={isUpdateModalOpen} onOpenChange={onUpdateModalOpenChange}>
+                    {data.data && (
+                        <CourseUpdateModal
+                            courseId={_id as string}
+                            initialData={{
+                                course_name: data.data.course_name,
+                                description: data.data.description,
+                                background_src: data.data.background_src
+                            }}
+                        />
+                    )}
+                </Modal>
+
                 <Calendar color="secondary" isReadOnly aria-label="Schedule" value={today(getLocalTimeZone())} />
             </div>
 

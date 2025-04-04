@@ -1,0 +1,70 @@
+What is the value of 2 + 3?
+A. 4
+B. 5
+C. 6
+D. 7
+ANSWER: B
+
+What is the square root of 16?
+A. 2
+B. 3
+C. 4
+D. 5
+ANSWER: C
+
+If a triangle has angles 60°, 60°, and 60°, what type of triangle is it?
+A. Scalene
+B. Isosceles
+C. Equilateral
+D. Right
+ANSWER: C
+
+What is the derivative of x^2 with respect to x?
+A. x
+B. 2x
+C. x^2
+D. 2
+ANSWER: B
+
+What is the value of 5! (5 factorial)?
+A. 60
+B. 100
+C. 120
+D. 150
+ANSWER: C
+
+What is the result of 10 divided by 2?
+A. 2
+B. 4
+C. 5
+D. 6
+ANSWER: C
+
+Solve for x: 2x + 3 = 7
+A. 1
+B. 2
+C. 3
+D. 4
+ANSWER: B
+
+What is the area of a circle with radius 3? (Use π = 3.14)
+A. 28.26
+B. 18.84
+C. 31.42
+D. 25.12
+ANSWER: A
+
+What is the sum of the interior angles of a quadrilateral?
+A. 180°
+B. 270°
+C. 360°
+D. 450°
+ANSWER: C
+
+If a number is divisible by both 2 and 3, it is also divisible by:
+A. 4
+B. 5
+C. 6
+D. 8
+ANSWER: C
+

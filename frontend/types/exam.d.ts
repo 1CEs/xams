@@ -15,6 +15,7 @@ type QuestionForm = {
     choices: string[]
     answer: string[]
     score: number
+    percentages?: Record<number, number>
 }
 
 type QuestionWithIdentifier<T extends QuestionForm> = T & { id: number, _id: string }

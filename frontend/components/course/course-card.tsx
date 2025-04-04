@@ -42,7 +42,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
   }
 
   return (
-    <Card {...props} className={' transition duration-500 hover:-translate-y-2 '}>
+    <Card {...props} className={' transition duration-500 hover:-translate-y-2 max-w-[250px]'}>
       <CardHeader className='p-0 rounded-b-none'>
         <Card isFooterBlurred className="border-none" radius="lg">
           <Image
@@ -66,7 +66,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
       <CardBody>
         <div>
           <h1 className='font-bold'>{title}</h1>
-          <p className='text-sm text-white/50'>{description}</p>
+          <p className='text-sm text-white/50 line-clamp-1'>{description}</p>
         </div>
       </CardBody>
       <CardFooter className='justify-between'>

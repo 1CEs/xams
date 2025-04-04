@@ -292,7 +292,7 @@ export const LearnersTable = ({ studentIds }: LearnersTableProps) => {
   }
 
   return (
-    <Table aria-label="Students table with custom cells">
+    <Table removeWrapper aria-label="Students table with custom cells">
       <TableHeader columns={columns}>
         {(column) => (
           <TableColumn key={column.uid} align={column.uid === "actions" ? "center" : "start"}>

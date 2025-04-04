@@ -12,9 +12,9 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
     .group('', (app) => 
         app
             // Examination-Only routes
-            .get('', async ({ controller }) => await controller.getExaminations())
-            .get('/:id', async ({ params, controller }) => await controller.getExaminationById(params.id))
-            .get('', async ({ query, controller }) => await controller.getExaminationByInstructorId(query.instructor_id), {
+            .get('', async ({ controller, user }) => await controller.getExaminations(user as IInstructor))
+            .get('/:id', async ({ params, controller, user }) => await controller.getExaminationById(params.id, user as IInstructor))
+            .get('', async ({ query, controller, user }) => await controller.getExaminationByInstructorId(query.instructor_id, user as IInstructor), {
                 query: t.Object({
                     instructor_id: t.String()
                 })
@@ -22,15 +22,15 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
             .post('', async ({ body, user, controller }) => await controller.addExamination({ ...body, instructor_id: user._id as unknown as string, category: body.category || [] }, user as IInstructor), {
                 body: AddExaminationSchema
             })
-            .patch('/:id', async ({ params, body, controller }) => await controller.updateExamination(params.id, body), {
+            .patch('/:id', async ({ params, body, controller, user }) => await controller.updateExamination(params.id, body, user as IInstructor), {
                 body: updateExaminationSchema
             })
-            .delete('/:id', async ({ params, controller }) => await controller.deleteExamination(params.id))
+            .delete('/:id', async ({ params, controller, user }) => await controller.deleteExamination(params.id, user as IInstructor))
 
             // Question-Only routes
-            .post('/question/:id', async ({ params, body, controller }) => await controller.addExaminationQuestion(params.id, body), {
+            .post('/question/:id', async ({ params, body, controller, user }) => await controller.addExaminationQuestion(params.id, body, user as IInstructor), {
                 body: QuestionFormSchema
             })
-            .delete('/question/:id', async({ user, params, controller }) => await controller.deleteQuestion(user._id as unknown as string, params.id))
+            .delete('/question/:id', async({ user, params, controller }) => await controller.deleteQuestion(user._id as unknown as string, params.id, user as IInstructor))
             
     )

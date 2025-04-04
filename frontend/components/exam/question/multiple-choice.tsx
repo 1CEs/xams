@@ -1,4 +1,4 @@
-import { Button, Checkbox, Chip } from '@nextui-org/react'
+import { Button, Checkbox, Chip, Input } from '@nextui-org/react'
 import React, { useState } from 'react'
 import TextEditor from '../../text-editor'
 import { MdiBin, MingcuteAddFill } from '../../icons/icons'
@@ -19,6 +19,22 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number }) => {
         setFieldValue('choices', values.choices.filter((_, i) => i !== number))
     }
 
+    const calculatePercentages = (currentAnswers: string[]) => {
+        const checkedCount = currentAnswers.length
+        if (checkedCount === 0) return {}
+        
+        const percentage = 100 / checkedCount
+        const percentages: Record<number, number> = {}
+        
+        values.choices.forEach((choice, idx) => {
+            if (currentAnswers.includes(choice)) {
+                percentages[idx] = percentage
+            }
+        })
+        
+        return percentages
+    }
+
     const handleToggleCorrectAnswer = (isSelected: boolean) => {
         const choiceValue = values.choices[number]
 
@@ -35,14 +51,21 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number }) => {
             return
         }
 
+        let newAnswers: string[]
         if (isSelected) {
-            setFieldValue('answer', [...values.answer, choiceValue])
+            newAnswers = [...values.answer, choiceValue]
+            setFieldValue('answer', newAnswers)
             setStateColor('secondary')
-            console.log(values)
         } else {
-            setFieldValue('answer', values.answer.filter((ans) => ans !== choiceValue))
+            newAnswers = values.answer.filter((ans) => ans !== choiceValue)
+            setFieldValue('answer', newAnswers)
             setStateColor('default')
         }
+
+        // Calculate and update percentages for all correct answers
+        const percentages = calculatePercentages(newAnswers)
+        setFieldValue('percentages', percentages)
+        
         setRequiredInput('')
     }
 
@@ -58,15 +81,31 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number }) => {
             </Chip>
             <div className="flex flex-col w-full">
                 <div className="flex justify-between items-center pb-6">
-                    <Checkbox
-                        name={`choices.${number}.is_correct`}
-                        color="secondary"
-                        isSelected={values.answer.includes(values.choices[number])}
-                        onValueChange={(isSelected) => handleToggleCorrectAnswer(isSelected)}
-                        size="lg"
-                    >
-                        <span className={`text-tiny text-${stateColor}`}>{requiredInput ? requiredInput : 'Set as correct answer'}</span>
-                    </Checkbox>
+                    <div className="flex items-center gap-2">
+                        <Checkbox
+                            name={`choices.${number}.is_correct`}
+                            color="secondary"
+                            isSelected={values.answer.includes(values.choices[number])}
+                            onValueChange={(isSelected) => handleToggleCorrectAnswer(isSelected)}
+                            size="lg"
+                        >
+                            <span className={`text-tiny text-${stateColor}`}>{requiredInput ? requiredInput : 'Set as correct answer'}</span>
+                        </Checkbox>
+                        {values.answer.includes(values.choices[number]) && (
+                            <Input
+                                type="number"
+                                size="sm"
+                                min={-100}
+                                max={100}
+                                value={values.percentages?.[number]?.toString() || '0'}
+                                isReadOnly
+                                className="w-20"
+                                classNames={{
+                                    input: "text-center"
+                                }}
+                            />
+                        )}
+                    </div>
                     {number < 2 ? (
                         <span className="text-tiny text-foreground/50">Mandatory</span>
                     ) : (
