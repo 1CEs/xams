@@ -18,6 +18,7 @@ import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { today, getLocalTimeZone } from '@internationalized/date'
 import { LearnersTable } from "@/components/course/learner-table"
+import { useRouter } from "next/navigation"
 
 export default function CoursePage() {
     const params = useSearchParams()
@@ -25,6 +26,7 @@ export default function CoursePage() {
     const { data, error, isLoading } = useFetch<ServerResponse<CourseResponse>>(`/course/${_id}`)
     const { isOpen, onOpen, onOpenChange } = useDisclosure()
     const { trigger, setTrigger } = useTrigger()
+    const router = useRouter()
 
     // State for modals
     const [groupToDelete, setGroupToDelete] = useState<string | null>(null)
@@ -32,6 +34,7 @@ export default function CoursePage() {
     const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onOpenChange: onDeleteModalOpenChange } = useDisclosure()
     const { isOpen: isDeleteExamModalOpen, onOpen: onDeleteExamModalOpen, onOpenChange: onDeleteExamModalOpenChange } = useDisclosure()
     const { isOpen: isScheduleModalOpen, onOpen: onScheduleModalOpen, onOpenChange: onScheduleModalOpenChange } = useDisclosure()
+    const { isOpen: isDeleteCourseModalOpen, onOpen: onDeleteCourseModalOpen, onOpenChange: onDeleteCourseModalOpenChange } = useDisclosure()
 
     const openDeleteConfirmation = (groupName: string) => {
         setGroupToDelete(groupName)
@@ -67,6 +70,18 @@ export default function CoursePage() {
             toast.success('Examination schedule deleted successfully')
             setTrigger(!trigger)
             setExamToDelete(null)
+        } catch (err) {
+            console.error(err)
+            errorHandler(err)
+        }
+    }
+
+    const handleDeleteCourse = async () => {
+        try {
+            const res = await clientAPI.delete(`/course/${_id}`)
+            toast.success('Course deleted successfully')
+            // Redirect to courses page after deletion
+            router.push('/overview')
         } catch (err) {
             console.error(err)
             errorHandler(err)
@@ -325,6 +340,17 @@ export default function CoursePage() {
                         onAction={handleDeleteExam}
                     />
                 </Modal>
+
+                {/* Course deletion confirmation modal */}
+                <Modal isOpen={isDeleteCourseModalOpen} onOpenChange={onDeleteCourseModalOpenChange}>
+                    <ConfirmModal
+                        header="Delete Course"
+                        subHeader="Are you sure you want to delete this course?"
+                        content={`This will permanently delete the course "${data.data.course_name}" and all associated groups, exams, and student data. This action cannot be undone.`}
+                        onAction={handleDeleteCourse}
+                    />
+                </Modal>
+
                 <div className="flex flex-wrap gap-x-2">
                     <Tooltip content="Examination Schedule">
                         <Button
@@ -347,9 +373,11 @@ export default function CoursePage() {
                     <Button color="warning" isIconOnly>
                         <FluentSettings16Filled fontSize={24} />
                     </Button>
-                    <Button color="danger" isIconOnly>
-                        <MdiBin fontSize={24} />
-                    </Button>
+                    <Tooltip content="Delete Course">
+                        <Button color="danger" isIconOnly onPress={onDeleteCourseModalOpen}>
+                            <MdiBin fontSize={24} />
+                        </Button>
+                    </Tooltip>
                 </div>
 
                 {/* Examination Schedule Modal */}
