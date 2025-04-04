@@ -1,4 +1,11 @@
-export const extractHtml = (html: string) => {
+export const extractHtml = (html: string | { content: string; isCorrect: boolean } | undefined) => {
+    if (!html) return ''
+    
     const regex = /<[^>]*>/g
-    return html.replace(regex, "")
+    if (typeof html === 'string') {
+        return html.replace(regex, "")
+    }
+    
+    if (!html.content) return ''
+    return html.content.replace(regex, "")
 }

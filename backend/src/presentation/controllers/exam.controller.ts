@@ -59,8 +59,15 @@ export class ExaminationController implements IExaminationController {
                     
                     return {
                         ...question,
-                        hasAnswers: question.answer && question.answer.length > 0,
-                        answer: encryptRSA(question.answer.length.toString(), process.env.PUBLIC_KEY as string)
+                        hasAnswers: (question.type === 'mc' && question.choices?.some(c => c.isCorrect)) || 
+                                  (question.type === 'tf' && question.isTrue !== undefined) ||
+                                  (['ses', 'les'].includes(question.type) && question.expectedAnswer !== undefined),
+                        answer: encryptRSA(
+                            (question.type === 'mc' ? question.choices?.filter(c => c.isCorrect).length.toString() :
+                            question.type === 'tf' ? question.isTrue?.toString() :
+                            question.expectedAnswer?.length.toString()) || '0',
+                            process.env.PUBLIC_KEY as string
+                        )
                     };
                 });
             }

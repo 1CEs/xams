@@ -1,14 +1,18 @@
-import { Input } from '@nextui-org/react'
-import React from 'react'
+import { useFormikContext } from 'formik'
+import TextEditor from '../../text-editor'
 
-type Props = {}
+const ShortEssayForm = () => {
+    const { setFieldValue, values } = useFormikContext<QuestionForm>()
 
-const ShortEssayForm = (props: Props) => {
-  return (
-    <div className='flex gap-x-4 px-10'>
-        <Input placeholder='Enter your answer' maxLength={150}/>
-    </div>
-  )
+    return (
+        <div className="px-10 flex flex-col gap-y-4">
+            <TextEditor
+                name="expectedAnswer"
+                type="unnested"
+                className="min-h-[150px]"
+            />
+        </div>
+    )
 }
 
 export default ShortEssayForm

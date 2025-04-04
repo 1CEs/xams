@@ -52,20 +52,33 @@ const NewQuestionForm = ({ examination_id }: Props) => {
             initialValues={{
                 question: '',
                 type: 'mc',
-                choices: ["", ""],
-                answer: [],
+                choices: [{ content: '', isCorrect: false }, { content: '', isCorrect: false }],
+                isTrue: false,
+                expectedAnswer: '',
+                maxWords: 0,
                 score: 1
             }}
             onSubmit={async (
                 values: QuestionForm,
-                { setSubmitting }: FormikHelpers<QuestionForm>
+                formikHelpers: FormikHelpers<QuestionForm>
             ) => {
                 try {
-                    setSubmitting(false)
+                    formikHelpers.setSubmitting(false)
                     console.log(values)
                     const res = await clientAPI.post(`exam/question/${examination_id}`, values)
                     toast.success(res.data.message)
                     setTrigger(!trigger)
+                    formikHelpers.resetForm({
+                        values: {
+                            question: '',
+                            type: 'mc',
+                            choices: [{ content: '', isCorrect: false }, { content: '', isCorrect: false }],
+                            isTrue: false,
+                            expectedAnswer: '',
+                            maxWords: 0,
+                            score: 1
+                        }
+                    })
                 } catch (error) {
                     errorHandler(error)
                 }

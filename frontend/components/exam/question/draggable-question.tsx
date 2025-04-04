@@ -1,13 +1,14 @@
 import { CarbonTextLongParagraph, HealthiconsIExamMultipleChoice, MdiDrag, PajamasFalsePositive, UilParagraph } from "@/components/icons/icons"
 import { useDndContext } from "@dnd-kit/core"
 import { useSortable } from "@dnd-kit/sortable"
-import { Accordion, AccordionItem } from "@nextui-org/react"
+import { Accordion, AccordionItem, Card, CardBody, CardHeader, Divider, Spinner, Checkbox, Button, Textarea, CardFooter, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react"
 import { CSS } from "@dnd-kit/utilities"
 import { extractHtml } from "@/utils/extract-html"
+import { useState } from "react"
 
 interface DraggableQuestionProps {
+    question: QuestionForm
     id: number
-    question: QuestionWithIdentifier<QuestionForm>
     disableDrag?: boolean
 }
 
@@ -24,8 +25,9 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
     })
 
     const { active } = useDndContext()
-
     const isDragging = active?.id === id
+
+    const [isOpen, setIsOpen] = useState<boolean>(false)
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -34,8 +36,7 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
     }
 
     const extractedQuestion = extractHtml(question.question)
-    const extractedChoices = question.choices.map((choice) => extractHtml(choice))
-    const extractedAnswer = question.answer.map((answer) => extractHtml(answer))
+    const extractedChoices = question.choices?.map((choice) => extractHtml(choice)) || []
 
     const matchQuestionType = (type: QuestionSelector) => {
         switch (type) {
@@ -63,61 +64,54 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex w-full items-center rounded-lg shadow-md ${isDragging ? "opacity-75 border border-secondary shadow-lg" : ""}`}
-        >
-            <Accordion variant="splitted" isCompact className="w-full">
-                <AccordionItem
-                    startContent={matchIconType[question.type]}
-                    title={
-                        <div className="flex justify-between items-center">
-                            <span className="truncate w-5/6 text-sm font-medium">
-                                {question.id + ". "}{extractedQuestion.length > 50 ? `${extractedQuestion.slice(0, 50)}...` : extractedQuestion}
-                            </span>
-                            {!disableDrag && (
-                                <span
-                                    {...listeners}
-                                    {...attributes}
-                                    className="text-xl cursor-grab active:cursor-grabbing ml-2"
-                                >
-                                    <MdiDrag />
-                                </span>
-                            )}
-                        </div>
-                    }
-                >
-                    <div className="flex flex-col text-sm space-y-2">
-                        <Accordion>
-                            <AccordionItem
-                                title={<span className="truncate text-sm font-medium">Choices ({question.choices.length})</span>}
-                                isCompact
-                            >
-                                <ul className="list-disc ml-4">
-                                    {extractedChoices.map((choice, index) => (
-                                        <li key={index}>{choice}</li>
-                                    ))}
-                                </ul>
-                            </AccordionItem>
-                        </Accordion>
+            {...attributes}
+            {...listeners}
+            className={`${disableDrag ? 'cursor-not-allowed' : 'cursor-move'} w-[400px] max-w-[500px]`}
 
-                        <Accordion>
-                            <AccordionItem
-                                title={<span className="truncate text-sm font-medium">Answer ({question.answer.length})</span>}
-                                isCompact
-                            >
-                                <ul className="list-disc ml-4">
-                                    {extractedAnswer.map((answer, index) => (
-                                        <li key={index}>{answer}</li>
-                                    ))}
-                                </ul>
-                            </AccordionItem>
-                        </Accordion>
-                        <div className="flex justify-between items-center font-bold">
-                            <span className="text-tiny text-foreground/50">{matchQuestionType(question.type)}</span>
-                            <span className="text-tiny text-foreground/50">{question.score + " "}<span className="text-danger">*</span></span>
+        >
+
+            <Card>
+                <CardHeader>
+                    <div className="flex gap-3 w-full">
+                        <div className="flex items-center justify-between gap-3">
+                            {matchIconType[question.type]}
+                            <div className="flex flex-col">
+                                <p className="text-md">{matchQuestionType(question.type)}</p>
+                                <p className="text-small text-default-500">Score: {question.score}</p>
+                            </div>
                         </div>
                     </div>
-                </AccordionItem>
-            </Accordion>
+
+                    <Button onPress={() => setIsOpen(!isOpen)} variant="flat" color="secondary" size="sm">Show</Button>
+                </CardHeader>
+                {isOpen && <Divider />}
+                {isOpen && <CardBody>
+                    <p className="line-clamp-2">{extractedQuestion}</p>
+                    {question.type === 'mc' && (
+                        <div className="mt-4">
+                            {extractedChoices.map((choice, index) => (
+                                <div key={index} className="flex items-center gap-2 mb-2">
+                                    <Checkbox color="secondary" isSelected={question.choices?.[index]?.isCorrect} />
+                                    <span>{choice}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {question.type === 'tf' && (
+                        <div className="mt-4">
+                            <p>Correct Answer: {question.isTrue ? 'True' : 'False'}</p>
+                        </div>
+                    )}
+                    {(question.type === 'ses' || question.type === 'les') && (
+                        <div className="mt-4">
+                            <p>Expected Answer: {extractHtml(question.expectedAnswer || '')}</p>
+                            {question.type === 'les' && (
+                                <p className="text-small text-default-500">Max Words: {question.maxWords}</p>
+                            )}
+                        </div>
+                    )}
+                </CardBody>}
+            </Card>
         </div>
     )
 }

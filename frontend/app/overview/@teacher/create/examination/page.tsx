@@ -120,9 +120,23 @@ export default function CreateExaminationPage() {
             el.addEventListener('change', async (e: Event) => {
                 const file = (e as unknown as ChangeEvent<HTMLInputElement>).target.files?.[0]
                 if (file) {
+                    // Validate file type
+                    if (!file.name.endsWith('.txt')) {
+                        toast.error('Please upload a .txt file')
+                        return
+                    }
+
+                    // Validate file size (max 1MB)
+                    if (file.size > 1024 * 1024) {
+                        toast.error('File size should be less than 1MB')
+                        return
+                    }
+
                     const formData = new FormData()
                     formData.append('file', file)
+
                     try {
+                        toast.info('Uploading questions...')
                         const res = await clientAPI.post('/upload/aiken', formData, {
                             headers: {
                                 "Content-Type": "multipart/form-data",
@@ -131,17 +145,34 @@ export default function CreateExaminationPage() {
 
                         const { message, code, data } = res.data
 
+                        if (code !== 200 || !data || data.length === 0) {
+                            toast.error(message || 'Failed to import questions')
+                            return
+                        }
+
+                        // Upload each question to the exam
+                        let successCount = 0
                         for (let i = 0; i < data.length; i++) {
-                            const update = await clientAPI.post(`exam/question/${_id}`, res.data.data[i])
-                            if (code == 200) {
-                                toast.success(update.data.message)
+                            try {
+                                const update = await clientAPI.post(`exam/question/${_id}`, data[i])
+                                if (update.data.code === 200) {
+                                    successCount++
+                                }
+                            } catch (error) {
+                                console.error(`Failed to add question ${i + 1}:`, error)
                             }
                         }
 
-                        setTrigger(!trigger)
+                        if (successCount > 0) {
+                            toast.success(`Successfully imported ${successCount} questions`)
+                            setTrigger(!trigger)
+                        } else {
+                            toast.error('Failed to add any questions to the exam')
+                        }
 
                     } catch (error) {
                         console.error('Error uploading file:', error)
+                        toast.error('Failed to process the Aiken file. Please check the format and try again.')
                     }
                 }
             })

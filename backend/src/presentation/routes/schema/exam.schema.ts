@@ -14,8 +14,13 @@ export const QuestionFormSchema = t.Object({
         t.Literal('mc'),
         t.Literal('ses')
     ], { description: 'Question type is required' }),
-    choices: t.Array(t.String({ description: 'Choices are required' })),
-    answer: t.Array(t.String({ description: 'Answer is required' }), { min: 1, max: 4 }),
+    choices: t.Optional(t.Array(t.Object({
+        content: t.String(),
+        isCorrect: t.Boolean()
+    }))),
+    isTrue: t.Optional(t.Boolean()),
+    expectedAnswer: t.Optional(t.String()),
+    maxWords: t.Optional(t.Number()),
     score: t.Number({ description: 'Score is required' })
 })
 

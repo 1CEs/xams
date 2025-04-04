@@ -7,13 +7,20 @@ import { errorHandler } from '@/utils/error'
 import { Card, CardBody, CardHeader, Divider, Spinner, Checkbox, Button, Textarea, CardFooter, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@nextui-org/react'
 import { HealthiconsIExamMultipleChoice } from '@/components/icons/icons'
 import { extractHtml } from '@/utils/extract-html'
+import Anya from '@/public/images/anya.png'
+import { Image } from '@nextui-org/react'
 
 interface Question {
   _id: string
   question: string
-  type: string
-  choices: string[]
-  answer: string[]
+  type: 'mc' | 'tf' | 'ses' | 'les'
+  choices?: {
+    content: string
+    isCorrect: boolean
+  }[]
+  isTrue?: boolean
+  expectedAnswer?: string
+  maxWords?: number
   score: number
 }
 
@@ -173,6 +180,15 @@ const PreviewExaminationPage = () => {
     }))
   }
 
+  const handleTrueFalseChange = (questionId: string, value: boolean) => {
+    setAnswers(prev => prev.map(answer => {
+      if (answer.questionId === questionId) {
+        return { ...answer, answers: [value.toString()] }
+      }
+      return answer
+    }))
+  }
+
   const handleEssayChange = (questionId: string, value: string) => {
     setAnswers(prev => prev.map(answer => {
       if (answer.questionId === questionId) {
@@ -196,12 +212,21 @@ const PreviewExaminationPage = () => {
     let correctAnswers = 0
     const details = exam.questions.map(question => {
       const userAnswer = answers.find(a => a.questionId === question._id)
-      const isCorrect = question.type === 'ses' || question.type === 'les'
-        ? true // Essay questions are always marked as correct for preview
-        : userAnswer?.answers
-          ? question.answer.every(ans => userAnswer.answers.includes(ans)) &&
-          userAnswer.answers.every(ans => question.answer.includes(ans))
-          : false
+      let isCorrect = false
+
+      if (question.type === 'mc') {
+        // For multiple choice, check if all correct choices are selected and no incorrect ones
+        const correctChoices = question.choices?.filter(c => c.isCorrect).map(c => c.content) || []
+        isCorrect = userAnswer?.answers.length === correctChoices.length &&
+          correctChoices.every(ans => userAnswer.answers.includes(ans)) &&
+          userAnswer.answers.every(ans => correctChoices.includes(ans))
+      } else if (question.type === 'tf') {
+        // For true/false, check if the answer matches isTrue
+        isCorrect = userAnswer?.answers[0] === question.isTrue?.toString()
+      } else if (question.type === 'ses' || question.type === 'les') {
+        // For essay questions, always mark as correct in preview mode
+        isCorrect = true
+      }
 
       if (isCorrect) {
         obtainedScore += question.score
@@ -213,7 +238,11 @@ const PreviewExaminationPage = () => {
         questionId: question._id,
         isCorrect,
         userAnswer: userAnswer?.answers || [],
-        correctAnswer: question.answer,
+        correctAnswer: question.type === 'mc'
+          ? question.choices?.filter(c => c.isCorrect).map(c => c.content) || []
+          : question.type === 'tf'
+            ? [question.isTrue?.toString() || '']
+            : [],
         score: question.score
       }
     })
@@ -482,26 +511,29 @@ const PreviewExaminationPage = () => {
                     <div className="mb-4 flex justify-between">
                       <div>
                         <p className="text-lg font-medium">{extractHtml(question.question)}</p>
-                        <p className='text-sm text-foreground/50'>{question.answer.length > 1 ? 'Multiple' : 'Single'} Answer</p>
+                        <p className='text-sm text-foreground/50'>
+                          {question.type === 'mc' ? 'Multiple Choice' :
+                            question.type === 'tf' ? 'True/False' :
+                              question.type === 'ses' ? 'Short Essay' : 'Long Essay'}
+                        </p>
                       </div>
                       <p className="text-sm text-foreground/50">Score: {question.score}</p>
                     </div>
 
                     {question.type === 'mc' && (
                       <div className="flex flex-col space-y-2">
-                        {question.choices.map((choice, choiceIndex) => (
+                        {question.choices?.map((choice, choiceIndex) => (
                           <div key={choiceIndex} className="flex items-center gap-3">
                             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
                               {String.fromCharCode(65 + choiceIndex)}
                             </div>
                             <Checkbox
-                              isSelected={answers.find(a => a.questionId === question._id)?.answers.includes(choice) || false}
-                              onValueChange={() => handleCheckboxChange(question._id, choice, question.answer.length === 1)}
+                              isSelected={answers.find(a => a.questionId === question._id)?.answers.includes(choice.content) || false}
+                              onValueChange={() => handleCheckboxChange(question._id, choice.content, question.choices?.filter(c => c.isCorrect).length === 1)}
                               className="flex-grow p-3"
                             >
-                              {extractHtml(choice)}
+                              {extractHtml(choice.content)}
                             </Checkbox>
-
                           </div>
                         ))}
                       </div>
@@ -516,7 +548,7 @@ const PreviewExaminationPage = () => {
                             </div>
                             <Checkbox
                               isSelected={answers.find(a => a.questionId === question._id)?.answers.includes(option.toLowerCase()) || false}
-                              onValueChange={() => handleCheckboxChange(question._id, option.toLowerCase(), false)}
+                              onValueChange={() => handleTrueFalseChange(question._id, option === 'True')}
                               className="flex-grow p-3 rounded-lg border border-default-200"
                             >
                               {option}

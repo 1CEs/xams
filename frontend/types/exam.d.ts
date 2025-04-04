@@ -12,10 +12,14 @@ type QuestionSelector = 'mc' | 'tf' | 'ses' | 'les'
 type QuestionForm = {
     question: string
     type: QuestionSelector
-    choices: string[]
-    answer: string[]
+    choices?: {
+        content: string
+        isCorrect: boolean
+    }[]
+    isTrue?: boolean
+    expectedAnswer?: string
+    maxWords?: number
     score: number
-    percentages?: Record<number, number>
 }
 
 type QuestionWithIdentifier<T extends QuestionForm> = T & { id: number, _id: string }

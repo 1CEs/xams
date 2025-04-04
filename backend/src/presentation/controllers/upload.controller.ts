@@ -16,8 +16,8 @@ export class UploadController implements IUploadController {
         const lines = content.split("\n").map(line => line.trim())
 
         let currentQuestion: string | null = null
-        let choices: string[] = []
-        let correctAnswers: string[] = []
+        let choices: { content: string; isCorrect: boolean }[] = []
+        let correctAnswerIndex: number | null = null
 
         for (const line of lines) {
             if (!line) continue
@@ -29,30 +29,34 @@ export class UploadController implements IUploadController {
                     console.warn(`Invalid answer: ${answer}. Skipping question.`)
                     currentQuestion = null
                     choices = []
-                    correctAnswers = []
+                    correctAnswerIndex = null
                     continue
                 }
-                correctAnswers = [choices[answerIndex]]
+                correctAnswerIndex = answerIndex
 
                 if (currentQuestion) {
                     questions.push({
                         question: currentQuestion,
                         type: "mc",
-                        choices,
-                        answer: correctAnswers,
-                        category: [],
+                        choices: choices.map((choice, index) => ({
+                            content: choice.content,
+                            isCorrect: index === correctAnswerIndex
+                        })),
                         score: 1,
                     })
                 }
                 currentQuestion = null
                 choices = []
-                correctAnswers = []
+                correctAnswerIndex = null
                 continue
             }
 
             if (/^[A-Z][).]\s*.+/.test(line)) {
                 const choiceText = line.replace(/^[A-Z][).]\s*/, "")
-                choices.push(choiceText)
+                choices.push({
+                    content: choiceText,
+                    isCorrect: false
+                })
             } else {
                 currentQuestion = currentQuestion
                     ? `${currentQuestion} ${line}`
