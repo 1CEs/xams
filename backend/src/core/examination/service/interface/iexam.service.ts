@@ -14,4 +14,5 @@ export interface IExaminationService {
     addExaminationQuestion: (id: string, payload: Omit<IQuestion, '_id'>) => Promise<IExamination | null>
     updateQuestion: (id: string, question_id: string, payload: Partial<IQuestion>) => Promise<IExamination | null>
     deleteQuestion: (id: string, question_id: string) => Promise<IExamination | null>
+    addNestedQuestion: (id: string, payload: { question: string; type: string; score: number; questions: IQuestion[] }) => Promise<IExamination | null>
 }

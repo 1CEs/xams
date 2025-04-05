@@ -55,4 +55,10 @@ export class ExaminationService implements IExaminationService {
         const result = await this._repository.deleteQuestion(id, question_id)
         return result
     }
+
+    // Nested Question methods
+    async addNestedQuestion(id: string, payload: { question: string; type: string; score: number; questions: IQuestion[] }) {
+        const result = await this._repository.addNestedQuestion(id, payload)
+        return result
+    }
 }

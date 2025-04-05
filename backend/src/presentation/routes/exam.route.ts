@@ -1,7 +1,7 @@
 import Elysia, { t } from "elysia";
 import { ExaminationController } from "../controllers/exam.controller";
 import { tokenVerifier } from "../middleware/token-verify.middleware";
-import { AddExaminationSchema, QuestionFormSchema, updateExaminationSchema } from "./schema/exam.schema";
+import { AddExaminationSchema, QuestionFormSchema, NestedQuestionSchema, updateExaminationSchema } from "./schema/exam.schema";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
 
 export const ExamRoute = new Elysia({ prefix: '/exam' })
@@ -33,4 +33,8 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
             })
             .delete('/question/:id', async({ user, params, controller }) => await controller.deleteQuestion(user._id as unknown as string, params.id, user as IInstructor))
             
+            // Nested Question routes
+            .post('/nested-question/:id', async ({ params, body, controller, user }) => await controller.addNestedQuestion(params.id, body, user as IInstructor), {
+                body: NestedQuestionSchema
+            })
     )

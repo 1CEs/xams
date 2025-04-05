@@ -5,6 +5,7 @@ import { Accordion, AccordionItem, Card, CardBody, CardHeader, Divider, Spinner,
 import { CSS } from "@dnd-kit/utilities"
 import { extractHtml } from "@/utils/extract-html"
 import { useState } from "react"
+import { IconParkTwotoneNestedArrows } from "@/components/icons/icons"
 
 interface DraggableQuestionProps {
     question: QuestionForm
@@ -22,6 +23,7 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
     } = useSortable({
         id,
         animateLayoutChanges: () => false,
+        disabled: disableDrag
     })
 
     const { active } = useDndContext()
@@ -36,7 +38,7 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
     }
 
     const extractedQuestion = extractHtml(question.question)
-    const extractedChoices = question.choices?.map((choice) => extractHtml(choice)) || []
+    const extractedChoices = question.choices?.map((choice: { content: string; isCorrect: boolean; }) => extractHtml(choice.content)) || []
 
     const matchQuestionType = (type: QuestionSelector) => {
         switch (type) {
@@ -48,6 +50,8 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
                 return "Multiple Choice"
             case "ses":
                 return "Short Essay"
+            case "nested":
+                return "Nested Question"
             default:
                 return "Unknown"
         }
@@ -57,7 +61,8 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
         tf: <PajamasFalsePositive />,
         les: <CarbonTextLongParagraph />,
         mc: <HealthiconsIExamMultipleChoice />,
-        ses: <UilParagraph />
+        ses: <UilParagraph />,
+        nested: <IconParkTwotoneNestedArrows />
     }
 
     return (
@@ -65,31 +70,32 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
             ref={setNodeRef}
             style={style}
             {...attributes}
-            {...listeners}
-            className={`${disableDrag ? 'cursor-not-allowed' : 'cursor-move'} w-[400px] max-w-[500px]`}
-
+            {...(disableDrag ? {} : listeners)}
+            className={`${disableDrag ? 'cursor-default' : 'cursor-move'} w-[400px] max-w-[500px]`}
         >
-
             <Card>
                 <CardHeader>
-                    <div className="flex gap-3 w-full">
+                    <div className="flex gap-3 justify-between w-full">
                         <div className="flex items-center justify-between gap-3">
-                            {matchIconType[question.type]}
+                            {!disableDrag && <MdiDrag className="text-gray-400" />}
+                            {matchIconType[question.type as keyof typeof matchIconType]}
                             <div className="flex flex-col">
-                                <p className="text-md">{matchQuestionType(question.type)}</p>
+                                <p className="text-md line-clamp-1">{extractedQuestion.substring(0, 30)}...</p>
+                                <p className="text-tiny">{matchQuestionType(question.type)}</p>
                                 <p className="text-small text-default-500">Score: {question.score}</p>
                             </div>
                         </div>
+                        <Button onPress={() => setIsOpen(!isOpen)} variant="flat" color="secondary" size="sm">
+                            {isOpen ? "Hide" : "Show"}
+                        </Button>
                     </div>
-
-                    <Button onPress={() => setIsOpen(!isOpen)} variant="flat" color="secondary" size="sm">Show</Button>
                 </CardHeader>
                 {isOpen && <Divider />}
                 {isOpen && <CardBody>
                     <p className="line-clamp-2">{extractedQuestion}</p>
                     {question.type === 'mc' && (
                         <div className="mt-4">
-                            {extractedChoices.map((choice, index) => (
+                            {extractedChoices.map((choice: string, index: number) => (
                                 <div key={index} className="flex items-center gap-2 mb-2">
                                     <Checkbox color="secondary" isSelected={question.choices?.[index]?.isCorrect} />
                                     <span>{choice}</span>
@@ -108,6 +114,41 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
                             {question.type === 'les' && (
                                 <p className="text-small text-default-500">Max Words: {question.maxWords}</p>
                             )}
+                        </div>
+                    )}
+                    {question.type === 'nested' && question.questions && (
+                        <div className="mt-4">
+                            <p className="font-semibold mb-2">Sub-questions:</p>
+                            <div className="space-y-4">
+                                {question.questions.map((subQuestion, index) => (
+                                    <div key={index} className="border-l-2 border-gray-200 pl-4">
+                                        <p className="text-sm font-medium">{extractHtml(subQuestion.question)}</p>
+                                        <p className="text-xs text-gray-500">{matchQuestionType(subQuestion.type)}</p>
+                                        <p className="text-xs text-gray-500">Score: {subQuestion.score}</p>
+                                        {subQuestion.type === 'mc' && subQuestion.choices && (
+                                            <div className="mt-2">
+                                                {subQuestion.choices.map((choice, choiceIndex) => (
+                                                    <div key={choiceIndex} className="flex items-center gap-2 mb-1">
+                                                        <Checkbox color="secondary" isSelected={choice.isCorrect} />
+                                                        <span className="text-xs">{extractHtml(choice.content)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {subQuestion.type === 'tf' && (
+                                            <p className="text-xs mt-1">Correct Answer: {subQuestion.isTrue ? 'True' : 'False'}</p>
+                                        )}
+                                        {(subQuestion.type === 'ses' || subQuestion.type === 'les') && (
+                                            <div className="mt-2">
+                                                <p className="text-xs">Expected Answer: {extractHtml(subQuestion.expectedAnswer || '')}</p>
+                                                {subQuestion.type === 'les' && (
+                                                    <p className="text-xs text-gray-500">Max Words: {subQuestion.maxWords}</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </CardBody>}

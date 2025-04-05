@@ -1,29 +1,26 @@
-import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import React from "react";
+import { useDroppable } from '@dnd-kit/core'
+import { ReactNode } from 'react'
 
-type Props = {
-    id: string;
-    children?: React.ReactNode;
-};
+interface DroppableQuestionProps {
+    id: string
+    children: ReactNode
+}
 
-const DroppableQuestion = ({ id, children }: Props) => {
-    const { isOver, setNodeRef } = useDroppable({
+const DroppableQuestion = ({ id, children }: DroppableQuestionProps) => {
+    const { setNodeRef, isOver } = useDroppable({
         id,
     })
-
-    const style = {
-        backgroundColor: isOver ? "rgba(0, 128, 0, 0.1)" : "#101010",
-    }
-
+    
     return (
-        <SortableContext id={id} items={[]} strategy={verticalListSortingStrategy}>
-            <div ref={setNodeRef} style={style} className="rounded-md w-3/4 border-secondary border-dashed border-2 min-h-[300px] max-h-fit p-6">
-                {children || "Drop here"}
-            </div>
-        </SortableContext>
-
+        <div
+            ref={setNodeRef}
+            className={` w-full border-2 border-dashed rounded-lg p-4 transition-colors ${
+                isOver ? 'border-primary bg-primary/10' : 'border-secondary'
+            }`}
+        >
+            {children}
+        </div>
     )
 }
 
-export default DroppableQuestion;
+export default DroppableQuestion

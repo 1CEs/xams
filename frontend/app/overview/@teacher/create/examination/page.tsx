@@ -7,7 +7,7 @@ import ConfirmModal from "@/components/modals/confirm-modal"
 import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, IcRoundFolder, MdiBin, MingcuteAddFill, MingcuteFileNewFill, PhEyeDuotone, SystemUiconsReuse } from "@/components/icons/icons"
 import { clientAPI } from "@/config/axios.config"
 import { errorHandler } from "@/utils/error"
-import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Modal, Textarea, Tooltip, useDisclosure } from "@nextui-org/react"
+import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Modal, ModalContent, ModalHeader, ModalBody, Textarea, Tooltip, useDisclosure } from "@nextui-org/react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { ChangeEvent, useEffect, useState } from "react"
 import {
@@ -34,9 +34,11 @@ import { toast } from "react-toastify"
 
 export default function CreateExaminationPage() {
     const router = useRouter()
-    const params = useSearchParams()
-    const _id = params.get('id')
-    const [exam, setExam] = useState<ExamResponse | null>(null)
+    const searchParams = useSearchParams()
+    const _id = searchParams.get('id')
+    const { isOpen, onOpen, onOpenChange } = useDisclosure()
+    const [deleteQuestionModal, setDeleteQuestionModal] = useState({ isOpen: false, questionId: '' })
+    const [exam, setExam] = useState<any>(null)
     const [isNewQuestion, setIsNewQuestion] = useState<boolean>(false)
     const [isNestedQuestion, setIsNestedQuestion] = useState<boolean>(false)
     const { questionList, setQuestionList, initializeQuestionList } = useQuestionListStore()
@@ -44,12 +46,13 @@ export default function CreateExaminationPage() {
     const [activeId, setActiveId] = useState<number | null>(null)
     const { trigger, setTrigger } = useTrigger()
     const [isEditing, setIsEditing] = useState<boolean>(false)
-    const { isOpen, onOpen, onClose, onOpenChange } = useDisclosure()
     const [formValues, setFormValues] = useState({
         title: '',
         description: '',
         category: [] as string[]
     })
+    const [currentPage, setCurrentPage] = useState(1)
+    const questionsPerPage = 5
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -98,10 +101,10 @@ export default function CreateExaminationPage() {
 
         if (activeId === overId) return
 
-        if (String(overId).startsWith("nested-")) {
-            setQuestionList((prev) => prev.filter((item) => item.id !== activeId))
+        if (overId === "nested-questions") {
             const draggedItem = questionList.find((item) => item.id === activeId)
             if (draggedItem) {
+                setQuestionList((prev) => prev.filter((item) => item.id !== activeId))
                 setNestedQuestions((prev) => [...prev, draggedItem])
             }
         } else {
@@ -180,10 +183,20 @@ export default function CreateExaminationPage() {
     }
 
     const onDeleteQuestion = async (id: string) => {
-        console.log(id)
-        const res = await clientAPI.delete(`exam/question/${id}`)
-        console.log(res)
-        setTrigger(!trigger)
+        try {
+            const res = await clientAPI.delete(`exam/question/${id}`)
+            toast.success('Question deleted successfully')
+            setTrigger(!trigger)
+        } catch (error) {
+            console.error('Error deleting question:', error)
+            toast.error('Failed to delete question')
+            errorHandler(error)
+        }
+    }
+
+    const handleDeleteQuestion = async () => {
+        await onDeleteQuestion(deleteQuestionModal.questionId)
+        setDeleteQuestionModal({ isOpen: false, questionId: '' })
     }
 
     const handleDeleteExamination = async () => {
@@ -195,6 +208,16 @@ export default function CreateExaminationPage() {
             console.error('Error deleting examination:', error)
             errorHandler(error)
         }
+    }
+
+    // Add pagination logic
+    const indexOfLastQuestion = currentPage * questionsPerPage
+    const indexOfFirstQuestion = indexOfLastQuestion - questionsPerPage
+    const currentQuestions = questionList.slice(indexOfFirstQuestion, indexOfLastQuestion)
+    const totalPages = Math.ceil(questionList.length / questionsPerPage)
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page)
     }
 
     if (exam) {
@@ -359,30 +382,80 @@ export default function CreateExaminationPage() {
                             :
 
                             <div className="flex flex-col gap-y-3">
-
-                                <SortableContext items={questionList} strategy={verticalListSortingStrategy}>
-                                    {
-                                        questionList.map((question, index) => (
-                                            <div className="flex gap-x-3" key={index}>
-                                                <DraggableQuestion question={question} id={question.id} />
-                                                <Tooltip content="Delete question">
-                                                    <Button
-                                                        size="sm"
-                                                        isIconOnly
-                                                        variant="flat"
-                                                        color="danger"
-                                                        className="hover:animate-pulse"
-                                                        onPress={() => onDeleteQuestion(question._id)}
-                                                    >
-                                                        <MdiBin fontSize={16} />
-                                                    </Button>
-                                                </Tooltip>
-                                            </div>
-
-                                        ))
-                                    }
+                                <SortableContext items={currentQuestions} strategy={verticalListSortingStrategy}>
+                                    {currentQuestions.map((question, index) => (
+                                        <div className="flex gap-x-3" key={index}>
+                                            <DraggableQuestion question={question} id={question.id} />
+                                            <Tooltip content="Delete question">
+                                                <Button
+                                                    size="sm"
+                                                    isIconOnly
+                                                    variant="flat"
+                                                    color="danger"
+                                                    className="hover:animate-pulse"
+                                                    onPress={() => setDeleteQuestionModal({ isOpen: true, questionId: question._id! })}
+                                                >
+                                                    <MdiBin fontSize={16} />
+                                                </Button>
+                                            </Tooltip>
+                                        </div>
+                                    ))}
                                 </SortableContext>
-                                <DragOverlay>{activeId ? <DraggableQuestion question={questionList.find((item) => item.id === activeId)!} id={activeId} /> : null}</DragOverlay>
+                                
+                                {/* Pagination Controls */}
+                                {totalPages > 1 && (
+                                    <div className="flex gap-2 mt-4">
+                                        <Button
+                                            size="sm"
+                                            variant="flat"
+                                            isDisabled={currentPage === 1}
+                                            onPress={() => handlePageChange(currentPage - 1)}
+                                        >
+                                            Previous
+                                        </Button>
+                                        <div className="flex gap-1">
+                                            {currentPage > 1 && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="flat"
+                                                    onPress={() => handlePageChange(1)}
+                                                >
+                                                    1
+                                                </Button>
+                                            )}
+                                            {currentPage > 2 && (
+                                                <span className="flex items-center">...</span>
+                                            )}
+                                            <Button
+                                                size="sm"
+                                                variant="solid"
+                                                color="secondary"
+                                            >
+                                                {currentPage}
+                                            </Button>
+                                            {currentPage < totalPages - 1 && (
+                                                <span className="flex items-center">...</span>
+                                            )}
+                                            {currentPage < totalPages && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="flat"
+                                                    onPress={() => handlePageChange(totalPages)}
+                                                >
+                                                    {totalPages}
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            variant="flat"
+                                            isDisabled={currentPage === totalPages}
+                                            onPress={() => handlePageChange(currentPage + 1)}
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                )}
                             </div>}
                     </div>
                     {isNewQuestion ?
@@ -390,7 +463,7 @@ export default function CreateExaminationPage() {
                         : null
                     }
                     {isNestedQuestion ?
-                        <NestedQuestionForm />
+                        <NestedQuestionForm examinationId={_id || ''} />
                         : null
                     }
                 </div>
@@ -402,6 +475,16 @@ export default function CreateExaminationPage() {
                         subHeader="Are you sure you want to delete this examination?" 
                         content="This action cannot be undone. All questions and data associated with this examination will be permanently deleted."
                         onAction={handleDeleteExamination}
+                    />
+                </Modal>
+
+                {/* Delete Question Confirmation Modal */}
+                <Modal isOpen={deleteQuestionModal.isOpen} onOpenChange={() => setDeleteQuestionModal({ isOpen: false, questionId: '' })}>
+                    <ConfirmModal 
+                        header="Delete Question" 
+                        subHeader="Are you sure you want to delete this question?" 
+                        content="This action cannot be undone. The question will be permanently deleted."
+                        onAction={handleDeleteQuestion}
                     />
                 </Modal>
             </DndContext>

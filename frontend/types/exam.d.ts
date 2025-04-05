@@ -7,7 +7,7 @@ type ExamResponse = {
     _id: string
 }
 
-type QuestionSelector = 'mc' | 'tf' | 'ses' | 'les'
+type QuestionSelector = "tf" | "les" | "mc" | "ses" | "nested"
 
 type QuestionForm = {
     question: string
@@ -20,9 +20,13 @@ type QuestionForm = {
     expectedAnswer?: string
     maxWords?: number
     score: number
+    questions?: QuestionForm[]
 }
 
-type QuestionWithIdentifier<T extends QuestionForm> = T & { id: number, _id: string }
+type QuestionWithIdentifier<T> = T & {
+    id: number
+    _id?: string
+}
 
 type NestedQuestionForm = {
     question: string

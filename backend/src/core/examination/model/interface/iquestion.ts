@@ -11,4 +11,5 @@ export interface IQuestion {
     expectedAnswer?: string
     maxWords?: number
     score: number
+    questions?: IQuestion[] // Only present when type is 'nested'
 }

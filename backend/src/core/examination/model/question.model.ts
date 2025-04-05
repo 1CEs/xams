@@ -1,51 +1,65 @@
 import mongoose from "mongoose";
 import { QuestionDocument } from "../../../types/exam";
 
-const { Schema } = mongoose
+const { Schema } = mongoose;
 
-export const QuestionSchema = new Schema<QuestionDocument>({
+const QuestionSchema = new Schema<QuestionDocument>({
     type: {
         type: Schema.Types.String,
         required: true,
-        enum: ['mc', 'tf', 'ses', 'les']
+        enum: ['mc', 'tf', 'ses', 'les', 'nested']
     },
     question: {
         type: Schema.Types.String,
         required: true
     },
-    // For multiple choice questions
-    choices: { 
+    choices: {
         type: [{
             content: String,
             isCorrect: Boolean
         }],
-        required: function() {
+        required: function () {
             return this.type === 'mc';
-        }
+        },
+        default: []
     },
-    // For true/false questions
     isTrue: {
         type: Schema.Types.Boolean,
-        required: function() {
+        required: function () {
             return this.type === 'tf';
-        }
+        },
+        default: false
     },
-    // For essay questions (both short and long)
     expectedAnswer: {
         type: Schema.Types.String,
-        required: function() {
+        required: function () {
             return this.type === 'ses' || this.type === 'les';
-        }
+        },
+        default: ''
     },
-    // For essay questions - maximum word count
     maxWords: {
         type: Schema.Types.Number,
-        required: function() {
+        required: function () {
             return this.type === 'les';
-        }
+        },
+        default: 0
     },
     score: {
         type: Schema.Types.Number,
         required: true
+    },
+    questions: [/* placeholder for recursion */]
+}, { _id: true });
+
+// 🧠 Recursive self-reference
+QuestionSchema.add({
+    questions: {
+        type: [QuestionSchema],
+        required: function () {
+            return this.type === 'nested';
+        },
+        default: []
     }
-}, { _id: true })
+});
+
+export { QuestionSchema };

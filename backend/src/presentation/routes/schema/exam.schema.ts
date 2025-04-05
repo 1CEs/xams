@@ -24,6 +24,13 @@ export const QuestionFormSchema = t.Object({
     score: t.Number({ description: 'Score is required' })
 })
 
+export const NestedQuestionSchema = t.Object({
+    question: t.String({ description: 'Question is required' }),
+    type: t.Literal('nested'),
+    score: t.Number({ description: 'Score is required' }),
+    questions: t.Array(QuestionFormSchema)
+})
+
 export const updateExaminationSchema = t.Object({
     title: t.Optional(t.String()),
     description: t.Optional(t.String()),
