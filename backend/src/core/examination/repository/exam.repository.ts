@@ -101,9 +101,9 @@ export class ExaminationRepository
             throw new Error(`Examination with ID ${id} not found`);
         }
 
-        preparedQuestions.forEach(async (question) => {
-            await this.removeQuestionFromNestedQuestion(id, result._id.toString(), question._id.toString());
-        })
+        // preparedQuestions.forEach(async (question) => {
+        //     await this.removeQuestionFromNestedQuestion(id, result._id.toString(), question._id.toString());
+        // })
 
         return result;
 

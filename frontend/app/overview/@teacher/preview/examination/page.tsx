@@ -13,7 +13,7 @@ import { Image } from '@nextui-org/react'
 interface Question {
   _id: string
   question: string
-  type: 'mc' | 'tf' | 'ses' | 'les'
+  type: 'mc' | 'tf' | 'ses' | 'les' | 'nested'
   choices?: {
     content: string
     isCorrect: boolean
@@ -22,6 +22,7 @@ interface Question {
   expectedAnswer?: string
   maxWords?: number
   score: number
+  questions?: Question[] // For nested questions
 }
 
 interface ExamResponse {
@@ -226,6 +227,25 @@ const PreviewExaminationPage = () => {
       } else if (question.type === 'ses' || question.type === 'les') {
         // For essay questions, always mark as correct in preview mode
         isCorrect = true
+      } else if (question.type === 'nested') {
+        // For nested questions, check all sub-questions
+        if (question.questions && userAnswer?.answers) {
+          const subQuestionAnswers = userAnswer.answers.map((ans, index) => {
+            const subQuestion = question.questions![index]
+            if (subQuestion.type === 'mc') {
+              const correctChoices = subQuestion.choices?.filter(c => c.isCorrect).map(c => c.content) || []
+              const userSubAnswers = ans.split(',')
+              return userSubAnswers.length === correctChoices.length &&
+                correctChoices.every(c => userSubAnswers.includes(c)) &&
+                userSubAnswers.every(u => correctChoices.includes(u))
+            } else if (subQuestion.type === 'tf') {
+              return ans === subQuestion.isTrue?.toString()
+            } else {
+              return true // For essay questions in nested questions
+            }
+          })
+          isCorrect = subQuestionAnswers.every(Boolean)
+        }
       }
 
       if (isCorrect) {
@@ -242,7 +262,15 @@ const PreviewExaminationPage = () => {
           ? question.choices?.filter(c => c.isCorrect).map(c => c.content) || []
           : question.type === 'tf'
             ? [question.isTrue?.toString() || '']
-            : [],
+            : question.type === 'nested' && question.questions
+              ? question.questions.map(q => 
+                  q.type === 'mc' 
+                    ? q.choices?.filter(c => c.isCorrect).map(c => c.content).join(',') || ''
+                    : q.type === 'tf'
+                      ? q.isTrue?.toString() || ''
+                      : ''
+                )
+              : [],
         score: question.score
       }
     })
@@ -472,7 +500,7 @@ const PreviewExaminationPage = () => {
                 </span>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-2">
+              <div className="flex flex-wrap gap-2">
                 {exam?.questions.map((question, index) => {
                   const isAnswered = isQuestionAnswered(question._id);
                   const isCurrentPage = Math.floor(index / questionsPerPage) + 1 === currentPage;
@@ -485,7 +513,7 @@ const PreviewExaminationPage = () => {
                       onPress={() => handleQuestionNavigation(index)}
                       className={`
                         ${!isCurrentPage && isAnswered ? 'border-success border' : ''}
-                        ${!isCurrentPage && !isAnswered ? 'border-danger border' : ''}
+                        ${!isCurrentPage && !isAnswered ? 'border-gray-500 border' : ''}
                       `}
                     >
                       {index + 1}
@@ -504,7 +532,7 @@ const PreviewExaminationPage = () => {
             <Card key={question._id} id={`question-${index}`} className="">
               <CardBody>
                 <div className="flex items-start gap-4 px-1">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary text-white text-sm flex items-center justify-center">
                     {startIndex + index + 1}
                   </div>
                   <div className="flex-grow">
@@ -514,7 +542,8 @@ const PreviewExaminationPage = () => {
                         <p className='text-sm text-foreground/50'>
                           {question.type === 'mc' ? 'Multiple Choice' :
                             question.type === 'tf' ? 'True/False' :
-                              question.type === 'ses' ? 'Short Essay' : 'Long Essay'}
+                              question.type === 'ses' ? 'Short Essay' :
+                                question.type === 'nested' ? 'Nested Question' : 'Long Essay'}
                         </p>
                       </div>
                       <p className="text-sm text-foreground/50">Score: {question.score}</p>
@@ -567,6 +596,101 @@ const PreviewExaminationPage = () => {
                         minRows={question.type === 'les' ? 5 : 2}
                         maxRows={question.type === 'les' ? 10 : 4}
                       />
+                    )}
+
+                    {question.type === 'nested' && question.questions && (
+                      <div className="space-y-4 mt-4">
+                        {question.questions.map((subQuestion, subIndex) => (
+                          <div key={subIndex} className="border-l-2 border-secondary pl-4">
+                            <p className="text-md font-medium mb-2">{extractHtml(subQuestion.question)}</p>
+                            <p className="text-sm text-foreground/50 mb-2">
+                              {subQuestion.type === 'mc' ? 'Multiple Choice' :
+                                subQuestion.type === 'tf' ? 'True/False' :
+                                  subQuestion.type === 'ses' ? 'Short Essay' : 'Long Essay'}
+                            </p>
+
+                            {subQuestion.type === 'mc' && (
+                              <div className="flex flex-col space-y-2">
+                                {subQuestion.choices?.map((choice, choiceIndex) => (
+                                  <div key={choiceIndex} className="flex items-center gap-3">
+                                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
+                                      {String.fromCharCode(65 + choiceIndex)}
+                                    </div>
+                                    <Checkbox
+                                      isSelected={answers.find(a => a.questionId === question._id)?.answers[subIndex]?.split(',').includes(choice.content) || false}
+                                      onValueChange={() => {
+                                        const currentAnswers = answers.find(a => a.questionId === question._id)?.answers || []
+                                        const subAnswers = currentAnswers[subIndex]?.split(',') || []
+                                        const newSubAnswers = subAnswers.includes(choice.content)
+                                          ? subAnswers.filter(a => a !== choice.content)
+                                          : [...subAnswers, choice.content]
+                                        const newAnswers = [...currentAnswers]
+                                        newAnswers[subIndex] = newSubAnswers.join(',')
+                                        setAnswers(prev => prev.map(a => 
+                                          a.questionId === question._id 
+                                            ? { ...a, answers: newAnswers }
+                                            : a
+                                        ))
+                                      }}
+                                      className="flex-grow p-3"
+                                    >
+                                      {extractHtml(choice.content)}
+                                    </Checkbox>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {subQuestion.type === 'tf' && (
+                              <div className="flex flex-col space-y-2">
+                                {['True', 'False'].map((option, index) => (
+                                  <div key={option} className="flex items-center gap-3">
+                                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
+                                      {String.fromCharCode(65 + index)}
+                                    </div>
+                                    <Checkbox
+                                      isSelected={answers.find(a => a.questionId === question._id)?.answers[subIndex] === option.toLowerCase()}
+                                      onValueChange={() => {
+                                        const currentAnswers = answers.find(a => a.questionId === question._id)?.answers || []
+                                        const newAnswers = [...currentAnswers]
+                                        newAnswers[subIndex] = option.toLowerCase()
+                                        setAnswers(prev => prev.map(a => 
+                                          a.questionId === question._id 
+                                            ? { ...a, answers: newAnswers }
+                                            : a
+                                        ))
+                                      }}
+                                      className="flex-grow p-3 rounded-lg border border-default-200"
+                                    >
+                                      {option}
+                                    </Checkbox>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {(subQuestion.type === 'ses' || subQuestion.type === 'les') && (
+                              <Textarea
+                                label="Your Answer"
+                                placeholder="Type your answer here..."
+                                value={answers.find(a => a.questionId === question._id)?.essayAnswer || ''}
+                                onValueChange={(value) => {
+                                  const currentAnswers = answers.find(a => a.questionId === question._id)?.answers || []
+                                  const newAnswers = [...currentAnswers]
+                                  newAnswers[subIndex] = value
+                                  setAnswers(prev => prev.map(a => 
+                                    a.questionId === question._id 
+                                      ? { ...a, answers: newAnswers }
+                                      : a
+                                  ))
+                                }}
+                                minRows={subQuestion.type === 'les' ? 5 : 2}
+                                maxRows={subQuestion.type === 'les' ? 10 : 4}
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>

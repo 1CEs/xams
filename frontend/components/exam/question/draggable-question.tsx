@@ -118,7 +118,6 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
                     )}
                     {question.type === 'nested' && question.questions && (
                         <div className="mt-4">
-                            <p className="font-semibold mb-2">Sub-questions:</p>
                             <div className="space-y-4">
                                 {question.questions.map((subQuestion, index) => (
                                     <div key={index} className="border-l-2 border-gray-200 pl-4">
