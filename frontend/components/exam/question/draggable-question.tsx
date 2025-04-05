@@ -110,7 +110,11 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
                     )}
                     {(question.type === 'ses' || question.type === 'les') && (
                         <div className="mt-4">
-                            <p>Expected Answer: {extractHtml(question.expectedAnswer || '')}</p>
+                            <div>
+                                <p className="text-tiny text-default-500">Expected Answer: </p>
+                                <p dangerouslySetInnerHTML={{ __html: question.expectedAnswer! }}></p>
+                            </div>
+                            
                             {question.type === 'les' && (
                                 <p className="text-small text-default-500">Max Words: {question.maxWords}</p>
                             )}

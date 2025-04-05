@@ -4,11 +4,8 @@ import React, { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientAPI } from '@/config/axios.config'
 import { errorHandler } from '@/utils/error'
-import { Card, CardBody, CardHeader, Divider, Spinner, Checkbox, Button, Textarea, CardFooter, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@nextui-org/react'
+import { Card, CardBody, CardHeader, Divider, Spinner, Checkbox, Button, Textarea, CardFooter, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, RadioGroup, Radio } from '@nextui-org/react'
 import { HealthiconsIExamMultipleChoice } from '@/components/icons/icons'
-import { extractHtml } from '@/utils/extract-html'
-import Anya from '@/public/images/anya.png'
-import { Image } from '@nextui-org/react'
 
 interface Question {
   _id: string
@@ -66,6 +63,30 @@ const PreviewExaminationPage = () => {
   const [isResultsModalOpen, setIsResultsModalOpen] = useState(false)
   const [examResult, setExamResult] = useState<ExamResult | null>(null)
   const questionsPerPage = 5
+
+  // Load saved answers from localStorage on component mount
+  useEffect(() => {
+    if (_id) {
+      const savedAnswers = localStorage.getItem(`exam_answers_${_id}`)
+      if (savedAnswers) {
+        setAnswers(JSON.parse(savedAnswers))
+      }
+    }
+  }, [_id])
+
+  // Save answers to localStorage whenever they change
+  useEffect(() => {
+    if (_id && answers.length > 0) {
+      localStorage.setItem(`exam_answers_${_id}`, JSON.stringify(answers))
+    }
+  }, [answers, _id])
+
+  // Clear localStorage after successful submission
+  const clearSavedAnswers = () => {
+    if (_id) {
+      localStorage.removeItem(`exam_answers_${_id}`)
+    }
+  }
 
   const totalPages = Math.ceil((exam?.questions.length || 0) / questionsPerPage)
   const startIndex = (currentPage - 1) * questionsPerPage
@@ -144,13 +165,27 @@ const PreviewExaminationPage = () => {
     const fetchExam = async () => {
       try {
         const res = await clientAPI.get(`exam/${_id}`)
-        setExam(res.data.data)
-        // Initialize answers array
-        setAnswers(res.data.data.questions.map((q: Question) => ({
+        const examData = res.data.data
+        
+        // Load saved answers from localStorage
+        const savedAnswers = localStorage.getItem(`exam_answers_${_id}`)
+        let initialAnswers = examData.questions.map((q: Question) => ({
           questionId: q._id,
           answers: [],
           essayAnswer: ''
-        })))
+        }))
+
+        // If there are saved answers, merge them with the initial answers
+        if (savedAnswers) {
+          const parsedSavedAnswers = JSON.parse(savedAnswers)
+          initialAnswers = initialAnswers.map((answer: Answer) => {
+            const savedAnswer = parsedSavedAnswers.find((sa: Answer) => sa.questionId === answer.questionId)
+            return savedAnswer || answer
+          })
+        }
+
+        setExam(examData)
+        setAnswers(initialAnswers)
       } catch (error) {
         errorHandler(error)
       } finally {
@@ -290,6 +325,7 @@ const PreviewExaminationPage = () => {
       const result = checkAnswers()
       setExamResult(result)
       setIsResultsModalOpen(true)
+      clearSavedAnswers() // Clear saved answers after submission
       // const res = await clientAPI.post(`exam/${_id}/submit`, { 
       //   answers,
       //   result
@@ -331,6 +367,7 @@ const PreviewExaminationPage = () => {
 
   const handleResultsClose = () => {
     setIsResultsModalOpen(false)
+    clearSavedAnswers() // Clear saved answers when closing results
     router.push(`/overview`)
   }
 
@@ -551,20 +588,39 @@ const PreviewExaminationPage = () => {
 
                     {question.type === 'mc' && (
                       <div className="flex flex-col space-y-2">
-                        {question.choices?.map((choice, choiceIndex) => (
-                          <div key={choiceIndex} className="flex items-center gap-3">
-                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
-                              {String.fromCharCode(65 + choiceIndex)}
+                        {question.choices?.filter(c => c.isCorrect).length === 1 ? (
+                          <RadioGroup
+                            value={answers.find(a => a.questionId === question._id)?.answers[0] || ''}
+                            onValueChange={(value) => handleCheckboxChange(question._id, value, true)}
+                            className="flex flex-col space-y-2"
+                          >
+                            {question.choices?.map((choice, choiceIndex) => (
+                              <div key={choiceIndex} className="flex items-center gap-3">
+                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
+                                  {String.fromCharCode(65 + choiceIndex)}
+                                </div>
+                                <Radio value={choice.content} className="flex-grow p-3">
+                                  <span dangerouslySetInnerHTML={{ __html: choice.content }}></span>
+                                </Radio>
+                              </div>
+                            ))}
+                          </RadioGroup>
+                        ) : (
+                          question.choices?.map((choice, choiceIndex) => (
+                            <div key={choiceIndex} className="flex items-center gap-3">
+                              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
+                                {String.fromCharCode(65 + choiceIndex)}
+                              </div>
+                              <Checkbox
+                                isSelected={answers.find(a => a.questionId === question._id)?.answers.includes(choice.content) || false}
+                                onValueChange={() => handleCheckboxChange(question._id, choice.content, false)}
+                                className="flex-grow p-3"
+                              >
+                                <span dangerouslySetInnerHTML={{ __html: choice.content }}></span>
+                              </Checkbox>
                             </div>
-                            <Checkbox
-                              isSelected={answers.find(a => a.questionId === question._id)?.answers.includes(choice.content) || false}
-                              onValueChange={() => handleCheckboxChange(question._id, choice.content, question.choices?.filter(c => c.isCorrect).length === 1)}
-                              className="flex-grow p-3"
-                            >
-                              <span dangerouslySetInnerHTML={{ __html: choice.content }}></span>
-                            </Checkbox>
-                          </div>
-                        ))}
+                          ))
+                        )}
                       </div>
                     )}
 
@@ -611,33 +667,61 @@ const PreviewExaminationPage = () => {
 
                             {subQuestion.type === 'mc' && (
                               <div className="flex flex-col space-y-2">
-                                {subQuestion.choices?.map((choice, choiceIndex) => (
-                                  <div key={choiceIndex} className="flex items-center gap-3">
-                                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
-                                      {String.fromCharCode(65 + choiceIndex)}
+                                {subQuestion.choices?.filter(c => c.isCorrect).length === 1 ? (
+                                  <RadioGroup
+                                    value={answers.find(a => a.questionId === question._id)?.answers[subIndex]?.split(',')[0] || ''}
+                                    onValueChange={(value) => {
+                                      const currentAnswers = answers.find(a => a.questionId === question._id)?.answers || []
+                                      const newAnswers = [...currentAnswers]
+                                      newAnswers[subIndex] = value
+                                      setAnswers(prev => prev.map(a => 
+                                        a.questionId === question._id 
+                                          ? { ...a, answers: newAnswers }
+                                          : a
+                                      ))
+                                    }}
+                                    className="flex flex-col space-y-2"
+                                  >
+                                    {subQuestion.choices?.map((choice, choiceIndex) => (
+                                      <div key={choiceIndex} className="flex items-center gap-3">
+                                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
+                                          {String.fromCharCode(65 + choiceIndex)}
+                                        </div>
+                                        <Radio value={choice.content} className="flex-grow p-3">
+                                          <span dangerouslySetInnerHTML={{ __html: choice.content }}></span>
+                                        </Radio>
+                                      </div>
+                                    ))}
+                                  </RadioGroup>
+                                ) : (
+                                  subQuestion.choices?.map((choice, choiceIndex) => (
+                                    <div key={choiceIndex} className="flex items-center gap-3">
+                                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
+                                        {String.fromCharCode(65 + choiceIndex)}
+                                      </div>
+                                      <Checkbox
+                                        isSelected={answers.find(a => a.questionId === question._id)?.answers[subIndex]?.split(',').includes(choice.content) || false}
+                                        onValueChange={() => {
+                                          const currentAnswers = answers.find(a => a.questionId === question._id)?.answers || []
+                                          const subAnswers = currentAnswers[subIndex]?.split(',') || []
+                                          const newSubAnswers = subAnswers.includes(choice.content)
+                                            ? subAnswers.filter(a => a !== choice.content)
+                                            : [...subAnswers, choice.content]
+                                          const newAnswers = [...currentAnswers]
+                                          newAnswers[subIndex] = newSubAnswers.join(',')
+                                          setAnswers(prev => prev.map(a => 
+                                            a.questionId === question._id 
+                                              ? { ...a, answers: newAnswers }
+                                              : a
+                                          ))
+                                        }}
+                                        className="flex-grow p-3"
+                                      >
+                                        <span dangerouslySetInnerHTML={{ __html: choice.content }}></span>
+                                      </Checkbox>
                                     </div>
-                                    <Checkbox
-                                      isSelected={answers.find(a => a.questionId === question._id)?.answers[subIndex]?.split(',').includes(choice.content) || false}
-                                      onValueChange={() => {
-                                        const currentAnswers = answers.find(a => a.questionId === question._id)?.answers || []
-                                        const subAnswers = currentAnswers[subIndex]?.split(',') || []
-                                        const newSubAnswers = subAnswers.includes(choice.content)
-                                          ? subAnswers.filter(a => a !== choice.content)
-                                          : [...subAnswers, choice.content]
-                                        const newAnswers = [...currentAnswers]
-                                        newAnswers[subIndex] = newSubAnswers.join(',')
-                                        setAnswers(prev => prev.map(a => 
-                                          a.questionId === question._id 
-                                            ? { ...a, answers: newAnswers }
-                                            : a
-                                        ))
-                                      }}
-                                      className="flex-grow p-3"
-                                    >
-                                      {choice.content}
-                                    </Checkbox>
-                                  </div>
-                                ))}
+                                  ))
+                                )}
                               </div>
                             )}
 
