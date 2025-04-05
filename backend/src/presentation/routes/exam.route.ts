@@ -31,7 +31,13 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
             .post('/question/:id', async ({ params, body, controller, user }) => await controller.addExaminationQuestion(params.id, body, user as IInstructor), {
                 body: QuestionFormSchema
             })
-            .delete('/question/:id', async({ user, params, controller }) => await controller.deleteQuestion(user._id as unknown as string, params.id, user as IInstructor))
+            .delete('/question', async({ query, controller }) => await controller.deleteQuestion(query.examination_id as unknown as string, query.question_id as unknown as string),
+                {
+                    query: t.Object({
+                        examination_id: t.String(),
+                        question_id: t.String()
+                    })
+            })
             
             // Nested Question routes
             .post('/nested-question/:id', async ({ params, body, controller, user }) => await controller.addNestedQuestion(params.id, body, user as IInstructor), {

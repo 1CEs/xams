@@ -184,7 +184,7 @@ export default function CreateExaminationPage() {
 
     const onDeleteQuestion = async (id: string) => {
         try {
-            const res = await clientAPI.delete(`exam/question/${id}`)
+            const res = await clientAPI.delete(`exam/question?question_id=${id}&examination_id=${_id}`)
             toast.success('Question deleted successfully')
             setTrigger(!trigger)
         } catch (error) {

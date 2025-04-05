@@ -77,12 +77,12 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
                 <CardHeader>
                     <div className="flex gap-3 justify-between w-full">
                         <div className="flex items-center justify-between gap-3">
-                            {!disableDrag && <MdiDrag className="text-gray-400" />}
+                            {!disableDrag && <MdiDrag fontSize={18} className="text-gray-400" />}
                             {matchIconType[question.type as keyof typeof matchIconType]}
                             <div className="flex flex-col">
                                 <p className="text-md line-clamp-1">{extractedQuestion.substring(0, 30)}...</p>
-                                <p className="text-tiny">{matchQuestionType(question.type)}</p>
-                                <p className="text-small text-default-500">Score: {question.score}</p>
+                                <p className="text-tiny text-default-500">{matchQuestionType(question.type)}</p>
+                                <p className="text-tiny text-default-500">Score: {question.score}</p>
                             </div>
                         </div>
                         <Button onPress={() => setIsOpen(!isOpen)} variant="flat" color="secondary" size="sm">

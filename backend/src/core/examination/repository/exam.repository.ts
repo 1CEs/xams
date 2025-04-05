@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { ExaminationDocument } from "../../../types/exam";
 import { BaseRepository } from "../../base/base.repository";
 import { ExaminationModel } from "../model/examination.model";
@@ -34,9 +35,12 @@ export class ExaminationRepository
 
     async deleteQuestion(id: string, question_id: string) {
         const result = await this._model.findOneAndUpdate(
-            { _id: id },
-            { $pull: { "questions._id": question_id } },
+            { _id: new mongoose.Types.ObjectId(id) },
+            { $pull: { questions: { _id: new mongoose.Types.ObjectId(question_id) } } },
+            { new: true }
         ).exec();
+    
+        console.log("Updated Document:", result);
         return result;
     }
 
