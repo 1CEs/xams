@@ -538,7 +538,7 @@ const PreviewExaminationPage = () => {
                   <div className="flex-grow">
                     <div className="mb-4 flex justify-between">
                       <div>
-                        <p className="text-lg font-medium">{extractHtml(question.question)}</p>
+                        <p className="text-lg font-medium" dangerouslySetInnerHTML={{ __html: question.question }}></p>
                         <p className='text-sm text-foreground/50'>
                           {question.type === 'mc' ? 'Multiple Choice' :
                             question.type === 'tf' ? 'True/False' :
@@ -561,7 +561,7 @@ const PreviewExaminationPage = () => {
                               onValueChange={() => handleCheckboxChange(question._id, choice.content, question.choices?.filter(c => c.isCorrect).length === 1)}
                               className="flex-grow p-3"
                             >
-                              {extractHtml(choice.content)}
+                              <span dangerouslySetInnerHTML={{ __html: choice.content }}></span>
                             </Checkbox>
                           </div>
                         ))}
@@ -602,7 +602,7 @@ const PreviewExaminationPage = () => {
                       <div className="space-y-4 mt-4">
                         {question.questions.map((subQuestion, subIndex) => (
                           <div key={subIndex} className="border-l-2 border-secondary pl-4">
-                            <p className="text-md font-medium mb-2">{extractHtml(subQuestion.question)}</p>
+                            <p className="text-md font-medium mb-2">{subQuestion.question}</p>
                             <p className="text-sm text-foreground/50 mb-2">
                               {subQuestion.type === 'mc' ? 'Multiple Choice' :
                                 subQuestion.type === 'tf' ? 'True/False' :
@@ -634,7 +634,7 @@ const PreviewExaminationPage = () => {
                                       }}
                                       className="flex-grow p-3"
                                     >
-                                      {extractHtml(choice.content)}
+                                      {choice.content}
                                     </Checkbox>
                                   </div>
                                 ))}

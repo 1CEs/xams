@@ -16,7 +16,7 @@ export const QuestionFormSchema = t.Object({
     ], { description: 'Question type is required' }),
     choices: t.Optional(t.Array(t.Object({
         content: t.String(),
-        isCorrect: t.Boolean()
+        isCorrect: t.Boolean(),
     }))),
     isTrue: t.Optional(t.Boolean()),
     expectedAnswer: t.Optional(t.String()),

@@ -44,6 +44,10 @@ const NewQuestionForm = ({ examination_id }: Props) => {
         les: {
             form: <LongEssayForm />,
             content: 'Add your long essay'
+        },
+        nested: {
+            form: <div>Nested questions are not supported in this form</div>,
+            content: 'Nested questions are not supported in this form'
         }
     }
 

@@ -51,6 +51,20 @@ const NestedQuestionForm = ({ examinationId }: NestedQuestionFormProps) => {
     const { questionList, setQuestionList } = useQuestionListStore()
     const [activeId, setActiveId] = React.useState<number | null>(null)
     const { trigger, setTrigger } = useTrigger()
+    const formikRef = React.useRef<any>(null)
+
+    // Function to calculate total score of nested questions
+    const calculateTotalScore = () => {
+        return nestedQuestions.reduce((total, question) => total + question.score, 0)
+    }
+
+    // Update score whenever nested questions change
+    React.useEffect(() => {
+        if (formikRef.current) {
+            const totalScore = calculateTotalScore()
+            formikRef.current.setFieldValue('score', totalScore)
+        }
+    }, [nestedQuestions])
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -123,13 +137,14 @@ const NestedQuestionForm = ({ examinationId }: NestedQuestionFormProps) => {
 
     return (
         <Formik
+            innerRef={formikRef}
             initialValues={{
                 question: "",
                 type: "nested",
                 score: 0,
                 questions: [],
             }}
-            onSubmit={async (values) => {
+            onSubmit={async (values, { setFieldValue }) => {
                 try {
                     // Prepare the nested question data
                     const nestedQuestionData = {
@@ -176,20 +191,10 @@ const NestedQuestionForm = ({ examinationId }: NestedQuestionFormProps) => {
                                     </Button>
                                 </div>
 
-                                <Input
-                                    className='w-[100px] text-secondary'
-                                    size='sm'
-                                    maxLength={4}
-                                    startContent={<span className='text-sm text-foreground/50'>Score: </span>}
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        if (/^\d*\.?\d*$/.test(value)) {
-                                            setFieldValue('score', value ? Number(value) : 0);
-                                        }
-                                    }}
-                                    value={values.score.toString()}
-                                    name='score'
-                                />
+                                <div className="flex items-center gap-2 p-2 rounded-lg bg-black/70">
+                                    <span className='text-sm'>Total Score: </span>
+                                    <span className='text-secondary font-medium'>{values.score}</span>
+                                </div>
                             </div>
                         </CardHeader>
                         <CardBody className="gap-y-9">
