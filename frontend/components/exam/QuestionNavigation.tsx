@@ -43,11 +43,13 @@ const QuestionNavigation = ({
                 <Button
                   key={index}
                   size="sm"
-                  color={isCurrentPage ? "secondary" : "default"}
+                  color="default"
                   onPress={() => handleQuestionNavigation(index)}
                   className={`
-                    ${!isCurrentPage && isAnswered ? 'border-success border' : ''}
+                    ${!isCurrentPage && isAnswered ? 'bg-success' : ''}
                     ${!isCurrentPage && !isAnswered ? 'border-gray-500 border' : ''}
+                    ${isCurrentPage ? 'border-success border' : ''}
+                    ${isCurrentPage && isAnswered ? 'bg-success' : ''}
                   `}
                 >
                   {index + 1}

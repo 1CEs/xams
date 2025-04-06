@@ -143,7 +143,88 @@ const QuestionCard = ({
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary text-white text-sm flex items-center justify-center">
                         {questionNumber + subIndex}
                       </div>
-                      {renderQuestionContent(subQuestion, true)}
+                      <div className="flex-grow">
+                        <div className="mb-4 flex justify-between">
+                          <div>
+                            <p className="text-lg font-medium" dangerouslySetInnerHTML={{ __html: subQuestion.question }}></p>
+                            <p className='text-sm text-foreground/50'>
+                              {subQuestion.type === 'mc' ? 'Multiple Choice' :
+                                subQuestion.type === 'tf' ? 'True/False' :
+                                  subQuestion.type === 'ses' ? 'Short Essay' : 'Long Essay'
+                              }
+                            </p>
+                          </div>
+                          <p className="text-sm text-foreground/50">Score: {subQuestion.score}</p>
+                        </div>
+
+                        {subQuestion.type === 'mc' && (
+                          <div className="flex flex-col space-y-2">
+                            {subQuestion.choices?.filter((c: Choice) => c.isCorrect).length === 1 ? (
+                              <RadioGroup
+                                value={answers.find(a => a.questionId === subQuestion._id)?.answers[0] || ''}
+                                onValueChange={(value) => handleCheckboxChange(subQuestion._id, value, true)}
+                                className="flex flex-col space-y-2"
+                              >
+                                {subQuestion.choices?.map((choice: Choice, choiceIndex: number) => (
+                                  <div key={choiceIndex} className="flex items-center gap-3">
+                                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
+                                      {String.fromCharCode(65 + choiceIndex)}
+                                    </div>
+                                    <Radio value={choice.content} className="flex-grow p-3">
+                                      <span dangerouslySetInnerHTML={{ __html: choice.content }}></span>
+                                    </Radio>
+                                  </div>
+                                ))}
+                              </RadioGroup>
+                            ) : (
+                              subQuestion.choices?.map((choice: Choice, choiceIndex: number) => (
+                                <div key={choiceIndex} className="flex items-center gap-3">
+                                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
+                                    {String.fromCharCode(65 + choiceIndex)}
+                                  </div>
+                                  <Checkbox
+                                    isSelected={answers.find(a => a.questionId === subQuestion._id)?.answers.includes(choice.content) || false}
+                                    onValueChange={() => handleCheckboxChange(subQuestion._id, choice.content, false)}
+                                    className="flex-grow p-3"
+                                  >
+                                    <span dangerouslySetInnerHTML={{ __html: choice.content }}></span>
+                                  </Checkbox>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+
+                        {subQuestion.type === 'tf' && (
+                          <div className="flex flex-col space-y-2">
+                            {['True', 'False'].map((option, index) => (
+                              <div key={option} className="flex items-center gap-3">
+                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
+                                  {String.fromCharCode(65 + index)}
+                                </div>
+                                <Checkbox
+                                  isSelected={answers.find(a => a.questionId === subQuestion._id)?.answers.includes(option.toLowerCase()) || false}
+                                  onValueChange={() => handleTrueFalseChange(subQuestion._id, option === 'True')}
+                                  className="flex-grow p-3 rounded-lg border border-default-200"
+                                >
+                                  {option}
+                                </Checkbox>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {(subQuestion.type === 'ses' || subQuestion.type === 'les') && (
+                          <Textarea
+                            label="Your Answer"
+                            placeholder="Type your answer here..."
+                            value={answers.find(a => a.questionId === subQuestion._id)?.essayAnswer || ''}
+                            onValueChange={(value) => handleEssayChange(subQuestion._id, value)}
+                            minRows={subQuestion.type === 'les' ? 5 : 2}
+                            maxRows={subQuestion.type === 'les' ? 10 : 4}
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

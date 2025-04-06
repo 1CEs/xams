@@ -172,11 +172,33 @@ const PreviewExaminationPage = () => {
 
         // Load saved answers from localStorage
         const savedAnswers = localStorage.getItem(`exam_answers_${_id}`)
-        let initialAnswers = examData.questions.map((q: Question) => ({
-          questionId: q._id,
-          answers: [],
-          essayAnswer: ''
-        }))
+        
+        // Initialize answers for all questions including sub-questions
+        let initialAnswers: Answer[] = []
+        
+        const initializeAnswers = (questions: Question[]) => {
+          questions.forEach((q) => {
+            if (q.type === 'nested' && q.questions) {
+              // Add answers for sub-questions
+              q.questions.forEach((subQ) => {
+                initialAnswers.push({
+                  questionId: subQ._id,
+                  answers: [],
+                  essayAnswer: ''
+                })
+              })
+            } else {
+              // Add answer for regular question
+              initialAnswers.push({
+                questionId: q._id,
+                answers: [],
+                essayAnswer: ''
+              })
+            }
+          })
+        }
+
+        initializeAnswers(examData.questions)
 
         // If there are saved answers, merge them with the initial answers
         if (savedAnswers) {
@@ -352,13 +374,17 @@ const PreviewExaminationPage = () => {
 
     // Use setTimeout to ensure the DOM has updated with the new questions before scrolling
     setTimeout(() => {
-      // Calculate the relative index within the current page
-      const relativeIndex = questionIndex % questionsPerPage
-
       // Find and scroll to the question
-      const questionElement = document.getElementById(`question-${relativeIndex}`)
+      const questionElement = document.getElementById(`question-${questionIndex + 1}`)
       if (questionElement) {
-        questionElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        const headerOffset = 100 // Adjust this value based on your header height
+        const elementPosition = questionElement.getBoundingClientRect().top
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        })
       }
     }, 100)
   }
