@@ -6,6 +6,11 @@ import { emailRegex } from "../../utils/regex"
 import { IAuthController } from "./interface/iauth.controller"
 import { SetTokenParameters } from "../../types/auth"
 
+type JWTInstance = {
+    sign: (payload: any) => Promise<string>
+    verify: (token: string) => Promise<any>
+}
+
 export class AuthController implements IAuthController {
     private _factory: IUserServiceFactory
     constructor() {
@@ -86,5 +91,15 @@ export class AuthController implements IAuthController {
             maxAge: Number(process.env.REFRESH_TOKEN_EXP! || 604800),
             path: '/'
         })
+    }
+
+    async forgotPassword(email: string, jwt: JWTInstance) {
+        const result = await this._factory.createService('general').forgotPassword(email, jwt)
+        return this._response<typeof result>('Password reset email sent successfully', 200, result)
+    }
+
+    async resetPassword(token: string, newPassword: string, jwt: JWTInstance) {
+        const result = await this._factory.createService('general').resetPassword(token, newPassword, jwt)
+        return this._response<typeof result>('Password has been reset successfully', 200, result)
     }
 }

@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/user.store'
 import { useRouter } from 'nextjs-toploader/app'
 import { useCookies } from 'next-client-cookies'
 import { clientAPI } from '@/config/axios.config'
+import { toast } from 'react-toastify'
 
 type Props = {
     content: string
@@ -65,7 +66,7 @@ const Form = (props: Props) => {
             router.push('/overview')
         } catch (error) {
             if (isAxiosError(error)) {
-                console.error('Error details:', error.response?.data);
+                toast.error(error.response?.data.message)
         
                 const { err, errors } = error.response?.data || {};
                 if (err) {
@@ -104,7 +105,7 @@ const Form = (props: Props) => {
                                 </RadioGroup>
                             </div>
                             :
-                            <Link href="#" size='sm'>Forgot password</Link>
+                            <Link href="/member/forgot-password" size='sm'>Forgot password</Link>
                         }
                     </div>
                     <Divider />

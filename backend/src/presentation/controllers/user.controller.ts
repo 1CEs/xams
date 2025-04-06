@@ -6,6 +6,12 @@ import { UserServiceFactory } from "../../core/user/service/user.factory";
 import { CategoryPayload } from "../../types/user";
 import { IUserController } from "./interface/iuser.controller";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
+import { JWT } from "../middleware/jwt.middleware";
+
+type JWTInstance = {
+    sign: (payload: any) => Promise<string>
+    verify: (token: string) => Promise<any>
+}
 
 export class UserController implements IUserController {
     private _factory: IUserServiceFactory
@@ -41,6 +47,11 @@ export class UserController implements IUserController {
     async deleteUser(id: string) {
         const deleted = await this._factory.createService('general').deleteUser(id)
         return this._response<typeof deleted>('Delete Successfully', 200, deleted)
+    }
+
+    async forgotPassword(email: string, jwt: JWTInstance) {
+        const result = await this._factory.createService('general').forgotPassword(email, jwt)
+        return this._response<typeof result>('Password reset email sent successfully', 200, result)
     }
 
     // Instructor-Only methods

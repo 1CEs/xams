@@ -3,6 +3,19 @@ import { ExaminationController } from "../controllers/exam.controller";
 import { tokenVerifier } from "../middleware/token-verify.middleware";
 import { AddExaminationSchema, QuestionFormSchema, NestedQuestionSchema, updateExaminationSchema } from "./schema/exam.schema";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
+import { catchAsync } from "../../utils/error";
+import { Static } from "@sinclair/typebox";
+import { Context } from "elysia";
+
+type ExamContext = Context & {
+    controller: ExaminationController;
+    user: IInstructor;
+}
+
+type AddExamBody = Static<typeof AddExaminationSchema>
+type QuestionBody = Static<typeof QuestionFormSchema>
+type NestedQuestionBody = Static<typeof NestedQuestionSchema>
+type UpdateExamBody = Static<typeof updateExaminationSchema>
 
 export const ExamRoute = new Elysia({ prefix: '/exam' })
     .derive(() => { 
@@ -12,26 +25,26 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
     .group('', (app) => 
         app
             // Examination-Only routes
-            .get('', async ({ controller, user }) => await controller.getExaminations(user as IInstructor))
-            .get('/:id', async ({ params, controller, user }) => await controller.getExaminationById(params.id, user as IInstructor))
-            .get('', async ({ query, controller, user }) => await controller.getExaminationByInstructorId(query.instructor_id, user as IInstructor), {
+            .get('', catchAsync(async ({ controller, user }: ExamContext) => await controller.getExaminations(user)))
+            .get('/:id', catchAsync(async ({ params, controller, user }: ExamContext & { params: { id: string } }) => await controller.getExaminationById(params.id, user)))
+            .get('', catchAsync(async ({ query, controller, user }: ExamContext & { query: { instructor_id: string } }) => await controller.getExaminationByInstructorId(query.instructor_id, user)), {
                 query: t.Object({
                     instructor_id: t.String()
                 })
             })
-            .post('', async ({ body, user, controller }) => await controller.addExamination({ ...body, instructor_id: user._id as unknown as string, category: body.category || [] }, user as IInstructor), {
+            .post('', catchAsync(async ({ body, user, controller }: ExamContext & { body: AddExamBody }) => await controller.addExamination({ ...body, instructor_id: user._id as unknown as string, category: body.category || [] }, user)), {
                 body: AddExaminationSchema
             })
-            .patch('/:id', async ({ params, body, controller, user }) => await controller.updateExamination(params.id, body, user as IInstructor), {
+            .patch('/:id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { id: string }, body: UpdateExamBody }) => await controller.updateExamination(params.id, body, user)), {
                 body: updateExaminationSchema
             })
-            .delete('/:id', async ({ params, controller, user }) => await controller.deleteExamination(params.id, user as IInstructor))
+            .delete('/:id', catchAsync(async ({ params, controller, user }: ExamContext & { params: { id: string } }) => await controller.deleteExamination(params.id, user)))
 
             // Question-Only routes
-            .post('/question/:id', async ({ params, body, controller, user }) => await controller.addExaminationQuestion(params.id, body, user as IInstructor), {
+            .post('/question/:id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { id: string }, body: QuestionBody }) => await controller.addExaminationQuestion(params.id, body, user)), {
                 body: QuestionFormSchema
             })
-            .delete('/question', async({ query, controller }) => await controller.deleteQuestion(query.examination_id as unknown as string, query.question_id as unknown as string),
+            .delete('/question', catchAsync(async({ query, controller }: ExamContext & { query: { examination_id: string, question_id: string } }) => await controller.deleteQuestion(query.examination_id, query.question_id)),
                 {
                     query: t.Object({
                         examination_id: t.String(),
@@ -40,7 +53,7 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
             })
             
             // Nested Question routes
-            .post('/nested-question/:id', async ({ params, body, controller, user }) => await controller.addNestedQuestion(params.id, body, user as IInstructor), {
+            .post('/nested-question/:id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { id: string }, body: NestedQuestionBody }) => await controller.addNestedQuestion(params.id, body, user)), {
                 body: NestedQuestionSchema
             })
     )

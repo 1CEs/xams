@@ -1,6 +1,12 @@
 import Elysia, { t } from "elysia";
 import { EnrollmentController } from "../controllers/enrollment.controller";
 import { tokenVerifier } from "../middleware/token-verify.middleware";
+import { catchAsync } from "../../utils/error";
+import { Context } from "elysia";
+
+type EnrollmentContext = Context & {
+    controller: EnrollmentController;
+}
 
 export const EnrollmentRoute = new Elysia({ prefix: '/enrollment' })
     .derive(() => { 
@@ -10,9 +16,9 @@ export const EnrollmentRoute = new Elysia({ prefix: '/enrollment' })
     .group('', (app) => 
         app
             // Enroll a student in a course group
-            .post('/:courseId/group/:groupName/student/:studentId', async ({ params, controller }) => {
+            .post('/:courseId/group/:groupName/student/:studentId', catchAsync(async ({ params, controller }: EnrollmentContext & { params: { courseId: string, groupName: string, studentId: string } }) => {
                 return await controller.enrollStudent(params.courseId, params.groupName, params.studentId);
-            }, {
+            }), {
                 params: t.Object({
                     courseId: t.String(),
                     groupName: t.String(),
@@ -21,9 +27,9 @@ export const EnrollmentRoute = new Elysia({ prefix: '/enrollment' })
             })
             
             // Unenroll a student from a course group
-            .delete('/:courseId/group/:groupName/student/:studentId', async ({ params, controller }) => {
+            .delete('/:courseId/group/:groupName/student/:studentId', catchAsync(async ({ params, controller }: EnrollmentContext & { params: { courseId: string, groupName: string, studentId: string } }) => {
                 return await controller.unenrollStudent(params.courseId, params.groupName, params.studentId);
-            }, {
+            }), {
                 params: t.Object({
                     courseId: t.String(),
                     groupName: t.String(),
@@ -32,18 +38,18 @@ export const EnrollmentRoute = new Elysia({ prefix: '/enrollment' })
             })
             
             // Get all enrollments for a student
-            .get('/student/:studentId', async ({ params, controller }) => {
+            .get('/student/:studentId', catchAsync(async ({ params, controller }: EnrollmentContext & { params: { studentId: string } }) => {
                 return await controller.getStudentEnrollments(params.studentId);
-            }, {
+            }), {
                 params: t.Object({
                     studentId: t.String()
                 })
             })
             
             // Get all students enrolled in a group
-            .get('/:courseId/group/:groupName', async ({ params, controller }) => {
+            .get('/:courseId/group/:groupName', catchAsync(async ({ params, controller }: EnrollmentContext & { params: { courseId: string, groupName: string } }) => {
                 return await controller.getGroupEnrollments(params.courseId, params.groupName);
-            }, {
+            }), {
                 params: t.Object({
                     courseId: t.String(),
                     groupName: t.String()

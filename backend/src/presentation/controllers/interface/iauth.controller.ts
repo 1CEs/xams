@@ -4,6 +4,10 @@ import { IUser } from "../../../core/user/model/interface/iuser"
 import { SignUpPayload, SignInPayload } from "../../../types/user"
 import { SetTokenParameters } from "../../../types/auth"
 
+type JWTInstance = {
+    sign: (payload: any) => Promise<string>
+    verify: (token: string) => Promise<any>
+}
 
 export interface IAuthController {
     signup: (payload: SignUpPayload) => Promise<ControllerResponse<any>>
@@ -24,4 +28,6 @@ export interface IAuthController {
             refreshToken
         }: SetTokenParameters
     ) => Promise<void>
+    forgotPassword: (email: string, jwt: JWTInstance) => Promise<any>
+    resetPassword: (token: string, newPassword: string, jwt: JWTInstance) => Promise<any>
 }
