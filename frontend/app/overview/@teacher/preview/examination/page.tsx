@@ -6,6 +6,9 @@ import { clientAPI } from '@/config/axios.config'
 import { errorHandler } from '@/utils/error'
 import { Card, CardBody, CardHeader, Divider, Spinner, Checkbox, Button, Textarea, CardFooter, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, RadioGroup, Radio } from '@nextui-org/react'
 import { HealthiconsIExamMultipleChoice } from '@/components/icons/icons'
+import QuestionNavigation from '@/components/exam/QuestionNavigation'
+import QuestionCard from '@/components/exam/QuestionCard'
+import ExamResultsModal from '@/components/exam/ExamResultsModal'
 
 interface Question {
   _id: string
@@ -166,7 +169,7 @@ const PreviewExaminationPage = () => {
       try {
         const res = await clientAPI.get(`exam/${_id}`)
         const examData = res.data.data
-        
+
         // Load saved answers from localStorage
         const savedAnswers = localStorage.getItem(`exam_answers_${_id}`)
         let initialAnswers = examData.questions.map((q: Question) => ({
@@ -298,13 +301,13 @@ const PreviewExaminationPage = () => {
           : question.type === 'tf'
             ? [question.isTrue?.toString() || '']
             : question.type === 'nested' && question.questions
-              ? question.questions.map(q => 
-                  q.type === 'mc' 
-                    ? q.choices?.filter(c => c.isCorrect).map(c => c.content).join(',') || ''
-                    : q.type === 'tf'
-                      ? q.isTrue?.toString() || ''
-                      : ''
-                )
+              ? question.questions.map(q =>
+                q.type === 'mc'
+                  ? q.choices?.filter(c => c.isCorrect).map(c => c.content).join(',') || ''
+                  : q.type === 'tf'
+                    ? q.isTrue?.toString() || ''
+                    : ''
+              )
               : [],
         score: question.score
       }
@@ -360,6 +363,11 @@ const PreviewExaminationPage = () => {
     }, 100)
   }
 
+  const handleTimeout = () => {
+    setHasSubmitted(true)
+    setIsTimeoutModalOpen(true)
+  }
+
   const handleTimeoutSubmit = () => {
     setIsTimeoutModalOpen(false)
     handleSubmit()
@@ -367,7 +375,7 @@ const PreviewExaminationPage = () => {
 
   const handleResultsClose = () => {
     setIsResultsModalOpen(false)
-    clearSavedAnswers() // Clear saved answers when closing results
+    clearSavedAnswers()
     router.push(`/overview`)
   }
 
@@ -395,6 +403,20 @@ const PreviewExaminationPage = () => {
       return answer?.answers && answer.answers.length > 0
     })
   }
+
+  // Add a new function to calculate question numbers
+  const getQuestionNumber = (questions: Question[], currentIndex: number) => {
+    let number = 1;
+    for (let i = 0; i < currentIndex; i++) {
+      const question = questions[i];
+      if (question.type === 'nested' && question.questions) {
+        number += question.questions.length;
+      } else {
+        number += 1;
+      }
+    }
+    return number;
+  };
 
   if (loading) {
     return (
@@ -437,73 +459,14 @@ const PreviewExaminationPage = () => {
         </ModalContent>
       </Modal>
 
-      <Modal
+      <ExamResultsModal
         isOpen={isResultsModalOpen}
         onClose={handleResultsClose}
-        size="5xl"
-      >
-        <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            <h2 className="text-2xl font-bold">Exam Results</h2>
-            <p className="text-sm text-foreground/50">Your examination has been submitted successfully</p>
-          </ModalHeader>
-          <ModalBody>
-            {examResult && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <Card className="p-4">
-                    <p className="text-foreground/50">Total Score</p>
-                    <p className="text-2xl font-bold">{examResult.obtainedScore}/{examResult.totalScore}</p>
-                  </Card>
-                  <Card className="p-4">
-                    <p className="text-foreground/50">Correct Answers</p>
-                    <p className="text-2xl font-bold">{examResult.correctAnswers}/{examResult.totalQuestions}</p>
-                  </Card>
-                </div>
-
-                <Divider />
-
-                <div className="space-y-4">
-                  <h3 className="font-semibold">Question Details</h3>
-                  <div className="grid grid-cols-5 gap-2">
-                    {examResult.details.map((detail, index) => (
-                      <Card
-                        key={detail.questionId}
-                        className={`p-2 ${detail.isCorrect ? 'border-success' : 'border-danger'} h-24 flex flex-col justify-center items-center cursor-pointer hover:scale-105 transition-transform`}
-                        onClick={() => {
-                          const questionIndex = exam?.questions.findIndex(q => q._id === detail.questionId) || 0
-                          const page = Math.floor(questionIndex / questionsPerPage) + 1
-                          setCurrentPage(page)
-                          setIsResultsModalOpen(false)
-                          setTimeout(() => {
-                            const questionElement = document.getElementById(`question-${questionIndex % questionsPerPage}`)
-                            if (questionElement) {
-                              questionElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                            }
-                          }, 100)
-                        }}
-                      >
-                        <div className="text-center">
-                          <p className="font-medium text-sm">Q{index + 1}</p>
-                          <p className={`text-md ${detail.isCorrect ? 'text-success' : 'text-danger'}`}>
-                            {detail.isCorrect ? '✓' : '✗'}
-                          </p>
-                          <p className="text-xs text-foreground/50">{detail.isCorrect ? detail.score : 0}/{detail.score}</p>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button color="secondary" onPress={handleResultsClose}>
-              Close
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+        examResult={examResult}
+        questions={exam.questions}
+        questionsPerPage={questionsPerPage}
+        setCurrentPage={setCurrentPage}
+      />
 
       <Card className="mb-8">
         <CardHeader className="flex gap-3">
@@ -527,265 +490,37 @@ const PreviewExaminationPage = () => {
       </Card>
 
       <div className="space-x-6 flex">
-        <Card className='w-1/3 h-fit sticky top-20'>
-          <CardBody className='px-5'>
-            <div className="flex flex-col gap-4">
-              <div className='flex justify-between items-center'>
-                <h2 className="text-lg font-semibold">Questions Navigation</h2>
-                <span className={`${timeRemaining <= 300 ? 'text-danger' : ''}`}>
-                  {formatTime(timeRemaining)}
-                </span>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {exam?.questions.map((question, index) => {
-                  const isAnswered = isQuestionAnswered(question._id);
-                  const isCurrentPage = Math.floor(index / questionsPerPage) + 1 === currentPage;
-
-                  return (
-                    <Button
-                      key={index}
-                      size="sm"
-                      color={isCurrentPage ? "secondary" : "default"}
-                      onPress={() => handleQuestionNavigation(index)}
-                      className={`
-                        ${!isCurrentPage && isAnswered ? 'border-success border' : ''}
-                        ${!isCurrentPage && !isAnswered ? 'border-gray-500 border' : ''}
-                      `}
-                    >
-                      {index + 1}
-                    </Button>
-                  );
-                })}
-              </div>
-              <p className="text-sm text-foreground/50">
-                Page {currentPage} of {totalPages} | Showing questions {startIndex + 1}-{Math.min(endIndex, exam.questions.length)} of {exam.questions.length}
-              </p>
-            </div>
-          </CardBody>
-        </Card>
+        <QuestionNavigation
+          questions={exam.questions}
+          currentPage={currentPage}
+          questionsPerPage={questionsPerPage}
+          timeRemaining={timeRemaining}
+          isQuestionAnswered={(questionId: string): boolean => {
+            const result = isQuestionAnswered(questionId);
+            return result === undefined ? false : !!result;
+          }}
+          handleQuestionNavigation={handleQuestionNavigation}
+          formatTime={formatTime}
+        />
         <div className="space-y-6 w-2/3">
-          {currentQuestions.map((question, index) => (
-            <Card key={question._id} id={`question-${index}`} className="">
-              <CardBody>
-                <div className="flex items-start gap-4 px-1">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary text-white text-sm flex items-center justify-center">
-                    {startIndex + index + 1}
-                  </div>
-                  <div className="flex-grow">
-                    <div className="mb-4 flex justify-between">
-                      <div>
-                        <p className="text-lg font-medium" dangerouslySetInnerHTML={{ __html: question.question }}></p>
-                        <p className='text-sm text-foreground/50'>
-                          {question.type === 'mc' ? 'Multiple Choice' :
-                            question.type === 'tf' ? 'True/False' :
-                              question.type === 'ses' ? 'Short Essay' :
-                                question.type === 'nested' ? 'Nested Question' : 'Long Essay'}
-                        </p>
-                      </div>
-                      <p className="text-sm text-foreground/50">Score: {question.score}</p>
-                    </div>
-
-                    {question.type === 'mc' && (
-                      <div className="flex flex-col space-y-2">
-                        {question.choices?.filter(c => c.isCorrect).length === 1 ? (
-                          <RadioGroup
-                            value={answers.find(a => a.questionId === question._id)?.answers[0] || ''}
-                            onValueChange={(value) => handleCheckboxChange(question._id, value, true)}
-                            className="flex flex-col space-y-2"
-                          >
-                            {question.choices?.map((choice, choiceIndex) => (
-                              <div key={choiceIndex} className="flex items-center gap-3">
-                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
-                                  {String.fromCharCode(65 + choiceIndex)}
-                                </div>
-                                <Radio value={choice.content} className="flex-grow p-3">
-                                  <span dangerouslySetInnerHTML={{ __html: choice.content }}></span>
-                                </Radio>
-                              </div>
-                            ))}
-                          </RadioGroup>
-                        ) : (
-                          question.choices?.map((choice, choiceIndex) => (
-                            <div key={choiceIndex} className="flex items-center gap-3">
-                              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
-                                {String.fromCharCode(65 + choiceIndex)}
-                              </div>
-                              <Checkbox
-                                isSelected={answers.find(a => a.questionId === question._id)?.answers.includes(choice.content) || false}
-                                onValueChange={() => handleCheckboxChange(question._id, choice.content, false)}
-                                className="flex-grow p-3"
-                              >
-                                <span dangerouslySetInnerHTML={{ __html: choice.content }}></span>
-                              </Checkbox>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-
-                    {question.type === 'tf' && (
-                      <div className="flex flex-col space-y-2">
-                        {['True', 'False'].map((option, index) => (
-                          <div key={option} className="flex items-center gap-3">
-                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
-                              {String.fromCharCode(65 + index)}
-                            </div>
-                            <Checkbox
-                              isSelected={answers.find(a => a.questionId === question._id)?.answers.includes(option.toLowerCase()) || false}
-                              onValueChange={() => handleTrueFalseChange(question._id, option === 'True')}
-                              className="flex-grow p-3 rounded-lg border border-default-200"
-                            >
-                              {option}
-                            </Checkbox>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {(question.type === 'ses' || question.type === 'les') && (
-                      <Textarea
-                        label="Your Answer"
-                        placeholder="Type your answer here..."
-                        value={answers.find(a => a.questionId === question._id)?.essayAnswer || ''}
-                        onValueChange={(value) => handleEssayChange(question._id, value)}
-                        minRows={question.type === 'les' ? 5 : 2}
-                        maxRows={question.type === 'les' ? 10 : 4}
-                      />
-                    )}
-
-                    {question.type === 'nested' && question.questions && (
-                      <div className="space-y-4 mt-4">
-                        {question.questions.map((subQuestion, subIndex) => (
-                          <div key={subIndex} className="border-l-2 border-secondary pl-4">
-                            <p className="text-md font-medium mb-2">{subQuestion.question}</p>
-                            <p className="text-sm text-foreground/50 mb-2">
-                              {subQuestion.type === 'mc' ? 'Multiple Choice' :
-                                subQuestion.type === 'tf' ? 'True/False' :
-                                  subQuestion.type === 'ses' ? 'Short Essay' : 'Long Essay'}
-                            </p>
-
-                            {subQuestion.type === 'mc' && (
-                              <div className="flex flex-col space-y-2">
-                                {subQuestion.choices?.filter(c => c.isCorrect).length === 1 ? (
-                                  <RadioGroup
-                                    value={answers.find(a => a.questionId === question._id)?.answers[subIndex]?.split(',')[0] || ''}
-                                    onValueChange={(value) => {
-                                      const currentAnswers = answers.find(a => a.questionId === question._id)?.answers || []
-                                      const newAnswers = [...currentAnswers]
-                                      newAnswers[subIndex] = value
-                                      setAnswers(prev => prev.map(a => 
-                                        a.questionId === question._id 
-                                          ? { ...a, answers: newAnswers }
-                                          : a
-                                      ))
-                                    }}
-                                    className="flex flex-col space-y-2"
-                                  >
-                                    {subQuestion.choices?.map((choice, choiceIndex) => (
-                                      <div key={choiceIndex} className="flex items-center gap-3">
-                                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
-                                          {String.fromCharCode(65 + choiceIndex)}
-                                        </div>
-                                        <Radio value={choice.content} className="flex-grow p-3">
-                                          <span dangerouslySetInnerHTML={{ __html: choice.content }}></span>
-                                        </Radio>
-                                      </div>
-                                    ))}
-                                  </RadioGroup>
-                                ) : (
-                                  subQuestion.choices?.map((choice, choiceIndex) => (
-                                    <div key={choiceIndex} className="flex items-center gap-3">
-                                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
-                                        {String.fromCharCode(65 + choiceIndex)}
-                                      </div>
-                                      <Checkbox
-                                        isSelected={answers.find(a => a.questionId === question._id)?.answers[subIndex]?.split(',').includes(choice.content) || false}
-                                        onValueChange={() => {
-                                          const currentAnswers = answers.find(a => a.questionId === question._id)?.answers || []
-                                          const subAnswers = currentAnswers[subIndex]?.split(',') || []
-                                          const newSubAnswers = subAnswers.includes(choice.content)
-                                            ? subAnswers.filter(a => a !== choice.content)
-                                            : [...subAnswers, choice.content]
-                                          const newAnswers = [...currentAnswers]
-                                          newAnswers[subIndex] = newSubAnswers.join(',')
-                                          setAnswers(prev => prev.map(a => 
-                                            a.questionId === question._id 
-                                              ? { ...a, answers: newAnswers }
-                                              : a
-                                          ))
-                                        }}
-                                        className="flex-grow p-3"
-                                      >
-                                        <span dangerouslySetInnerHTML={{ __html: choice.content }}></span>
-                                      </Checkbox>
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-                            )}
-
-                            {subQuestion.type === 'tf' && (
-                              <div className="flex flex-col space-y-2">
-                                {['True', 'False'].map((option, index) => (
-                                  <div key={option} className="flex items-center gap-3">
-                                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
-                                      {String.fromCharCode(65 + index)}
-                                    </div>
-                                    <Checkbox
-                                      isSelected={answers.find(a => a.questionId === question._id)?.answers[subIndex] === option.toLowerCase()}
-                                      onValueChange={() => {
-                                        const currentAnswers = answers.find(a => a.questionId === question._id)?.answers || []
-                                        const newAnswers = [...currentAnswers]
-                                        newAnswers[subIndex] = option.toLowerCase()
-                                        setAnswers(prev => prev.map(a => 
-                                          a.questionId === question._id 
-                                            ? { ...a, answers: newAnswers }
-                                            : a
-                                        ))
-                                      }}
-                                      className="flex-grow p-3 rounded-lg border border-default-200"
-                                    >
-                                      {option}
-                                    </Checkbox>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {(subQuestion.type === 'ses' || subQuestion.type === 'les') && (
-                              <Textarea
-                                label="Your Answer"
-                                placeholder="Type your answer here..."
-                                value={answers.find(a => a.questionId === question._id)?.essayAnswer || ''}
-                                onValueChange={(value) => {
-                                  const currentAnswers = answers.find(a => a.questionId === question._id)?.answers || []
-                                  const newAnswers = [...currentAnswers]
-                                  newAnswers[subIndex] = value
-                                  setAnswers(prev => prev.map(a => 
-                                    a.questionId === question._id 
-                                      ? { ...a, answers: newAnswers }
-                                      : a
-                                  ))
-                                }}
-                                minRows={subQuestion.type === 'les' ? 5 : 2}
-                                maxRows={subQuestion.type === 'les' ? 10 : 4}
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          ))}
+          {currentQuestions.map((question, index) => {
+            const questionNumber = getQuestionNumber(exam.questions, startIndex + index)
+            return (
+              <QuestionCard
+                key={question._id}
+                question={question}
+                questionNumber={questionNumber}
+                answers={answers}
+                handleCheckboxChange={handleCheckboxChange}
+                handleTrueFalseChange={handleTrueFalseChange}
+                handleEssayChange={handleEssayChange}
+              />
+            )
+          })}
         </div>
       </div>
       <div className='flex w-full '>
         <div className='w-1/3'></div>
-
         <div className="mt-8 flex justify-start w-2/3 pl-4">
           <div className={`${currentPage == totalPages ? 'w-full flex justify-start items-center' : null}`}>
             <Button
@@ -822,7 +557,6 @@ const PreviewExaminationPage = () => {
           )}
         </div>
       </div>
-
     </div>
   )
 }
