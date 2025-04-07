@@ -55,7 +55,7 @@ const ExploreCourseCard: React.FC<ExploreCourseCardProps> = ({ id, title, descri
             <Button
               className='w-full text-secondary hover:text-white'
               as={Link}
-              href="/auth/signin"
+              href="/member/sign-in"
               variant='ghost'
               color='secondary'
               size='sm'

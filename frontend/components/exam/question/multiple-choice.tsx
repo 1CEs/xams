@@ -1,14 +1,15 @@
 import { Button, Checkbox, Chip, Input } from '@nextui-org/react'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import TextEditor from '../../text-editor'
 import { MdiBin, MingcuteAddFill } from '../../icons/icons'
 import { useFormikContext } from 'formik'
 
 type ChoiceBoxProps = {
     number: number
+    correctCount: number
 }
 
-const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number }) => {
+const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number, correctCount }) => {
     const { setFieldValue, values } = useFormikContext<QuestionForm>()
     const [requiredInput, setRequiredInput] = useState<string>('')
     const [stateColor, setStateColor] = useState<'default' | 'danger' | 'warning' | 'secondary'>('default')
@@ -56,7 +57,7 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number }) => {
             </Chip>
             <div className="flex flex-col w-full">
                 <div className="flex justify-between items-center pb-6">
-                    <div className="flex items-center gap-2">
+                    <div className="flex gap-2 gap-x-8 w-full ">
                         <Checkbox
                             name={`choices.${number}.isCorrect`}
                             color="secondary"
@@ -66,6 +67,25 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number }) => {
                         >
                             <span className={`text-tiny text-${stateColor}`}>{requiredInput ? requiredInput : 'Set as correct answer'}</span>
                         </Checkbox>
+                        {correctCount > 1 &&
+                            <Input
+                                startContent={
+                                    <div className="pointer-events-none flex items-center">
+                                    <span className="text-default-400 text-small">Score:</span>
+                                    </div>
+                                }
+                                disabled={true}
+                                className='w-[135px] min-w-[60px]'
+                                type="number"
+                                size='sm'
+                                value={
+                                    values.choices?.[number]?.isCorrect ? 
+                                    (values.score / correctCount).toFixed(5).toString() 
+                                    : 
+                                    ((values.score / correctCount) * -1).toFixed(5).toString()}
+                                onChange={(e) => setFieldValue(`choices.${number}.content`, e.target.value)}
+                            />
+                        }
                     </div>
                     {number < 2 ? (
                         <span className="text-tiny text-foreground/50">Mandatory</span>
@@ -80,10 +100,10 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number }) => {
                         />
                     )}
                 </div>
-                <TextEditor 
-                    name={`choices.${number}.content`} 
-                    type='unnested' 
-                    className="min-h-[100px] w-full" 
+                <TextEditor
+                    name={`choices.${number}.content`}
+                    type='unnested'
+                    className="min-h-[100px] w-full"
                 />
             </div>
         </div>
@@ -94,6 +114,13 @@ type MultipleChoiceFormProps = {}
 
 const MultipleChoiceForm: React.FC<MultipleChoiceFormProps> = () => {
     const { setFieldValue, values } = useFormikContext<QuestionForm>()
+    const [correctCount, setCorrectCount] = useState<number>(0)
+
+    useEffect(() => {
+        const correctCount = values.choices?.filter(choice => choice.isCorrect).length ?? 0
+        setCorrectCount(correctCount)
+        console.log(correctCount)
+    }, [values.choices])
 
     const handleAddChoice = () => {
         if (!values.choices) return
@@ -103,7 +130,7 @@ const MultipleChoiceForm: React.FC<MultipleChoiceFormProps> = () => {
     return (
         <div className="px-10 flex flex-col gap-y-6">
             {values.choices?.map((_, idx) => (
-                <ChoiceBox key={idx} number={idx} />
+                <ChoiceBox correctCount={correctCount} key={idx} number={idx} />
             ))}
             <Button
                 variant="flat"
