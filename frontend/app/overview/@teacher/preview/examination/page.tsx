@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientAPI } from '@/config/axios.config'
 import { errorHandler } from '@/utils/error'
@@ -67,6 +67,7 @@ const PreviewExaminationPage = () => {
   const [isTimeoutModalOpen, setIsTimeoutModalOpen] = useState(false)
   const [isResultsModalOpen, setIsResultsModalOpen] = useState(false)
   const [examResult, setExamResult] = useState<ExamResult | null>(null)
+  const [examLoaded, setExamLoaded] = useState(false)
   const questionsPerPage = 5
   const initialTime = 60 * 60 // 1 hour in seconds
 
@@ -88,16 +89,49 @@ const PreviewExaminationPage = () => {
   }, [answers, _id])
 
   // Clear localStorage after successful submission
-  const clearSavedAnswers = () => {
+  const clearSavedAnswers = useCallback(() => {
     if (_id) {
       localStorage.removeItem(`exam_answers_${_id}`)
+      // Also clear randomized choices from localStorage
+      if (exam) {
+        exam.questions.forEach(question => {
+          if (question.isRandomChoices) {
+            localStorage.removeItem(`exam_${_id}_randomized_choices_${question._id}`)
+          }
+          // Also clear for nested questions
+          if (question.type === 'nested' && question.questions) {
+            question.questions.forEach(subQuestion => {
+              if (subQuestion.isRandomChoices) {
+                localStorage.removeItem(`exam_${_id}_randomized_choices_${subQuestion._id}`)
+              }
+            })
+          }
+        })
+      }
     }
-  }
+  }, [_id, exam])
 
-  const totalPages = Math.ceil((exam?.questions.length || 0) / questionsPerPage)
-  const startIndex = (currentPage - 1) * questionsPerPage
-  const endIndex = startIndex + questionsPerPage
-  const currentQuestions = exam?.questions.slice(startIndex, endIndex) || []
+  // Memoize computed values
+  const totalPages = useMemo(() => 
+    Math.ceil((exam?.questions.length || 0) / questionsPerPage), 
+    [exam?.questions.length, questionsPerPage]
+  )
+  
+  const startIndex = useMemo(() => 
+    (currentPage - 1) * questionsPerPage, 
+    [currentPage, questionsPerPage]
+  )
+  
+  const endIndex = useMemo(() => 
+    startIndex + questionsPerPage, 
+    [startIndex, questionsPerPage]
+  )
+  
+  const currentQuestions = useMemo(() => 
+    exam?.questions.slice(startIndex, endIndex) || [], 
+    [exam?.questions, startIndex, endIndex]
+  )
+  
   const router = useRouter()
 
   useEffect(() => {
@@ -145,8 +179,29 @@ const PreviewExaminationPage = () => {
           })
         }
 
+        // Check for randomized choices in localStorage and apply them to the exam data
+        const applyRandomizedChoices = (questions: Question[]) => {
+          questions.forEach(q => {
+            if (q.isRandomChoices && q.choices && _id) {
+              const storedRandomizedChoices = localStorage.getItem(`exam_${_id}_randomized_choices_${q._id}`)
+              if (storedRandomizedChoices) {
+                // We don't modify the original exam data, the QuestionCard component will handle this
+                // This is just to ensure the data is loaded
+              }
+            }
+            
+            // Also check nested questions
+            if (q.type === 'nested' && q.questions) {
+              applyRandomizedChoices(q.questions)
+            }
+          })
+        }
+        
+        applyRandomizedChoices(examData.questions)
+
         setExam(examData)
         setAnswers(initialAnswers)
+        setExamLoaded(true)
       } catch (error) {
         errorHandler(error)
       } finally {
@@ -154,60 +209,13 @@ const PreviewExaminationPage = () => {
       }
     }
 
-    if (_id) {
+    if (_id && !examLoaded) {
       fetchExam()
     }
-  }, [_id])
+  }, [_id, examLoaded])
 
-  const handleCheckboxChange = useCallback((questionId: string, choice: string, isSingleAnswer: boolean) => {
-    setAnswers(prev => {
-      const newAnswers = [...prev];
-      const answerIndex = newAnswers.findIndex(a => a.questionId === questionId);
-      
-      if (answerIndex !== -1) {
-        const currentAnswer = newAnswers[answerIndex];
-        if (isSingleAnswer) {
-          // For single answer, only update if the choice is different
-          if (!currentAnswer.answers.includes(choice)) {
-            newAnswers[answerIndex] = { ...currentAnswer, answers: [choice] };
-          }
-        } else {
-          // For multiple answers, toggle the choice
-          const choiceIndex = currentAnswer.answers.indexOf(choice);
-          if (choiceIndex === -1) {
-            newAnswers[answerIndex] = { ...currentAnswer, answers: [...currentAnswer.answers, choice] };
-          } else {
-            newAnswers[answerIndex] = { 
-              ...currentAnswer, 
-              answers: currentAnswer.answers.filter((_, i) => i !== choiceIndex)
-            };
-          }
-        }
-      }
-      
-      return newAnswers;
-    });
-  }, []);
-
-  const handleTrueFalseChange = (questionId: string, value: boolean) => {
-    setAnswers(prev => prev.map(answer => {
-      if (answer.questionId === questionId) {
-        return { ...answer, answers: [value.toString()] }
-      }
-      return answer
-    }))
-  }
-
-  const handleEssayChange = (questionId: string, value: string) => {
-    setAnswers(prev => prev.map(answer => {
-      if (answer.questionId === questionId) {
-        return { ...answer, essayAnswer: value }
-      }
-      return answer
-    }))
-  }
-
-  const checkAnswers = (): ExamResult => {
+  // Memoize the checkAnswers function
+  const checkAnswers = useCallback((): ExamResult => {
     if (!exam) return {
       totalScore: 0,
       obtainedScore: 0,
@@ -301,9 +309,9 @@ const PreviewExaminationPage = () => {
       totalQuestions: exam.questions.length,
       details
     }
-  }
+  }, [exam, answers])
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     setIsSubmitting(true)
     try {
       const result = checkAnswers()
@@ -319,10 +327,10 @@ const PreviewExaminationPage = () => {
     } finally {
       setIsSubmitting(false)
     }
-  }
+  }, [checkAnswers, clearSavedAnswers])
 
-  // Updated function to handle navigation to specific question
-  const handleQuestionNavigation = (questionIndex: number, questionId: string) => {
+  // Memoize the handleQuestionNavigation function
+  const handleQuestionNavigation = useCallback((questionIndex: number, questionId: string) => {
     // Calculate the page that contains this question
     const targetPage = Math.ceil((questionIndex + 1) / questionsPerPage)
 
@@ -346,25 +354,26 @@ const PreviewExaminationPage = () => {
         })
       }
     }, 100)
-  }
+  }, [currentPage, questionsPerPage])
 
-  const handleTimeout = () => {
+  const handleTimeout = useCallback(() => {
     setHasSubmitted(true)
     setIsTimeoutModalOpen(true)
-  }
+  }, [])
 
-  const handleTimeoutSubmit = () => {
+  const handleTimeoutSubmit = useCallback(() => {
     setIsTimeoutModalOpen(false)
     handleSubmit()
-  }
+  }, [handleSubmit])
 
-  const handleResultsClose = () => {
+  const handleResultsClose = useCallback(() => {
     setIsResultsModalOpen(false)
     clearSavedAnswers()
     router.push(`/overview`)
-  }
+  }, [clearSavedAnswers, router])
 
-  const isQuestionAnswered = (questionId: string) => {
+  // Memoize the isQuestionAnswered function
+  const isQuestionAnswered = useCallback((questionId: string): boolean => {
     const answer = answers.find(a => a.questionId === questionId);
     if (!answer) return false;
 
@@ -372,9 +381,9 @@ const PreviewExaminationPage = () => {
     const mainQuestion = exam?.questions.find(q => q._id === questionId);
     if (mainQuestion) {
       if (mainQuestion.type === 'ses' || mainQuestion.type === 'les') {
-        return answer.essayAnswer && answer.essayAnswer.trim() !== '';
+        return Boolean(answer.essayAnswer && answer.essayAnswer.trim() !== '');
       }
-      return answer.answers && answer.answers.length > 0;
+      return Boolean(answer.answers && answer.answers.length > 0);
     }
 
     // If not found in main questions, check nested questions
@@ -383,17 +392,18 @@ const PreviewExaminationPage = () => {
         const nestedQuestion = question.questions.find(q => q._id === questionId);
         if (nestedQuestion) {
           if (nestedQuestion.type === 'ses' || nestedQuestion.type === 'les') {
-            return answer.essayAnswer && answer.essayAnswer.trim() !== '';
+            return Boolean(answer.essayAnswer && answer.essayAnswer.trim() !== '');
           }
-          return answer.answers && answer.answers.length > 0;
+          return Boolean(answer.answers && answer.answers.length > 0);
         }
       }
     }
 
     return false;
-  };
+  }, [answers, exam?.questions]);
 
-  const isAllQuestionsAnswered = () => {
+  // Memoize the isAllQuestionsAnswered function
+  const isAllQuestionsAnswered = useCallback(() => {
     if (!exam) return false
 
     const checkQuestionAnswered = (question: Question): boolean => {
@@ -412,10 +422,10 @@ const PreviewExaminationPage = () => {
     }
 
     return exam.questions.every(checkQuestionAnswered)
-  }
+  }, [exam, answers]);
 
-  // Add a new function to calculate question numbers
-  const getQuestionNumber = (questions: Question[], currentIndex: number) => {
+  // Memoize the getQuestionNumber function
+  const getQuestionNumber = useCallback((questions: Question[], currentIndex: number) => {
     let number = 1;
     for (let i = 0; i < currentIndex; i++) {
       const question = questions[i];
@@ -426,7 +436,7 @@ const PreviewExaminationPage = () => {
       }
     }
     return number;
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -505,10 +515,7 @@ const PreviewExaminationPage = () => {
           currentPage={currentPage}
           questionsPerPage={questionsPerPage}
           timeRemaining={<ExamTimer initialTime={initialTime} onTimeout={handleTimeout} hasSubmitted={hasSubmitted} />}
-          isQuestionAnswered={(questionId: string): boolean => {
-            const result = isQuestionAnswered(questionId);
-            return result === undefined ? false : !!result;
-          }}
+          isQuestionAnswered={isQuestionAnswered}
           handleQuestionNavigation={handleQuestionNavigation}
         />
         <div className="space-y-6 w-2/3">
@@ -520,9 +527,8 @@ const PreviewExaminationPage = () => {
                 question={question}
                 questionNumber={questionNumber}
                 answers={answers}
-                handleCheckboxChange={handleCheckboxChange}
-                handleTrueFalseChange={handleTrueFalseChange}
-                handleEssayChange={handleEssayChange}
+                setAnswers={setAnswers}
+                examId={_id || undefined}
               />
             )
           })}
