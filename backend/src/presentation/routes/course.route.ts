@@ -21,15 +21,15 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
     .derive(() => { 
         return { controller : new CourseController() } 
     })
+    .get('', catchAsync(async ({ query, controller }: CourseContext & { query: { search?: string } }) => await controller.getCourses(query.search)), {
+        query: t.Optional(t.Object({
+            search: t.Optional(t.String())
+        }))
+    })
     .use(tokenVerifier)
     .group('', (app) => 
         app
             // Course-Only routes
-            .get('', catchAsync(async ({ query, controller }: CourseContext & { query: { search?: string } }) => await controller.getCourses(query.search)), {
-                query: t.Optional(t.Object({
-                    search: t.Optional(t.String())
-                }))
-            })
             .get('/:id', catchAsync(async ({ params, controller }: CourseContext & { params: { id: string } }) => await controller.getCourseById(params.id)))
             // .get('', async ({ query, controller }) => await controller.getCourseByInstructorId(query.instructor_id), {
             //     query: t.Object({

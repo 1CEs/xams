@@ -57,18 +57,18 @@ const Navbar = () => {
                 <p className="font-bold hero-foreground">XAMS</p>
             </NavbarBrand>
             <NavbarContent className="hidden sm:flex gap-4" justify="center">
-                <NavbarItem>
-                    <Link color="foreground" href="#">
+                <NavbarItem isActive={pathName === '/explore'}>
+                    <Link color={pathName === '/explore' ? 'secondary' : 'foreground'} href="/explore">
                         Explores
                     </Link>
                 </NavbarItem>
-                <NavbarItem isActive>
-                    <Link href="/overview" color='secondary' aria-current="page">
+                <NavbarItem isActive={pathName === '/overview'}>
+                    <Link color={pathName === '/overview' ? 'secondary' : 'foreground'} href="/overview">
                         Overview
                     </Link>
                 </NavbarItem>
-                <NavbarItem>
-                    <Link color="foreground" href="#">
+                <NavbarItem isActive={pathName === '/integrations'}>
+                    <Link color={pathName === '/integrations' ? 'secondary' : 'foreground'} href="/integrations">
                         Integrations
                     </Link>
                 </NavbarItem>
