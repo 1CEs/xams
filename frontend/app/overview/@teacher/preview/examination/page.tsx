@@ -363,7 +363,7 @@ const PreviewExaminationPage = () => {
   }
 
   // Updated function to handle navigation to specific question
-  const handleQuestionNavigation = (questionIndex: number) => {
+  const handleQuestionNavigation = (questionIndex: number, questionId: string) => {
     // Calculate the page that contains this question
     const targetPage = Math.ceil((questionIndex + 1) / questionsPerPage)
 
@@ -375,7 +375,7 @@ const PreviewExaminationPage = () => {
     // Use setTimeout to ensure the DOM has updated with the new questions before scrolling
     setTimeout(() => {
       // Find and scroll to the question
-      const questionElement = document.getElementById(`question-${questionIndex + 1}`)
+      const questionElement = document.getElementById(`question-${questionId}`)
       if (questionElement) {
         const headerOffset = 100 // Adjust this value based on your header height
         const elementPosition = questionElement.getBoundingClientRect().top
@@ -409,25 +409,50 @@ const PreviewExaminationPage = () => {
     const answer = answers.find(a => a.questionId === questionId);
     if (!answer) return false;
 
-    const question = exam?.questions.find(q => q._id === questionId);
-    if (!question) return false;
-
-    if (question.type === 'ses' || question.type === 'les') {
-      return answer.essayAnswer && answer.essayAnswer.trim() !== '';
+    // First check if it's a main question
+    const mainQuestion = exam?.questions.find(q => q._id === questionId);
+    if (mainQuestion) {
+      if (mainQuestion.type === 'ses' || mainQuestion.type === 'les') {
+        return answer.essayAnswer && answer.essayAnswer.trim() !== '';
+      }
+      return answer.answers && answer.answers.length > 0;
     }
 
-    return answer.answers && answer.answers.length > 0;
+    // If not found in main questions, check nested questions
+    for (const question of exam?.questions || []) {
+      if (question.type === 'nested' && question.questions) {
+        const nestedQuestion = question.questions.find(q => q._id === questionId);
+        if (nestedQuestion) {
+          if (nestedQuestion.type === 'ses' || nestedQuestion.type === 'les') {
+            return answer.essayAnswer && answer.essayAnswer.trim() !== '';
+          }
+          return answer.answers && answer.answers.length > 0;
+        }
+      }
+    }
+
+    return false;
   };
 
   const isAllQuestionsAnswered = () => {
     if (!exam) return false
-    return exam.questions.every(question => {
+
+    const checkQuestionAnswered = (question: Question): boolean => {
       const answer = answers.find(a => a.questionId === question._id)
-      if (question.type === 'ses' || question.type === 'les') {
-        return answer?.essayAnswer && answer.essayAnswer.trim() !== ''
+      
+      if (question.type === 'nested' && question.questions) {
+        // For nested questions, check all sub-questions
+        return question.questions.every(subQuestion => checkQuestionAnswered(subQuestion))
       }
-      return answer?.answers && answer.answers.length > 0
-    })
+      
+      if (question.type === 'ses' || question.type === 'les') {
+        return Boolean(answer?.essayAnswer && answer.essayAnswer.trim() !== '')
+      }
+      
+      return Boolean(answer?.answers && answer.answers.length > 0)
+    }
+
+    return exam.questions.every(checkQuestionAnswered)
   }
 
   // Add a new function to calculate question numbers

@@ -45,7 +45,7 @@ interface Question {
     expectedAnswer?: string
     maxWords?: number
     score: number
-    questions?: Question[] // For nested questions
+    questions?: Question[]
 }
 
 interface ExamResponse {

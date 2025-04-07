@@ -1,12 +1,12 @@
 import { Button, Card, CardBody } from '@nextui-org/react'
 
 interface QuestionNavigationProps {
-  questions: any[]
+  questions: Question[]
   currentPage: number
   questionsPerPage: number
   timeRemaining: number
   isQuestionAnswered: (questionId: string) => boolean
-  handleQuestionNavigation: (index: number) => void
+  handleQuestionNavigation: (index: number, questionId: string) => void
   formatTime: (seconds: number) => string
 }
 
@@ -22,6 +22,8 @@ const QuestionNavigation = ({
   const totalPages = Math.ceil(questions.length / questionsPerPage)
   const startIndex = (currentPage - 1) * questionsPerPage
   const endIndex = startIndex + questionsPerPage
+  let totalQuestionCount = 0
+  const totalQuestions = questions.length
 
   return (
     <Card className='w-1/3 h-fit sticky top-20'>
@@ -38,27 +40,51 @@ const QuestionNavigation = ({
             {questions.map((question, index) => {
               const isAnswered = isQuestionAnswered(question._id)
               const isCurrentPage = Math.floor(index / questionsPerPage) + 1 === currentPage
-
+              console.log(currentPage)
+              
+              if (question.type === 'nested' && question.questions) {
+                return question.questions.map((nestedQuestion, nestedIndex) => {
+                  const nestedIsAnswered = isQuestionAnswered(nestedQuestion._id)
+                  totalQuestionCount++
+                  return (
+                    <Button
+                      key={nestedQuestion._id}
+                      size="sm"
+                      color="default"
+                      onPress={() => handleQuestionNavigation(index, nestedQuestion._id)}
+                      className={`
+                        ${!isCurrentPage && nestedIsAnswered ? 'bg-success' : ''}
+                        ${!isCurrentPage && !nestedIsAnswered ? 'border-gray-500 border' : ''}
+                        ${isCurrentPage ? 'border-success border' : ''}
+                        ${isCurrentPage && nestedIsAnswered ? 'bg-success border-secondary border' : ''}
+                      `}
+                    >
+                      {totalQuestionCount}
+                    </Button>
+                  )
+                })
+              }
+              totalQuestionCount++
               return (
                 <Button
-                  key={index}
+                  key={question._id}
                   size="sm"
                   color="default"
-                  onPress={() => handleQuestionNavigation(index)}
+                  onPress={() => handleQuestionNavigation(index, question._id)}
                   className={`
                     ${!isCurrentPage && isAnswered ? 'bg-success' : ''}
                     ${!isCurrentPage && !isAnswered ? 'border-gray-500 border' : ''}
                     ${isCurrentPage ? 'border-success border' : ''}
-                    ${isCurrentPage && isAnswered ? 'bg-success' : ''}
+                    ${isCurrentPage && isAnswered ? 'bg-success border-secondary border' : ''}
                   `}
                 >
-                  {index + 1}
+                  {totalQuestionCount}
                 </Button>
               )
             })}
           </div>
           <p className="text-sm text-foreground/50">
-            Page {currentPage} of {totalPages} | Showing questions {startIndex + 1}-{Math.min(endIndex, questions.length)} of {questions.length}
+            Page {currentPage} of {totalPages}
           </p>
         </div>
       </CardBody>

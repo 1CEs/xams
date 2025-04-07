@@ -122,7 +122,7 @@ const QuestionCard = ({
   }
 
   return (
-    <Card key={question._id} id={`question-${questionNumber}`} className="">
+    <Card key={question._id} id={`question-${question._id}`} className="">
       <CardBody>
         <div className="flex items-start gap-4 px-1">
           <div className={`flex-shrink-0 w-8 h-8 ${question.type === 'nested' ? 'hidden' : ''} rounded-full bg-secondary text-white text-sm flex items-center justify-center`}>
@@ -138,7 +138,7 @@ const QuestionCard = ({
               </div>
               <div className="space-y-6">
                 {question.questions?.map((subQuestion, subIndex) => (
-                  <div key={subQuestion._id} className="border-l-2 border-secondary pl-4">
+                  <div key={subQuestion._id} id={`question-${subQuestion._id}`} className="border-l-2 border-secondary pl-4">
                     <div className="flex items-start gap-4">
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary text-white text-sm flex items-center justify-center">
                         {questionNumber + subIndex}
