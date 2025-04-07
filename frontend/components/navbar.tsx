@@ -67,9 +67,9 @@ const Navbar = () => {
                         Overview
                     </Link>
                 </NavbarItem>
-                <NavbarItem isActive={pathName === '/integrations'}>
-                    <Link color={pathName === '/integrations' ? 'secondary' : 'foreground'} href="/integrations">
-                        Integrations
+                <NavbarItem isActive={pathName === '/annoucement'}>
+                    <Link color={pathName === '/annoucement' ? 'secondary' : 'foreground'} href="/annoucement">
+                        Annoucement
                     </Link>
                 </NavbarItem>
             </NavbarContent>
