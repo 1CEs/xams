@@ -40,9 +40,11 @@ export class UploadController implements IUploadController {
                         type: "mc",
                         choices: choices.map((choice, index) => ({
                             content: choice.content,
-                            isCorrect: index === correctAnswerIndex
+                            isCorrect: index === correctAnswerIndex,
+                            score: index === correctAnswerIndex ? 1 : 0
                         })),
                         score: 1,
+                        isRandomChoices: true
                     })
                 }
                 currentQuestion = null

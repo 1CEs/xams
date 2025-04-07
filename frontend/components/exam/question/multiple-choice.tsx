@@ -1,4 +1,4 @@
-import { Button, Checkbox, Chip, Input } from '@nextui-org/react'
+import { Button, Checkbox, Chip, Input, Radio } from '@nextui-org/react'
 import React, { useEffect, useState } from 'react'
 import TextEditor from '../../text-editor'
 import { MdiBin, MingcuteAddFill } from '../../icons/icons'
@@ -71,7 +71,7 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number, correctCount }) => {
                             <Input
                                 startContent={
                                     <div className="pointer-events-none flex items-center">
-                                    <span className="text-default-400 text-small">Score:</span>
+                                        <span className="text-default-400 text-small">Score:</span>
                                     </div>
                                 }
                                 disabled={true}
@@ -79,11 +79,11 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number, correctCount }) => {
                                 type="number"
                                 size='sm'
                                 value={
-                                    values.choices?.[number]?.isCorrect ? 
-                                    (values.score / correctCount).toFixed(5).toString() 
-                                    : 
-                                    ((values.score / correctCount) * -1).toFixed(5).toString()}
-                                onChange={(e) => setFieldValue(`choices.${number}.content`, e.target.value)}
+                                    values.choices?.[number]?.isCorrect ?
+                                        (values.score / correctCount).toFixed(5).toString()
+                                        :
+                                        ((values.score / correctCount) * -1).toFixed(5).toString()}
+                                onChange={(e) => setFieldValue(`choices.${number}.score`, e.target.value)}
                             />
                         }
                     </div>
@@ -124,24 +124,39 @@ const MultipleChoiceForm: React.FC<MultipleChoiceFormProps> = () => {
 
     const handleAddChoice = () => {
         if (!values.choices) return
-        setFieldValue('choices', [...values.choices, { content: '', isCorrect: false }])
+        setFieldValue('choices', [...values.choices, { content: '', isCorrect: false, score: 0 }])
     }
 
     return (
-        <div className="px-10 flex flex-col gap-y-6">
+        <div className="px-10 flex flex-col gap-y-4">
+            <p className='text-sm text-foreground/50'>
+                <span className='text-danger'>* </span>
+                <span>You can select multiple correct answers, but wrong choices will deduct points.</span>
+            </p>
             {values.choices?.map((_, idx) => (
                 <ChoiceBox correctCount={correctCount} key={idx} number={idx} />
             ))}
-            <Button
-                variant="flat"
-                color="secondary"
-                startContent={<MingcuteAddFill />}
-                size="sm"
-                className="w-fit text-primary"
-                onPress={handleAddChoice}
-            >
-                Add another answer
-            </Button>
+            <div className='flex justify-between items-center'>
+                <Checkbox
+                    isSelected={values.isRandomChoices}
+                    onValueChange={(isSelected) => setFieldValue('isRandomChoices', isSelected)}
+                    size='md'
+                    color='secondary'
+                >
+                    <span className='text-sm'>Randomize choices</span>
+                </Checkbox>
+                <Button
+                    variant="flat"
+                    color="secondary"
+                    startContent={<MingcuteAddFill />}
+                    size="sm"
+                    className="w-fit text-primary"
+                    onPress={handleAddChoice}
+                >
+                    Add another answer
+                </Button>
+            </div>
+
         </div>
     )
 }

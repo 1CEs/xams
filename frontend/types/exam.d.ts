@@ -12,9 +12,11 @@ type QuestionSelector = "tf" | "les" | "mc" | "ses" | "nested"
 type QuestionForm = {
     question: string
     type: QuestionSelector
+    isRandomChoices?: boolean
     choices?: {
         content: string
         isCorrect: boolean
+        score: number
     }[]
     isTrue?: boolean
     expectedAnswer?: string
@@ -33,13 +35,15 @@ type NestedQuestionForm = {
     questions: QuestionForm[] | never[]
 }
 
-interface Question {
+type Question = {
     _id: string
     question: string
     type: 'mc' | 'tf' | 'ses' | 'les' | 'nested'
+    isRandomChoices?: boolean
     choices?: {
         content: string
         isCorrect: boolean
+        score: number
     }[]
     isTrue?: boolean
     expectedAnswer?: string
@@ -48,20 +52,20 @@ interface Question {
     questions?: Question[]
 }
 
-interface ExamResponse {
+type ExamResponse = {
     _id: string
     title: string
     description: string
     questions: Question[]
 }
 
-interface Answer {
+type Answer = {
     questionId: string
     answers: string[]
     essayAnswer?: string
 }
 
-interface ExamResult {
+type ExamResult = {
     totalScore: number
     obtainedScore: number
     correctAnswers: number

@@ -7,10 +7,10 @@ export const StepProvider = (
     { children: ReactNode, content: string, number: number, isOptional?:boolean}
     ) => {
     return (
-        <div className="flex flex-col gap-y-6">
+        <div className="flex flex-col gap-y-3">
             <HeadLine number={number} content={content} isOptional={isOptional}/>
             { children }
-            <Divider />
+            <Divider className="mt-3" />
         </div>
     )
 }

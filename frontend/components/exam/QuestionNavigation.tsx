@@ -4,10 +4,9 @@ interface QuestionNavigationProps {
   questions: Question[]
   currentPage: number
   questionsPerPage: number
-  timeRemaining: number
+  timeRemaining: React.ReactElement
   isQuestionAnswered: (questionId: string) => boolean
   handleQuestionNavigation: (index: number, questionId: string) => void
-  formatTime: (seconds: number) => string
 }
 
 const QuestionNavigation = ({
@@ -16,8 +15,7 @@ const QuestionNavigation = ({
   questionsPerPage,
   timeRemaining,
   isQuestionAnswered,
-  handleQuestionNavigation,
-  formatTime
+  handleQuestionNavigation
 }: QuestionNavigationProps) => {
   const totalPages = Math.ceil(questions.length / questionsPerPage)
   const startIndex = (currentPage - 1) * questionsPerPage
@@ -31,16 +29,13 @@ const QuestionNavigation = ({
         <div className="flex flex-col gap-4">
           <div className='flex justify-between items-center'>
             <h2 className="text-lg font-semibold">Questions Navigation</h2>
-            <span className={`${timeRemaining <= 300 ? 'text-danger' : ''}`}>
-              {formatTime(timeRemaining)}
-            </span>
+            {timeRemaining}
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-5 gap-2">
             {questions.map((question, index) => {
               const isAnswered = isQuestionAnswered(question._id)
               const isCurrentPage = Math.floor(index / questionsPerPage) + 1 === currentPage
-              console.log(currentPage)
               
               if (question.type === 'nested' && question.questions) {
                 return question.questions.map((nestedQuestion, nestedIndex) => {

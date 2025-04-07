@@ -1,14 +1,16 @@
-import { Card, CardBody, Checkbox, Radio, RadioGroup, Textarea } from '@nextui-org/react'
+import { Card, CardBody, Checkbox, Radio, RadioGroup, Textarea, Tooltip } from '@nextui-org/react'
 
 interface Choice {
   content: string
   isCorrect: boolean
+  score: number
 }
 
 interface Question {
   _id: string
   question: string
   type: 'mc' | 'tf' | 'ses' | 'les' | 'nested'
+  isRandomChoices?: boolean
   choices?: Choice[]
   isTrue?: boolean
   expectedAnswer?: string
@@ -35,10 +37,15 @@ const QuestionCard = ({
   handleEssayChange
 }: QuestionCardProps) => {
   const renderQuestionContent = (q: Question, isSubQuestion: boolean = false) => {
+    // Randomize choices if isRandomChoices is true
+    const displayChoices = q.isRandomChoices 
+      ? [...(q.choices || [])].sort(() => Math.random() - 0.5)
+      : q.choices
+
     return (
       <div className="flex-grow">
         <div className="mb-4 flex justify-between">
-          <div>
+          <div className='max-w-[90%]'>
             <p className="text-lg font-medium" dangerouslySetInnerHTML={{ __html: q.question }}></p>
             <p className='text-sm text-foreground/50'>
               {q.type === 'mc' ? 'Multiple Choice' :
@@ -52,13 +59,13 @@ const QuestionCard = ({
 
         {q.type === 'mc' && (
           <div className="flex flex-col space-y-2">
-            {q.choices?.filter((c: Choice) => c.isCorrect).length === 1 ? (
+            {displayChoices?.filter((c: Choice) => c.isCorrect).length === 1 ? (
               <RadioGroup
                 value={answers.find(a => a.questionId === q._id)?.answers[0] || ''}
                 onValueChange={(value) => handleCheckboxChange(q._id, value, true)}
                 className="flex flex-col space-y-2"
               >
-                {q.choices?.map((choice: Choice, choiceIndex: number) => (
+                {displayChoices?.map((choice: Choice, choiceIndex: number) => (
                   <div key={choiceIndex} className="flex items-center gap-3">
                     <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
                       {String.fromCharCode(65 + choiceIndex)}
@@ -70,7 +77,7 @@ const QuestionCard = ({
                 ))}
               </RadioGroup>
             ) : (
-              q.choices?.map((choice: Choice, choiceIndex: number) => (
+              displayChoices?.map((choice: Choice, choiceIndex: number) => (
                 <div key={choiceIndex} className="flex items-center gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-sm">
                     {String.fromCharCode(65 + choiceIndex)}
@@ -130,7 +137,7 @@ const QuestionCard = ({
           </div>
           {question.type === 'nested' ? (
             <div className="w-full">
-              <div className="mb-4">
+              <div className="max-w-[90%]">
                 <p className="text-lg font-medium" dangerouslySetInnerHTML={{ __html: question.question }}></p>
                 <p className='text-sm text-foreground/50'>
                   For Question number: {questionNumber} to {questionNumber + (question.questions?.length || 0) - 1}

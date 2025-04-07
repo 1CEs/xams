@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientAPI } from '@/config/axios.config'
 import { errorHandler } from '@/utils/error'
@@ -9,6 +9,7 @@ import { HealthiconsIExamMultipleChoice } from '@/components/icons/icons'
 import QuestionNavigation from '@/components/exam/QuestionNavigation'
 import QuestionCard from '@/components/exam/QuestionCard'
 import ExamResultsModal from '@/components/exam/ExamResultsModal'
+import ExamTimer from '@/components/exam/ExamTimer'
 
 interface Question {
   _id: string
@@ -17,11 +18,13 @@ interface Question {
   choices?: {
     content: string
     isCorrect: boolean
+    score: number
   }[]
   isTrue?: boolean
   expectedAnswer?: string
   maxWords?: number
   score: number
+  isRandomChoices?: boolean
   questions?: Question[] // For nested questions
 }
 
@@ -60,12 +63,12 @@ const PreviewExaminationPage = () => {
   const [answers, setAnswers] = useState<Answer[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const [timeRemaining, setTimeRemaining] = useState(60 * 60) // (60 * 60) 1 hour in seconds
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [isTimeoutModalOpen, setIsTimeoutModalOpen] = useState(false)
   const [isResultsModalOpen, setIsResultsModalOpen] = useState(false)
   const [examResult, setExamResult] = useState<ExamResult | null>(null)
   const questionsPerPage = 5
+  const initialTime = 60 * 60 // 1 hour in seconds
 
   // Load saved answers from localStorage on component mount
   useEffect(() => {
@@ -98,73 +101,6 @@ const PreviewExaminationPage = () => {
   const router = useRouter()
 
   useEffect(() => {
-    let timer: ReturnType<typeof setInterval> | null = null
-
-    if (!hasSubmitted) {
-      timer = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 0) {
-            if (timer) clearInterval(timer)
-            if (!hasSubmitted) {
-              setHasSubmitted(true)
-              setIsTimeoutModalOpen(true)
-            }
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-    }
-
-    return () => {
-      if (timer) clearInterval(timer)
-    }
-  }, [hasSubmitted])
-
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const remainingSeconds = seconds % 60
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
-  }
-
-  function cleanBase64Pem(pem: string): string {
-    return pem
-      .replace(/-----BEGIN .*?-----/g, "") // Remove PEM header
-      .replace(/-----END .*?-----/g, "")   // Remove PEM footer
-      .replace(/\s+/g, "");               // Remove all whitespace & newlines
-  }
-
-  async function decryptRSA(encryptedData: string, privateKeyPEM: string): Promise<string> {
-    try {
-      // Clean the PEM key and decode Base64
-      const base64Key = cleanBase64Pem(privateKeyPEM);
-      const binaryKey = Uint8Array.from(atob(base64Key), c => c.charCodeAt(0));
-
-      // Import the private key
-      const privateKey = await window.crypto.subtle.importKey(
-        "pkcs8",
-        binaryKey.buffer,
-        { name: "RSA-OAEP", hash: "SHA-256" },
-        true,
-        ["decrypt"]
-      );
-
-      // Decrypt the message
-      const decryptedBuffer = await window.crypto.subtle.decrypt(
-        { name: "RSA-OAEP" },
-        privateKey,
-        Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0))
-      );
-
-      return new TextDecoder().decode(decryptedBuffer);
-    } catch (error) {
-      console.error("Decryption Error:", error);
-      throw new Error("Failed to decrypt data.");
-    }
-  }
-
-  useEffect(() => {
     const fetchExam = async () => {
       try {
         const res = await clientAPI.get(`exam/${_id}`)
@@ -172,10 +108,10 @@ const PreviewExaminationPage = () => {
 
         // Load saved answers from localStorage
         const savedAnswers = localStorage.getItem(`exam_answers_${_id}`)
-        
+
         // Initialize answers for all questions including sub-questions
         let initialAnswers: Answer[] = []
-        
+
         const initializeAnswers = (questions: Question[]) => {
           questions.forEach((q) => {
             if (q.type === 'nested' && q.questions) {
@@ -223,23 +159,35 @@ const PreviewExaminationPage = () => {
     }
   }, [_id])
 
-  const handleCheckboxChange = (questionId: string, choice: string, isSingleAnswer: boolean) => {
-    setAnswers(prev => prev.map(answer => {
-      if (answer.questionId === questionId) {
+  const handleCheckboxChange = useCallback((questionId: string, choice: string, isSingleAnswer: boolean) => {
+    setAnswers(prev => {
+      const newAnswers = [...prev];
+      const answerIndex = newAnswers.findIndex(a => a.questionId === questionId);
+      
+      if (answerIndex !== -1) {
+        const currentAnswer = newAnswers[answerIndex];
         if (isSingleAnswer) {
-          // For single answer, replace the entire array with the new choice
-          return { ...answer, answers: answer.answers.includes(choice) ? [] : [choice] }
+          // For single answer, only update if the choice is different
+          if (!currentAnswer.answers.includes(choice)) {
+            newAnswers[answerIndex] = { ...currentAnswer, answers: [choice] };
+          }
         } else {
           // For multiple answers, toggle the choice
-          const newAnswers = answer.answers.includes(choice)
-            ? answer.answers.filter(a => a !== choice)
-            : [...answer.answers, choice]
-          return { ...answer, answers: newAnswers }
+          const choiceIndex = currentAnswer.answers.indexOf(choice);
+          if (choiceIndex === -1) {
+            newAnswers[answerIndex] = { ...currentAnswer, answers: [...currentAnswer.answers, choice] };
+          } else {
+            newAnswers[answerIndex] = { 
+              ...currentAnswer, 
+              answers: currentAnswer.answers.filter((_, i) => i !== choiceIndex)
+            };
+          }
         }
       }
-      return answer
-    }))
-  }
+      
+      return newAnswers;
+    });
+  }, []);
 
   const handleTrueFalseChange = (questionId: string, value: boolean) => {
     setAnswers(prev => prev.map(answer => {
@@ -274,6 +222,7 @@ const PreviewExaminationPage = () => {
     const details = exam.questions.map(question => {
       const userAnswer = answers.find(a => a.questionId === question._id)
       let isCorrect = false
+      let questionScore = 0
 
       if (question.type === 'mc') {
         // For multiple choice, check if all correct choices are selected and no incorrect ones
@@ -281,12 +230,21 @@ const PreviewExaminationPage = () => {
         isCorrect = userAnswer?.answers.length === correctChoices.length &&
           correctChoices.every(ans => userAnswer.answers.includes(ans)) &&
           userAnswer.answers.every(ans => correctChoices.includes(ans))
+
+        // Calculate score based on individual choice scores
+        if (isCorrect) {
+          questionScore = question.choices
+            ?.filter(c => c.isCorrect)
+            .reduce((acc, choice) => acc + (choice.score || 0), 0) || 0
+        }
       } else if (question.type === 'tf') {
         // For true/false, check if the answer matches isTrue
         isCorrect = userAnswer?.answers[0] === question.isTrue?.toString()
+        questionScore = isCorrect ? question.score : 0
       } else if (question.type === 'ses' || question.type === 'les') {
         // For essay questions, always mark as correct in preview mode
         isCorrect = true
+        questionScore = question.score
       } else if (question.type === 'nested') {
         // For nested questions, check all sub-questions
         if (question.questions && userAnswer?.answers) {
@@ -305,11 +263,12 @@ const PreviewExaminationPage = () => {
             }
           })
           isCorrect = subQuestionAnswers.every(Boolean)
+          questionScore = isCorrect ? question.score : 0
         }
       }
 
       if (isCorrect) {
-        obtainedScore += question.score
+        obtainedScore += questionScore
         correctAnswers++
       }
       totalScore += question.score
@@ -331,7 +290,7 @@ const PreviewExaminationPage = () => {
                     : ''
               )
               : [],
-        score: question.score
+        score: questionScore
       }
     })
 
@@ -439,16 +398,16 @@ const PreviewExaminationPage = () => {
 
     const checkQuestionAnswered = (question: Question): boolean => {
       const answer = answers.find(a => a.questionId === question._id)
-      
+
       if (question.type === 'nested' && question.questions) {
         // For nested questions, check all sub-questions
         return question.questions.every(subQuestion => checkQuestionAnswered(subQuestion))
       }
-      
+
       if (question.type === 'ses' || question.type === 'les') {
         return Boolean(answer?.essayAnswer && answer.essayAnswer.trim() !== '')
       }
-      
+
       return Boolean(answer?.answers && answer.answers.length > 0)
     }
 
@@ -545,13 +504,12 @@ const PreviewExaminationPage = () => {
           questions={exam.questions}
           currentPage={currentPage}
           questionsPerPage={questionsPerPage}
-          timeRemaining={timeRemaining}
+          timeRemaining={<ExamTimer initialTime={initialTime} onTimeout={handleTimeout} hasSubmitted={hasSubmitted} />}
           isQuestionAnswered={(questionId: string): boolean => {
             const result = isQuestionAnswered(questionId);
             return result === undefined ? false : !!result;
           }}
           handleQuestionNavigation={handleQuestionNavigation}
-          formatTime={formatTime}
         />
         <div className="space-y-6 w-2/3">
           {currentQuestions.map((question, index) => {

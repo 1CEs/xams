@@ -17,7 +17,9 @@ export const QuestionFormSchema = t.Object({
     choices: t.Optional(t.Array(t.Object({
         content: t.String(),
         isCorrect: t.Boolean(),
+        score: t.Number()
     }))),
+    isRandomChoices: t.Optional(t.Boolean()),
     isTrue: t.Optional(t.Boolean()),
     expectedAnswer: t.Optional(t.String()),
     maxWords: t.Optional(t.Number()),

@@ -13,10 +13,18 @@ const QuestionSchema = new Schema<QuestionDocument>({
         type: Schema.Types.String,
         required: true
     },
+    isRandomChoices: {
+        type: Schema.Types.Boolean,
+        default: false
+    },
     choices: {
         type: [{
             content: String,
-            isCorrect: Boolean
+            isCorrect: Boolean,
+            score: {
+                type: Number,
+                default: 0
+            }
         }],
         required: function () {
             return this.type === 'mc';

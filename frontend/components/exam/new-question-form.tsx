@@ -56,7 +56,7 @@ const NewQuestionForm = ({ examination_id }: Props) => {
             initialValues={{
                 question: '',
                 type: 'mc',
-                choices: [{ content: '', isCorrect: false }, { content: '', isCorrect: false }],
+                choices: [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
                 isTrue: false,
                 expectedAnswer: '',
                 maxWords: 0,
@@ -68,15 +68,14 @@ const NewQuestionForm = ({ examination_id }: Props) => {
             ) => {
                 try {
                     formikHelpers.setSubmitting(false)
-                    console.log(values)
-                    const res = await clientAPI.post(`exam/question/${examination_id}`, values)
+                    const res = await clientAPI.post(`exam/question/${examination_id}`, {...values, score: Number(values.score)})
                     toast.success(res.data.message)
                     setTrigger(!trigger)
                     formikHelpers.resetForm({
                         values: {
                             question: '',
                             type: 'mc',
-                            choices: [{ content: '', isCorrect: false }, { content: '', isCorrect: false }],
+                            choices: [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
                             isTrue: false,
                             expectedAnswer: '',
                             maxWords: 0,
