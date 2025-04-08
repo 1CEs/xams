@@ -102,7 +102,7 @@ const mockData = {
 const AdminOverview = () => {
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+      <h1 className="text-3xl font-bold">Admin Overview</h1>
       
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -178,7 +178,7 @@ const AdminOverview = () => {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="users" fill="#8884d8" />
+                  <Bar dataKey="users" fill="#30c67c" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -252,7 +252,7 @@ const AdminOverview = () => {
                             user.role === 'admin' 
                               ? 'danger' 
                               : user.role === 'instructor' 
-                                ? 'primary' 
+                                ? 'warning' 
                                 : 'secondary'
                           }
                           size="sm"
