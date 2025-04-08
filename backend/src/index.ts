@@ -1,7 +1,7 @@
 import { Elysia } from "elysia"
 import { Database } from "./database/database"
-import { indexMiddleware } from "./presentation/middleware/index.middleware"
 import { indexRouter } from "./presentation/routes/index.route"
+import { indexMiddleware } from "./presentation/middleware/index.middleware"
 
 const runServer = async () => {
   console.log(process.env.DB_CONN!)
