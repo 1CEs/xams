@@ -3,6 +3,7 @@ import { cors } from '@elysiajs/cors'
 import { errorMiddleware } from "./error.middleware";
 import { swagger } from '@elysiajs/swagger'
 import { rateLimit } from "./rate-limit.middleware";
+import { loggerMiddleware } from "./logger.middleware";
 
 export const indexMiddleware = new Elysia()
     .use(cors())
