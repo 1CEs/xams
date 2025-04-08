@@ -6,9 +6,11 @@ import { useUserStore } from "@/stores/user.store"
 import { Suspense } from "react"
 
 export default function OverviewLayout({
+    admin,
     student,
     teacher
 }: Readonly<{
+    admin: React.ReactNode
     student: React.ReactNode
     teacher: React.ReactNode
 }>) {
@@ -19,7 +21,7 @@ export default function OverviewLayout({
             <Suspense fallback={
                 <Loading />
             }>
-                {user?.role == 'instructor' ? teacher : user?.role == 'student' ? student : <Loading />}
+                {user?.role == 'admin' ? admin : user?.role == 'instructor' ? teacher : user?.role == 'student' ? student : <Loading />}
             </Suspense>
         </div>
     )
