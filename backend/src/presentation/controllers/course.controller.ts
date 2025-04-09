@@ -5,7 +5,9 @@ import { CourseService } from "../../core/course/service/course.service";
 import { ICourseService } from "../../core/course/service/interface/icourse.service";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
 import { InstructorService } from "../../core/user/service/instructor.service";
+import { StudentService } from "../../core/user/service/student.service";
 import { UserServiceFactory } from "../../core/user/service/user.factory";
+import { UserRole } from "../../types/user";
 import { ICourseController } from "./interface/icourse.controller";
 
 export class CourseController implements ICourseController {
@@ -73,6 +75,30 @@ export class CourseController implements ICourseController {
     async deleteCourse(id: string) {
         const deleted = await this._service.deleteCourse(id)
         return this._response<typeof deleted>('Delete Course Successfully', 200, deleted)
+    }
+
+    async verifyPassword(course_id: string, group_id: string, setting_id: string, password: string, user?: IInstructor) {
+        const service = new UserServiceFactory().createService(user?.role as UserRole)
+        if(user?.role !== "student") {
+            const verified = await this._service.verifyPassword(course_id, group_id, setting_id, password)
+
+            if(!verified) {
+                return this._response<null>('Incorrect password', 400, null)
+            }
+
+            return this._response<typeof verified>('Password Verified Successfully', 200, verified)
+        }
+        
+        const isUserAlreadyInGroup = await (service as StudentService).isUserAlreadyInGroup(user?._id as unknown as string, group_id)
+        if (!isUserAlreadyInGroup) {
+            return this._response<null>('User is not in the group', 400, null)
+        }
+        const verified = await this._service.verifyPassword(course_id, group_id, setting_id, password)
+        if(!verified) {
+            return this._response<null>('Incorrect password', 400, null)
+        }
+        return this._response<Boolean | null>('Password Verified Successfully', 200, verified)
+        
     }
 
     // Group methods

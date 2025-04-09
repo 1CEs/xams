@@ -130,22 +130,6 @@ export class ExaminationController implements IExaminationController {
         return this._response<typeof deleted>('Delete Examination Successfully', 200, this._sanitizeExamData(deleted, user))
     }
 
-    async verifyPassword(examination_id: string, group_id: string, password: string, user?: IInstructor) {
-        const service = new UserServiceFactory().createService(user?.role as UserRole)
-        if(user?.role !== "student") {
-            const verified = await this._service.verifyPassword(examination_id, group_id, password)
-            return this._response<typeof verified>('Password Verified Successfully', 200, verified)
-        }
-        
-        const isUserAlreadyInGroup = await (service as StudentService).isUserAlreadyInGroup(user?._id as unknown as string, group_id)
-        if (!isUserAlreadyInGroup) {
-            return this._response<null>('User is not in the group', 400, null)
-        }
-        const verified = await this._service.verifyPassword(examination_id, group_id, password)
-        return this._response<IExamination | null>('Password Verified Successfully', 200, verified)
-        
-    }
-
     // Question-Only methods
     async addExaminationQuestion(id: string, payload: Omit<IQuestion, '_id'>, user?: IInstructor) {
         const exam = await this._service.addExaminationQuestion(id, payload)

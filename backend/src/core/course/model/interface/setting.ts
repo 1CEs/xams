@@ -1,4 +1,5 @@
 export interface ISetting {
+    _id?: string
     exam_id: string
     open_time: Date
     close_time: Date

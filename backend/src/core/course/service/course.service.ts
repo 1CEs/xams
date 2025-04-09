@@ -39,4 +39,9 @@ export class CourseService implements ICourseService {
         const deleted = await this._repository.delete(id)
         return deleted
     }
+
+    async verifyPassword(course_id: string, group_id: string, setting_id: string, password: string) {
+        const result = await this._repository.verifyPassword(course_id, group_id, setting_id, password)
+        return result
+    }
 }

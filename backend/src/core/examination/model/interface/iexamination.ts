@@ -8,4 +8,6 @@ export interface IExamination {
     description: string
     category: string[]
     questions: IQuestion[]
+    group_id?: string
+    password?: string
 }

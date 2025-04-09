@@ -11,6 +11,7 @@ export interface ICourseController {
     getCourseByInstructorId: (instructor_id: string) => Promise<ControllerResponse<ICourse[] | null>>
     updateCourse: (id: string, payload: Partial<ICourse>) => Promise<ControllerResponse<ICourse | null>>
     deleteCourse: (id: string) => Promise<ControllerResponse<ICourse | null>>
+    verifyPassword: (course_id: string, group_id: string, setting_id: string, password: string) => Promise<ControllerResponse<Boolean | null>>
 
     // Group-Only methods
     addGroup: (courseId: string, groupData: Omit<IGroup, "_id">) => Promise<ControllerResponse<ICourse | null>>

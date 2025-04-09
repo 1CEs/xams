@@ -9,7 +9,6 @@ export interface IExaminationService {
     getExaminationByInstructorId: (instructor_id: string) => Promise<IExamination[] | null>
     updateExamination: (id: string, payload: Partial<IExamination>) => Promise<IExamination | null>
     deleteExamination: (id: string) => Promise<IExamination | null>
-    verifyPassword: (examination_id: string, group_id: string, password: string) => Promise<IExamination | null>
 
     // Question-Only methods
     addExaminationQuestion: (id: string, payload: Omit<IQuestion, '_id'>) => Promise<IExamination | null>

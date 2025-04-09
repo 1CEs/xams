@@ -41,11 +41,6 @@ export class ExaminationService implements IExaminationService {
         return result
     }
 
-    async verifyPassword(examination_id: string, group_id: string, password: string) {
-        const result = await this._repository.verifyPassword(examination_id, group_id, password)
-        return result
-    }
-
     async addExaminationQuestion(id: string, payload: Omit<IQuestion, "_id">) {
         const result = await this._repository.addExaminationQuestion(id, payload)
         return result

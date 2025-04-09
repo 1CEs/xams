@@ -18,8 +18,8 @@ type ExamSettingBody = Static<typeof ExamSettingSchema>
 type UpdateCourseBody = Static<typeof updateCourseSchema>
 
 export const CourseRoute = new Elysia({ prefix: '/course' })
-    .derive(() => { 
-        return { controller : new CourseController() } 
+    .derive(() => {
+        return { controller: new CourseController() }
     })
     .get('', catchAsync(async ({ query, controller }: CourseContext & { query: { search?: string } }) => await controller.getCourses(query.search)), {
         query: t.Optional(t.Object({
@@ -27,7 +27,7 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
         }))
     })
     .use(tokenVerifier)
-    .group('', (app) => 
+    .group('', (app) =>
         app
             // Course-Only routes
             .get('/:id', catchAsync(async ({ params, controller }: CourseContext & { params: { id: string } }) => await controller.getCourseById(params.id)))
@@ -38,6 +38,14 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
             // })
             .post('', catchAsync(async ({ body, user, controller }: CourseContext & { body: AddCourseBody }) => await controller.addCourse({ ...body, instructor_id: user._id as unknown as string }, user)), {
                 body: AddCourseSchema
+            })
+            .post('/verify', catchAsync(async ({ query, controller, user }: CourseContext & { query: { course_id: string, group_id: string, setting_id: string, password: string } }) => await controller.verifyPassword(query.course_id, query.group_id, query.setting_id, query.password, user)), {
+                query: t.Object({
+                    course_id: t.String(),
+                    setting_id: t.String(),
+                    group_id: t.String(),
+                    password: t.String()
+                })
             })
             .patch('/:id', catchAsync(async ({ params, body, controller }: CourseContext & { params: { id: string }, body: UpdateCourseBody }) => await controller.updateCourse(params.id, body)), {
                 body: updateCourseSchema

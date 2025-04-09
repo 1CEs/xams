@@ -35,13 +35,6 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
             .post('', catchAsync(async ({ body, user, controller }: ExamContext & { body: AddExamBody }) => await controller.addExamination({ ...body, instructor_id: user._id as unknown as string, category: body.category || [] }, user)), {
                 body: AddExaminationSchema
             })
-            .post('/verify', catchAsync(async ({ query, controller, user }: ExamContext & { query: { examination_id: string, group_id: string, password: string } }) => await controller.verifyPassword(query.examination_id, query.group_id, query.password, user)), {
-                query: t.Object({
-                    examination_id: t.String(),
-                    group_id: t.String(),
-                    password: t.String()
-                })
-            })
             .patch('/:id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { id: string }, body: UpdateExamBody }) => await controller.updateExamination(params.id, body, user)), {
                 body: updateExaminationSchema
             })

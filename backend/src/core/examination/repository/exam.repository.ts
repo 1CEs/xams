@@ -24,11 +24,6 @@ export class ExaminationRepository
         return result
     }
 
-    async verifyPassword(examination_id: string, group_id: string, password: string) {
-        const result = await this._model.findOne({ _id: examination_id, group_id: group_id, password: password }).exec()
-        return result
-    }
-
     async updateQuestion(id: string, question_id: string, payload: Partial<IQuestion>) {
         const result = await this._model.findOneAndUpdate(
             { _id: id, 'questions._id': question_id },
