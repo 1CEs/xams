@@ -47,7 +47,7 @@ const NestedQuestionCard = memo(({
     <div className="w-full">
       <div className="max-w-[90%]">
         <p className="text-lg font-medium" dangerouslySetInnerHTML={{ __html: question.question }}></p>
-        <p className='text-sm text-foreground/50'>
+        <p className='text-sm text-foreground/50 pb-2'>
           For Question number: {questionNumber} to {questionNumber + (question.questions?.length || 0) - 1}
         </p>
       </div>
@@ -86,13 +86,13 @@ const QuestionCard = memo(({
 }: QuestionCardProps) => {
   // Add state to store randomized choices
   const [randomizedChoices, setRandomizedChoices] = useState<Choice[] | null>(null);
-  
+
   useEffect(() => {
     if (question.isRandomChoices && question.choices && !randomizedChoices) {
       // Check if randomized choices are already stored in localStorage
       if (examId && typeof window !== 'undefined') {
         const storedRandomizedChoices = localStorage.getItem(`exam_${examId}_randomized_choices_${question._id}`);
-        
+
         if (storedRandomizedChoices) {
           // Use stored randomized choices
           setRandomizedChoices(JSON.parse(storedRandomizedChoices));
@@ -100,7 +100,7 @@ const QuestionCard = memo(({
           // Randomize choices and store in localStorage
           const shuffledChoices = [...question.choices].sort(() => Math.random() - 0.5);
           setRandomizedChoices(shuffledChoices);
-          
+
           // Store in localStorage
           localStorage.setItem(`exam_${examId}_randomized_choices_${question._id}`, JSON.stringify(shuffledChoices));
         }
@@ -116,7 +116,7 @@ const QuestionCard = memo(({
     setAnswers(prev => {
       const newAnswers = [...prev];
       const answerIndex = newAnswers.findIndex(a => a.questionId === questionId);
-      
+
       if (answerIndex !== -1) {
         const currentAnswer = newAnswers[answerIndex];
         if (isSingleAnswer) {
@@ -130,14 +130,14 @@ const QuestionCard = memo(({
           if (choiceIndex === -1) {
             newAnswers[answerIndex] = { ...currentAnswer, answers: [...currentAnswer.answers, choice] };
           } else {
-            newAnswers[answerIndex] = { 
-              ...currentAnswer, 
+            newAnswers[answerIndex] = {
+              ...currentAnswer,
               answers: currentAnswer.answers.filter((_, i) => i !== choiceIndex)
             };
           }
         }
       }
-      
+
       return newAnswers;
     });
   }, [setAnswers]);
@@ -162,7 +162,7 @@ const QuestionCard = memo(({
 
   const renderQuestionContent = useCallback((q: Question, isSubQuestion: boolean = false) => {
     // Use the randomized choices if available, otherwise use the original choices
-    const displayChoices = q.isRandomChoices && randomizedChoices 
+    const displayChoices = q.isRandomChoices && randomizedChoices
       ? randomizedChoices
       : q.choices
 
@@ -269,18 +269,28 @@ const QuestionCard = memo(({
     }
   }, [question, questionNumber, renderQuestionContent, answers, setAnswers, examId]);
 
+  // If this is a nested sub-question, render without card and question number
+  if (isNested) {
+    return (
+      <div className="w-full">
+        {questionContent}
+      </div>
+    );
+  }
+
+  // For non-nested questions, render with card and question number
   return (
-    <Card key={question._id} id={`question-${question._id}`} className={isNested ? "border-l-2 border-secondary pl-4" : ""}>
+    <Card key={question._id} id={`question-${question._id}`}>
       <CardBody>
         <div className="flex items-start gap-4 px-1">
-          <div className={`flex-shrink-0 w-8 h-8 ${question.type === 'nested' ? 'hidden' : ''} rounded-full bg-secondary text-white text-sm flex items-center justify-center`}>
-            {questionNumber}
-          </div>
+            {question.type !== 'nested' && <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary text-white text-sm flex items-center justify-center">
+              {questionNumber}
+            </div>}
           {questionContent}
         </div>
       </CardBody>
     </Card>
-  )
+  );
 });
 
 QuestionCard.displayName = 'QuestionCard';
