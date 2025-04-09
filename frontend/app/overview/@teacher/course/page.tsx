@@ -20,6 +20,7 @@ import { today, getLocalTimeZone } from '@internationalized/date'
 import { LearnersTable } from "@/components/course/learner-table"
 import { useRouter } from "next/navigation"
 import CourseUpdateModal from "@/components/overview/modals/course-update-modal"
+import ExamScheduleCard from "@/components/overview/exam-schedule-card"
 
 export default function CoursePage() {
     const params = useSearchParams()
@@ -195,72 +196,13 @@ export default function CoursePage() {
                                                 <h3 className="text-lg font-semibold mb-4">Scheduled Exams</h3>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                     {group.exam_setting.map((setting, idx) => (
-                                                        <div key={idx} className="bg-gradient-to-r from-secondary/5 to-primary/5 rounded-xl overflow-hidden shadow-sm border border-secondary/10">
-                                                            <div className="bg-secondary/10 px-4 py-3 flex justify-between items-center">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="bg-secondary text-white p-1.5 rounded-full">
-                                                                        <UisSchedule fontSize={16} />
-                                                                    </div>
-                                                                    <h4 className="font-medium">Exam #{idx + 1}</h4>
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <Chip size="sm" color="primary" variant="flat" className="font-mono">
-                                                                        {setting.exam_code}
-                                                                    </Chip>
-                                                                    <Tooltip content="Delete this exam schedule">
-                                                                        <Button
-                                                                            isIconOnly
-                                                                            size="sm"
-                                                                            variant="light"
-                                                                            color="danger"
-                                                                            onPress={() => openDeleteExamConfirmation(group.group_name, idx)}
-                                                                        >
-                                                                            <MdiBin fontSize={16} />
-                                                                        </Button>
-                                                                    </Tooltip>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="p-4">
-                                                                <div className="flex justify-between items-center mb-3">
-                                                                    <span className="text-xs font-medium text-gray-500">EXAM ID</span>
-                                                                    <span className="font-mono text-sm">{setting.exam_id}</span>
-                                                                </div>
-
-                                                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                                                    <div className="bg-secondary/10 p-3 rounded-lg">
-                                                                        <div className="text-xs font-medium text-gray-500 mb-1">OPENS</div>
-                                                                        <div className="text-sm">{new Date(setting.open_time).toLocaleString()}</div>
-                                                                    </div>
-                                                                    <div className="bg-secondary/10 p-3 rounded-lg">
-                                                                        <div className="text-xs font-medium text-gray-500 mb-1">CLOSES</div>
-                                                                        <div className="text-sm">{new Date(setting.close_time).toLocaleString()}</div>
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="flex flex-wrap gap-2 mt-3">
-                                                                    <Chip size="sm" variant="flat" color="default">
-                                                                        {setting.allowed_attempts} attempt{setting.allowed_attempts !== 1 ? 's' : ''}
-                                                                    </Chip>
-                                                                    <Chip size="sm" variant="flat" color={setting.allowed_review ? "success" : "danger"}>
-                                                                        {setting.allowed_review ? 'Review allowed' : 'No review'}
-                                                                    </Chip>
-                                                                    <Chip size="sm" variant="flat" color={setting.show_answer ? "success" : "danger"}>
-                                                                        {setting.show_answer ? 'Show answers' : 'Hide answers'}
-                                                                    </Chip>
-                                                                    <Chip size="sm" variant="flat" color={setting.randomize_question ? "warning" : "default"}>
-                                                                        {setting.randomize_question ? 'Random questions' : 'Fixed order'}
-                                                                    </Chip>
-                                                                </div>
-
-                                                                {setting.ip_range && (
-                                                                    <div className="mt-3 text-xs">
-                                                                        <span className="font-medium text-gray-500">IP RANGE: </span>
-                                                                        <span className="font-mono">{setting.ip_range}</span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
+                                                        <ExamScheduleCard
+                                                            key={idx}
+                                                            setting={setting}
+                                                            index={idx}
+                                                            groupName={group.group_name}
+                                                            onDelete={openDeleteExamConfirmation}
+                                                        />
                                                     ))}
                                                 </div>
                                             </div>

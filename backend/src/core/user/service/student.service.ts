@@ -7,4 +7,14 @@ export class StudentService extends UserService<IStudent> implements IStudentSer
     constructor(role: UserRole) {
         super(role)
     }
+
+    async isUserAlreadyInGroup(user_id: string, group_id: string): Promise<boolean> {
+        const student = await this._repository.findById(user_id, { join_groups: 1 }) as IStudent | null;
+
+        if (!student) {
+            return false;
+        }
+
+        return student.join_groups.some(id => id.toString() === group_id);
+    }
 }

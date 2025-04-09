@@ -4,7 +4,9 @@ import { ExaminationService } from "../../core/examination/service/exam.service"
 import { IExaminationService } from "../../core/examination/service/interface/iexam.service";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
 import { InstructorService } from "../../core/user/service/instructor.service";
+import { StudentService } from "../../core/user/service/student.service";
 import { UserServiceFactory } from "../../core/user/service/user.factory";
+import { UserRole } from "../../types/user";
 import { IExaminationController } from "./interface/iexam.controller";
 import { publicEncrypt, privateDecrypt } from "crypto";
 
@@ -126,6 +128,22 @@ export class ExaminationController implements IExaminationController {
     async deleteExamination(id: string, user?: IInstructor) {
         const deleted = await this._service.deleteExamination(id)
         return this._response<typeof deleted>('Delete Examination Successfully', 200, this._sanitizeExamData(deleted, user))
+    }
+
+    async verifyPassword(examination_id: string, group_id: string, password: string, user?: IInstructor) {
+        const service = new UserServiceFactory().createService(user?.role as UserRole)
+        if(user?.role !== "student") {
+            const verified = await this._service.verifyPassword(examination_id, group_id, password)
+            return this._response<typeof verified>('Password Verified Successfully', 200, verified)
+        }
+        
+        const isUserAlreadyInGroup = await (service as StudentService).isUserAlreadyInGroup(user?._id as unknown as string, group_id)
+        if (!isUserAlreadyInGroup) {
+            return this._response<null>('User is not in the group', 400, null)
+        }
+        const verified = await this._service.verifyPassword(examination_id, group_id, password)
+        return this._response<IExamination | null>('Password Verified Successfully', 200, verified)
+        
     }
 
     // Question-Only methods

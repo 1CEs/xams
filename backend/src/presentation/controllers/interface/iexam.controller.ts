@@ -10,7 +10,8 @@ export interface IExaminationController {
     getExaminationByInstructorId: (instructor_id: string) => Promise<ControllerResponse<IExamination[] | null>>
     updateExamination: (id: string, payload: Partial<IExamination>) => Promise<ControllerResponse<IExamination | null>>
     deleteExamination: (id: string) => Promise<ControllerResponse<IExamination | null>>
-
+    verifyPassword: (examination_id: string, group_id: string, password: string) => Promise<ControllerResponse<IExamination | null>>
+    
     // Question-Only methods
     addExaminationQuestion: (id: string, payload: Omit<IQuestion, '_id'>) => Promise<ControllerResponse<IExamination | null>>
     updateQuestion: (id: string, question_id: string, payload: Partial<IQuestion>) => Promise<ControllerResponse<IExamination | null>>
