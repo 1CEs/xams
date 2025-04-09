@@ -46,7 +46,7 @@ const NestedQuestionCard = memo(({
   return (
     <div className="w-full">
       <div className="max-w-[90%]">
-        <p className="text-lg font-medium" dangerouslySetInnerHTML={{ __html: question.question }}></p>
+        <p className={`text-lg font-medium tiptap`} dangerouslySetInnerHTML={{ __html: question.question }}></p>
         <p className='text-sm text-foreground/50 pb-2'>
           For Question number: {questionNumber} to {questionNumber + (question.questions?.length || 0) - 1}
         </p>

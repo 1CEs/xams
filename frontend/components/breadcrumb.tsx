@@ -44,7 +44,7 @@ const Breadcrumb = () => {
         </BreadcrumbItem>
         
         {breadcrumbItems.map((item, index) => (
-          <BreadcrumbItem key={index}>
+          <BreadcrumbItem key={"breadcrumb-" + index}>
             {/* Don't make parallel routes clickable since they're not real pages */}
             {item.isParallelRoute ? (
               <span>{item.label}</span>
