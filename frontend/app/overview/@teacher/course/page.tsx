@@ -18,7 +18,7 @@ import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { today, getLocalTimeZone } from '@internationalized/date'
 import { LearnersTable } from "@/components/course/learner-table"
-import { useRouter } from "next/navigation"
+import { useRouter } from "nextjs-toploader/app"
 import CourseUpdateModal from "@/components/overview/modals/course-update-modal"
 import ExamScheduleCard from "@/components/overview/exam-schedule-card"
 
@@ -197,7 +197,9 @@ export default function CoursePage() {
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                     {group.exam_setting.map((setting, idx) => (
                                                         <ExamScheduleCard
+                                                            courseId={_id as string}
                                                             key={idx}
+                                                            groupId={group._id}
                                                             setting={setting}
                                                             index={idx}
                                                             groupName={group.group_name}
@@ -231,8 +233,8 @@ export default function CoursePage() {
             <div className="flex flex-col gap-y-6 basis-3/12">
                 <AvatarGroup size="md" isBordered max={5}>
                     {
-                        Array.from({ length: Math.random() * 10 + 1 }).map(() => (
-                            <Avatar src="https://pic.re/image" />
+                        Array.from({ length: Math.random() * 10 + 1 }).map((_, idx) => (
+                            <Avatar key={idx} src="https://pic.re/image" />
                         ))
                     }
                 </AvatarGroup>

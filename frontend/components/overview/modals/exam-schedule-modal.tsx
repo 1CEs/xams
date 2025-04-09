@@ -267,6 +267,7 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
                 
                 <div className="flex flex-col gap-2">
                   <Switch
+                    color='secondary'
                     isSelected={examSettingForm.allowed_review}
                     onValueChange={(allowed_review) => 
                       setExamSettingForm(prev => ({ ...prev, allowed_review }))}
@@ -275,6 +276,7 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
                   </Switch>
                   
                   <Switch
+                    color='secondary'
                     isSelected={examSettingForm.show_answer}
                     onValueChange={(show_answer) => 
                       setExamSettingForm(prev => ({ ...prev, show_answer }))}
@@ -283,6 +285,7 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
                   </Switch>
                   
                   <Switch
+                    color='secondary'
                     isSelected={examSettingForm.randomize_question}
                     onValueChange={(randomize_question) => 
                       setExamSettingForm(prev => ({ ...prev, randomize_question }))}
@@ -291,6 +294,7 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
                   </Switch>
                   
                   <Switch
+                    color='secondary'
                     isSelected={examSettingForm.randomize_choice}
                     onValueChange={(randomize_choice) => 
                       setExamSettingForm(prev => ({ ...prev, randomize_choice }))}

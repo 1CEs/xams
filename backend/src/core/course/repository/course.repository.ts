@@ -33,4 +33,17 @@ export class CourseRepository extends BaseRepository<ICourse & Document> impleme
 
         return result
     }
+
+    async getSetting(course_id: string, group_id: string, setting_id: string) {
+        const course = await this._model.findOne({ _id: course_id }).exec() as ICourse & Document
+        if (!course) {
+            return null
+        }
+        const group = course.groups?.find((group: IGroup) => group._id == group_id)
+        if (!group) {
+            return null
+        }
+        const setting = group.exam_setting.find((setting: ISetting) => setting._id == setting_id)
+        return setting
+    }
 }

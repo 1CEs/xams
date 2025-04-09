@@ -44,4 +44,9 @@ export class CourseService implements ICourseService {
         const result = await this._repository.verifyPassword(course_id, group_id, setting_id, password)
         return result
     }
+
+    async getSetting(course_id: string, group_id: string, setting_id: string) {
+        const result = await this._repository.getSetting(course_id, group_id, setting_id)
+        return result
+    }
 }

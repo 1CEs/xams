@@ -240,4 +240,9 @@ export class CourseController implements ICourseController {
         
         return this._response('Exam setting deleted successfully', 200, updated)
     }
+
+    async getSetting(course_id: string, group_id: string, setting_id: string) {
+        const setting = await this._service.getSetting(course_id, group_id, setting_id)
+        return this._response<typeof setting>('Done', 200, setting)
+    }
 }

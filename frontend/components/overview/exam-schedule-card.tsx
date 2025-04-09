@@ -3,6 +3,7 @@ import { MdiBin, UisSchedule } from "@/components/icons/icons"
 import ExamPasswordModal from "./modals/exam-password-modal"
 
 interface ExamSetting {
+  _id: string
   exam_code: string
   exam_id: string
   open_time: Date
@@ -15,13 +16,15 @@ interface ExamSetting {
 }
 
 interface ExamScheduleCardProps {
+  courseId: string
+  groupId: string
   setting: ExamSetting
   index: number
   groupName: string
   onDelete: (groupName: string, examSettingIndex: number) => void
 }
 
-export default function ExamScheduleCard({ setting, index, groupName, onDelete }: ExamScheduleCardProps) {
+export default function ExamScheduleCard({ courseId, groupId, setting, index, groupName, onDelete }: ExamScheduleCardProps) {
   const { isOpen, onOpen, onOpenChange } = useDisclosure()
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -104,11 +107,14 @@ export default function ExamScheduleCard({ setting, index, groupName, onDelete }
         </div>
       </div>
 
-      <ExamPasswordModal 
+      <ExamPasswordModal
+        courseId={courseId}
+        groupId={groupId}
         isOpen={isOpen}
         onOpenChange={onOpenChange}
         examId={setting.exam_id}
         examCode={setting.exam_code}
+        settingId={setting._id}
       />
     </>
   )

@@ -8,6 +8,7 @@ type CourseResponse = {
 }
 
 type IGroup = {
+    _id: string
     group_name: string
     join_code: string
     students: string[]
@@ -15,6 +16,7 @@ type IGroup = {
 }
 
 type ISetting = {
+    _id: string
     exam_id: string
     open_time: Date
     close_time: Date

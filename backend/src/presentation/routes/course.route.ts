@@ -36,6 +36,7 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
             //         instructor_id: t.String()
             //     })
             // })
+
             .post('', catchAsync(async ({ body, user, controller }: CourseContext & { body: AddCourseBody }) => await controller.addCourse({ ...body, instructor_id: user._id as unknown as string }, user)), {
                 body: AddCourseSchema
             })
@@ -97,4 +98,11 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
                 }
                 return await controller.deleteGroupExamSetting(params.id, params.groupName, index);
             }))
+            .get('', catchAsync(async ({ query, controller }: CourseContext & { query: { course_id: string, group_id: string, setting_id: string } }) => await controller.getSetting(query.course_id, query.group_id, query.setting_id)), {
+                query: t.Object({
+                    course_id: t.String(),
+                    group_id: t.String(),
+                    setting_id: t.String()
+                })
+            })
     )
