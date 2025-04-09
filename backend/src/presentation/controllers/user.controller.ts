@@ -5,8 +5,6 @@ import { IUserServiceFactory } from "../../core/user/service/interface/iuser.fac
 import { UserServiceFactory } from "../../core/user/service/user.factory";
 import { CategoryPayload } from "../../types/user";
 import { IUserController } from "./interface/iuser.controller";
-import { IInstructor } from "../../core/user/model/interface/iintructor";
-import { JWT } from "../middleware/jwt.middleware";
 
 type JWTInstance = {
     sign: (payload: any) => Promise<string>

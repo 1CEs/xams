@@ -11,11 +11,11 @@ export class UserRepository
         super(UserModel)
     }
 
-    async findByUsername(username: string) {
-        return await this._model.findOne({ username }).exec()
+    async findByUsername(username: string, projection?: any) {
+        return await this._model.findOne({ username }, projection).exec()
     }
 
-    async findByEmail(email: string) {
-        return await this._model.findOne({ email }).exec()
+    async findByEmail(email: string, projection?: any) {
+        return await this._model.findOne({ email }, projection).exec()
     }
 }

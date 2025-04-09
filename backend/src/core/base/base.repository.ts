@@ -13,16 +13,16 @@ export class BaseRepository<T extends Document> implements IBaseRepository<T> {
         return document as T & Document
     }
 
-    async find() {
-        return await this._model.find().exec()
+    async find(filter = {}, projection?: any) {
+        return await this._model.find(filter, projection).exec()
     }
 
-    async findById(_id: string) {
-        return await this._model.findById(_id).exec()
+    async findById(_id: string, projection?: any) {
+        return await this._model.findById(_id, projection).exec()
     }
 
-    async update(_id: string, payload: Partial<T>) {
-        return await this._model.findByIdAndUpdate(_id, payload, { new: true }).exec()
+    async update(_id: string, payload: Partial<T>, projection?: any) {
+        return await this._model.findByIdAndUpdate(_id, payload, { new: true, projection }).exec()
     }
 
     async delete(_id: string) {

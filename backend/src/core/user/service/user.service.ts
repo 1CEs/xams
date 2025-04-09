@@ -52,18 +52,18 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
     }
 
     async getUsers() {
-        const result = await this._repository.find()
+        const result = await this._repository.find({}, { password: 0 })
         return result as T[] | null
     }
 
     async getUserById(_id: string) {
-        const result = await this._repository.findById(_id)
+        const result = await this._repository.findById(_id, { password: 0 })
         return result as T | null
     }
 
     async getUserByEmail(email: string) {
         if (this._repository instanceof UserRepository) {
-            const result = await this._repository.findByEmail(email)
+            const result = await this._repository.findByEmail(email, { password: 0 })
             return result as T | null
         }
         return null
@@ -71,14 +71,14 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
 
     async getUserByUsername(username: string) {
         if (this._repository instanceof UserRepository) {
-            const result = await this._repository.findByUsername(username)
+            const result = await this._repository.findByUsername(username, { password: 0 })
             return result as T | null
         }
         return null
     }
 
     async updateUser(_id: string, payload: Partial<T>) {
-        const result = await this._repository.update(_id, payload)
+        const result = await this._repository.update(_id, payload, { password: 0 })
         return result as T | null
     }
 
