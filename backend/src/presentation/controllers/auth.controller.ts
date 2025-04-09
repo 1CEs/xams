@@ -78,7 +78,9 @@ export class AuthController implements IAuthController {
             value: accToken,
             httpOnly: true,
             maxAge: Number(process.env.ACCESS_TOKEN_EXP! || 84600),
-            path: '/'
+            path: '/',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
         })
 
         const refToken = await jwt.sign({
@@ -89,7 +91,9 @@ export class AuthController implements IAuthController {
             value: refToken,
             httpOnly: true,
             maxAge: Number(process.env.REFRESH_TOKEN_EXP! || 604800),
-            path: '/'
+            path: '/',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
         })
     }
 
