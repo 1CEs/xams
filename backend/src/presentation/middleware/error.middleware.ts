@@ -39,6 +39,8 @@ export const errorMiddleware = new Elysia()
                 return { code, err: parsedError }
             default:
                 set.status = 'Internal Server Error'
-                return { code: set.status, err: error.message }
+                // Handle case where error may not have message property
+                const errorMessage = 'message' in error ? error.message : 'An unknown error occurred'
+                return { code: set.status, err: errorMessage }
         }
     })
