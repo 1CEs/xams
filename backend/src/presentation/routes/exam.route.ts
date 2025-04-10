@@ -6,6 +6,7 @@ import { IInstructor } from "../../core/user/model/interface/iintructor";
 import { catchAsync } from "../../utils/error";
 import { Static } from "@sinclair/typebox";
 import { Context } from "elysia";
+import { Answer, SubmitAnswer } from "../../types/exam";
 
 type ExamContext = Context & {
     controller: ExaminationController;
@@ -55,5 +56,17 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
             // Nested Question routes
             .post('/nested-question/:id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { id: string }, body: NestedQuestionBody }) => await controller.addNestedQuestion(params.id, body, user)), {
                 body: NestedQuestionSchema
+            })
+
+            // Result-Only routes
+            .post('/submit', catchAsync(async ({ body, controller }: ExamContext & { body: SubmitAnswer }) => await controller.resultSubmit(body.exam_id, body.answers)), {
+                body: t.Object({
+                    exam_id: t.String(),
+                    answers: t.Array(t.Object({
+                        questionId: t.String(),
+                        answers: t.Array(t.String()),
+                        essayAnswer: t.Optional(t.String())
+                    }))
+                })
             })
     )

@@ -1,6 +1,7 @@
 import { IExamination } from "../../../core/examination/model/interface/iexamination"
 import { IQuestion } from "../../../core/examination/model/interface/iquestion"
 import { IInstructor } from "../../../core/user/model/interface/iintructor"
+import { Answer, ExamResult } from "../../../types/exam"
 
 export interface IExaminationController {
     // Examination-Only methods
@@ -15,4 +16,7 @@ export interface IExaminationController {
     addExaminationQuestion: (id: string, payload: Omit<IQuestion, '_id'>) => Promise<ControllerResponse<IExamination | null>>
     updateQuestion: (id: string, question_id: string, payload: Partial<IQuestion>) => Promise<ControllerResponse<IExamination | null>>
     deleteQuestion: (id: string, question_id: string) => Promise<ControllerResponse<IExamination | null>>
+
+    // Result-Only methods
+    resultSubmit: (examId: string, answers: Answer[]) => Promise<ControllerResponse<ExamResult>>
 }

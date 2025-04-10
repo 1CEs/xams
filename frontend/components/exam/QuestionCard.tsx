@@ -18,6 +18,7 @@ interface Question {
   maxWords?: number
   score: number
   questions?: Question[] // For nested questions
+  isMultiAnswer?: boolean // Add this property
 }
 
 interface Answer {
@@ -33,6 +34,7 @@ interface QuestionCardProps {
   setAnswers: React.Dispatch<React.SetStateAction<Answer[]>>
   examId?: string // Add examId prop to access localStorage
   isNested?: boolean // Flag to indicate if this is a nested question
+  code?: string // Add code prop to access localStorage with code
 }
 
 // Component for rendering nested questions
@@ -41,7 +43,8 @@ const NestedQuestionCard = memo(({
   questionNumber,
   answers,
   setAnswers,
-  examId
+  examId,
+  code
 }: QuestionCardProps) => {
   return (
     <div className="w-full">
@@ -64,6 +67,7 @@ const NestedQuestionCard = memo(({
                 answers={answers}
                 setAnswers={setAnswers}
                 examId={examId}
+                code={code}
                 isNested={true}
               />
             </div>
@@ -82,7 +86,8 @@ const QuestionCard = memo(({
   answers,
   setAnswers,
   examId,
-  isNested = false
+  isNested = false,
+  code
 }: QuestionCardProps) => {
   // Add state to store randomized choices
   const [randomizedChoices, setRandomizedChoices] = useState<Choice[] | null>(null);
@@ -90,8 +95,17 @@ const QuestionCard = memo(({
   useEffect(() => {
     if (question.isRandomChoices && question.choices && !randomizedChoices) {
       // Check if randomized choices are already stored in localStorage
-      if (examId && typeof window !== 'undefined') {
-        const storedRandomizedChoices = localStorage.getItem(`exam_${examId}_randomized_choices_${question._id}`);
+      if ((examId || code) && typeof window !== 'undefined') {
+        // Try to get from examId first, then from code
+        let storedRandomizedChoices = null;
+        
+        if (examId) {
+          storedRandomizedChoices = localStorage.getItem(`exam_${examId}_randomized_choices_${question._id}`);
+        }
+        
+        if (!storedRandomizedChoices && code) {
+          storedRandomizedChoices = localStorage.getItem(`exam_${code}_randomized_choices_${question._id}`);
+        }
 
         if (storedRandomizedChoices) {
           // Use stored randomized choices
@@ -101,15 +115,21 @@ const QuestionCard = memo(({
           const shuffledChoices = [...question.choices].sort(() => Math.random() - 0.5);
           setRandomizedChoices(shuffledChoices);
 
-          // Store in localStorage
-          localStorage.setItem(`exam_${examId}_randomized_choices_${question._id}`, JSON.stringify(shuffledChoices));
+          // Store in localStorage using both examId and code if available
+          if (examId) {
+            localStorage.setItem(`exam_${examId}_randomized_choices_${question._id}`, JSON.stringify(shuffledChoices));
+          }
+          
+          if (code) {
+            localStorage.setItem(`exam_${code}_randomized_choices_${question._id}`, JSON.stringify(shuffledChoices));
+          }
         }
       } else {
         // Fallback to just randomizing without storing
         setRandomizedChoices([...question.choices].sort(() => Math.random() - 0.5));
       }
     }
-  }, [question.isRandomChoices, question.choices, randomizedChoices, question._id, examId]);
+  }, [question.isRandomChoices, question.choices, randomizedChoices, question._id, examId, code]);
 
   // Handler functions moved from the examination page
   const handleCheckboxChange = useCallback((questionId: string, choice: string, isSingleAnswer: boolean) => {
@@ -136,6 +156,13 @@ const QuestionCard = memo(({
             };
           }
         }
+      } else {
+        // If the answer doesn't exist yet, create it
+        newAnswers.push({
+          questionId,
+          answers: isSingleAnswer ? [choice] : [choice],
+          essayAnswer: ''
+        });
       }
 
       return newAnswers;
@@ -152,12 +179,25 @@ const QuestionCard = memo(({
   }, [setAnswers]);
 
   const handleEssayChange = useCallback((questionId: string, value: string) => {
-    setAnswers(prev => prev.map(answer => {
-      if (answer.questionId === questionId) {
-        return { ...answer, essayAnswer: value }
+    setAnswers(prev => {
+      const existingAnswerIndex = prev.findIndex(a => a.questionId === questionId);
+      if (existingAnswerIndex !== -1) {
+        // Update existing answer
+        const newAnswers = [...prev];
+        newAnswers[existingAnswerIndex] = {
+          ...newAnswers[existingAnswerIndex],
+          essayAnswer: value
+        };
+        return newAnswers;
+      } else {
+        // Create new answer
+        return [...prev, {
+          questionId,
+          answers: [],
+          essayAnswer: value
+        }];
       }
-      return answer
-    }))
+    });
   }, [setAnswers]);
 
   const renderQuestionContent = useCallback((q: Question, isSubQuestion: boolean = false) => {
@@ -166,6 +206,9 @@ const QuestionCard = memo(({
       ? randomizedChoices
       : q.choices
 
+    // Find the current answer for this question
+    const currentAnswer = answers.find(a => a.questionId === q._id);
+    
     return (
       <div className="flex-grow">
         <div className="mb-4 flex justify-between">
@@ -183,9 +226,9 @@ const QuestionCard = memo(({
 
         {q.type === 'mc' && (
           <div className="flex flex-col space-y-2">
-            {displayChoices?.filter((c: Choice) => c.isCorrect).length === 1 ? (
+            {!q.isMultiAnswer ? (
               <RadioGroup
-                value={answers.find(a => a.questionId === q._id)?.answers[0] || ''}
+                value={currentAnswer?.answers[0] || ''}
                 onValueChange={(value) => handleCheckboxChange(q._id, value, true)}
                 className="flex flex-col space-y-2"
               >
@@ -207,7 +250,7 @@ const QuestionCard = memo(({
                     {String.fromCharCode(65 + choiceIndex)}
                   </div>
                   <Checkbox
-                    isSelected={answers.find(a => a.questionId === q._id)?.answers.includes(choice.content) || false}
+                    isSelected={currentAnswer?.answers.includes(choice.content) || false}
                     onValueChange={() => handleCheckboxChange(q._id, choice.content, false)}
                     className="flex-grow p-3"
                   >
@@ -242,7 +285,7 @@ const QuestionCard = memo(({
           <Textarea
             label="Your Answer"
             placeholder="Type your answer here..."
-            value={answers.find(a => a.questionId === q._id)?.essayAnswer || ''}
+            defaultValue={answers.find(a => a.questionId === q._id)?.essayAnswer || ''}
             onValueChange={(value) => handleEssayChange(q._id, value)}
             minRows={q.type === 'les' ? 5 : 2}
             maxRows={q.type === 'les' ? 10 : 4}
@@ -262,12 +305,13 @@ const QuestionCard = memo(({
           answers={answers}
           setAnswers={setAnswers}
           examId={examId}
+          code={code}
         />
       );
     } else {
       return renderQuestionContent(question);
     }
-  }, [question, questionNumber, renderQuestionContent, answers, setAnswers, examId]);
+  }, [question, questionNumber, renderQuestionContent, answers, setAnswers, examId, code]);
 
   // If this is a nested sub-question, render without card and question number
   if (isNested) {

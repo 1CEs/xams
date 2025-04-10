@@ -1,3 +1,4 @@
+import { Answer } from "../../../types/exam";
 import { IExamination } from "../model/interface/iexamination";
 import { IQuestion } from "../model/interface/iquestion";
 import { ExaminationRepository } from "../repository/exam.repository";
@@ -59,6 +60,11 @@ export class ExaminationService implements IExaminationService {
     // Nested Question methods
     async addNestedQuestion(id: string, payload: { question: string; type: string; score: number; questions: IQuestion[] }) {
         const result = await this._repository.addNestedQuestion(id, payload)
+        return result
+    }
+
+    async resultSubmit(examId: string, answers: Answer[]) {
+        const result = await this._repository.resultSubmit(examId, answers)
         return result
     }
 }

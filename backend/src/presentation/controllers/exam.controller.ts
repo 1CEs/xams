@@ -6,6 +6,7 @@ import { IInstructor } from "../../core/user/model/interface/iintructor";
 import { InstructorService } from "../../core/user/service/instructor.service";
 import { StudentService } from "../../core/user/service/student.service";
 import { UserServiceFactory } from "../../core/user/service/user.factory";
+import { Answer } from "../../types/exam";
 import { UserRole } from "../../types/user";
 import { IExaminationController } from "./interface/iexam.controller";
 import { publicEncrypt, privateDecrypt } from "crypto";
@@ -82,6 +83,11 @@ export class ExaminationController implements IExaminationController {
         } else {
             return sanitizeExam(exam);
         }
+    }
+
+    async resultSubmit(examId: string, answers: Answer[]) {
+        const result = await this._service.resultSubmit(examId, answers)
+        return this._response('Exam submitted successfully', 200, result)
     }
 
     // Examination-Only methods

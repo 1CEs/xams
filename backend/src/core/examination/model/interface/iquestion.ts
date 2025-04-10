@@ -1,6 +1,8 @@
 import { QuestionType } from "../../../../types/exam";
+import { ObjectId } from "mongoose";
 
 export interface IQuestion {
+    _id?: ObjectId
     question: string
     type: QuestionType
     isRandomChoices?: boolean

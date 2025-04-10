@@ -127,19 +127,27 @@ const ExaminationPage = () => {
         exam.questions.forEach(question => {
           if (question.isRandomChoices) {
             localStorage.removeItem(`exam_${exam._id}_randomized_choices_${question._id}`)
+            // Also check for code-based storage
+            if (code) {
+              localStorage.removeItem(`exam_${code}_randomized_choices_${question._id}`)
+            }
           }
           // Also clear for nested questions
           if (question.type === 'nested' && question.questions) {
             question.questions.forEach(subQuestion => {
               if (subQuestion.isRandomChoices) {
                 localStorage.removeItem(`exam_${exam._id}_randomized_choices_${subQuestion._id}`)
+                // Also check for code-based storage
+                if (code) {
+                  localStorage.removeItem(`exam_${code}_randomized_choices_${subQuestion._id}`)
+                }
               }
             })
           }
         })
       }
     }
-  }, [exam])
+  }, [exam, code])
 
   // Memoize computed values
   const totalPages = useMemo(() => 
@@ -214,6 +222,31 @@ const ExaminationPage = () => {
           })
         }
 
+        // Ensure randomized choices are properly synchronized with saved answers
+        if (examData && code) {
+          const ensureRandomizedChoices = (questions: Question[]) => {
+            questions.forEach(q => {
+              if (q.isRandomChoices && q.choices) {
+                // Check if randomized choices exist in localStorage
+                const storedRandomizedChoices = localStorage.getItem(`exam_${code}_randomized_choices_${q._id}`);
+                
+                // If not, create and store them
+                if (!storedRandomizedChoices) {
+                  const shuffledChoices = [...q.choices].sort(() => Math.random() - 0.5);
+                  localStorage.setItem(`exam_${code}_randomized_choices_${q._id}`, JSON.stringify(shuffledChoices));
+                }
+              }
+              
+              // Also check nested questions
+              if (q.type === 'nested' && q.questions) {
+                ensureRandomizedChoices(q.questions);
+              }
+            });
+          };
+          
+          ensureRandomizedChoices(examData.questions);
+        }
+
         setExam(examData)
         setAnswers(initialAnswers)
         setExamLoaded(true)
@@ -232,11 +265,9 @@ const ExaminationPage = () => {
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true)
     try {
-      const res = await clientAPI.post(`exam/student/${code}/submit`, { 
+      const res = await clientAPI.post(`exam/submit`, { 
         answers,
-        course_id,
-        group_id,
-        setting_id
+        exam_id: exam?._id,
       })
       setExamResult(res.data.data)
       setIsResultsModalOpen(true)
@@ -246,7 +277,7 @@ const ExaminationPage = () => {
     } finally {
       setIsSubmitting(false)
     }
-  }, [answers, code, course_id, group_id, setting_id, clearSavedAnswers])
+  }, [answers, exam?._id, clearSavedAnswers])
 
   const handleQuestionNavigation = useCallback((questionIndex: number, questionId: string) => {
     const targetPage = Math.ceil((questionIndex + 1) / questionsPerPage)
@@ -433,7 +464,8 @@ const ExaminationPage = () => {
                 questionNumber={questionNumber}
                 answers={answers}
                 setAnswers={setAnswers}
-                examId={code || undefined}
+                examId={exam._id}
+                code={code || undefined}
               />
             )
           })}

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { ExaminationDocument } from "../../../types/exam";
+import { Answer, ExaminationDocument } from "../../../types/exam";
 import { BaseRepository } from "../../base/base.repository";
 import { ExaminationModel } from "../model/examination.model";
 import { IExamination } from "../model/interface/iexamination";
@@ -144,4 +144,152 @@ export class ExaminationRepository
     }
 
 
+    async resultSubmit(examId: string, answers: Answer[]) {
+        // First update the exam with the submitted answers
+        const updatedExam = await this._model.findByIdAndUpdate(examId, { $push: { answers: answers } }, { new: true }).exec();
+        
+        // Then check the answers to generate the result
+        const result = await this.checkAnswers(examId, answers);
+        
+        // Format the result to match what the frontend expects
+        return {
+            totalScore: result.maxPossibleScore,
+            obtainedScore: result.totalScore,
+            correctAnswers: result.results.filter(r => r.isCorrect).length,
+            totalQuestions: result.results.length,
+            details: result.results.map(r => ({
+                questionId: r.questionId,
+                isCorrect: r.isCorrect,
+                userAnswer: answers.find(a => a.questionId === r.questionId)?.answers || [],
+                correctAnswer: (() => {
+                    const question = updatedExam?.questions.find(q => q._id?.toString() === r.questionId);
+                    if (!question) return [];
+                    
+                    if (question.type === 'mc') {
+                        return question.choices?.filter(c => c.isCorrect).map(c => c.content) || [];
+                    }
+                    
+                    if (question.type === 'tf') {
+                        return [question.isTrue?.toString() || ''];
+                    }
+                    
+                    return [];
+                })(),
+                score: r.score
+            }))
+        };
+    }
+
+    async checkAnswers(examId: string, submittedAnswers: Answer[]) {
+        // Get the examination with questions
+        const examination = await this._model.findById(examId).exec();
+        if (!examination) {
+            throw new Error('Examination not found');
+        }
+
+        let totalScore = 0;
+        let maxPossibleScore = 0;
+        const results = submittedAnswers.map(submittedAnswer => {
+            // Find the corresponding question
+            const question = examination.questions.find(q => q._id?.toString() === submittedAnswer.questionId);
+            if (!question) {
+                return {
+                    questionId: submittedAnswer.questionId,
+                    isCorrect: false,
+                    score: 0,
+                    maxScore: 0,
+                    feedback: 'Question not found'
+                };
+            }
+
+            maxPossibleScore += question.score;
+            let isCorrect = false;
+            let earnedScore = 0;
+            let feedback = '';
+
+            switch (question.type) {
+                case 'mc': // Multiple Choice
+                    if (question.choices) {
+                        const correctChoices = question.choices
+                            .filter(choice => choice.isCorrect)
+                            .map(choice => choice.content);
+                        
+                        isCorrect = submittedAnswer.answers.length === correctChoices.length &&
+                            submittedAnswer.answers.every(answer => correctChoices.includes(answer));
+                        
+                        if (isCorrect) {
+                            earnedScore = question.score;
+                        }
+                    }
+                    break;
+
+                case 'tf': // True/False
+                    isCorrect = submittedAnswer.answers[0] === (question.isTrue ? 'true' : 'false');
+                    earnedScore = isCorrect ? question.score : 0;
+                    break;
+
+                case 'ses': // Short Essay
+                    if (question.expectedAnswer && submittedAnswer.essayAnswer) {
+                        // Simple string comparison for short essays
+                        isCorrect = submittedAnswer.essayAnswer.toLowerCase().trim() === 
+                                  question.expectedAnswer.toLowerCase().trim();
+                        earnedScore = isCorrect ? question.score : 0;
+                    }
+                    break;
+
+                case 'les': // Long Essay
+                    if (question.expectedAnswer && submittedAnswer.essayAnswer) {
+                        // For long essays, we might want to implement more sophisticated checking
+                        // This is a basic implementation
+                        const wordCount = submittedAnswer.essayAnswer.split(/\s+/).length;
+                        const meetsWordCount = !question.maxWords || wordCount <= question.maxWords;
+                        
+                        // Basic keyword matching
+                        const keywords = question.expectedAnswer.toLowerCase().split(/\s+/);
+                        const answerWords = submittedAnswer.essayAnswer.toLowerCase().split(/\s+/);
+                        const matchedKeywords = keywords.filter(keyword => 
+                            answerWords.some(word => word.includes(keyword))
+                        );
+                        
+                        const keywordScore = (matchedKeywords.length / keywords.length) * question.score;
+                        earnedScore = meetsWordCount ? keywordScore : 0;
+                        isCorrect = earnedScore > 0;
+                    }
+                    break;
+
+                case 'nested': // Nested Questions
+                    if (question.questions && submittedAnswer.answers.length === question.questions.length) {
+                        const nestedResults = question.questions.map((nestedQ, index) => {
+                            const nestedAnswer = submittedAnswer.answers[index];
+                            // Recursive checking for nested questions
+                            // This is a simplified version
+                            isCorrect = nestedAnswer === nestedQ.expectedAnswer;
+                            earnedScore = isCorrect ? nestedQ.score : 0;
+                            return { isCorrect, earnedScore };
+                        });
+                        
+                        earnedScore = nestedResults.reduce((sum, result) => sum + result.earnedScore, 0);
+                        isCorrect = earnedScore > 0;
+                    }
+                    break;
+            }
+
+            totalScore += earnedScore;
+
+            return {
+                questionId: submittedAnswer.questionId,
+                isCorrect,
+                score: earnedScore,
+                maxScore: question.score,
+                feedback: isCorrect ? 'Correct' : 'Incorrect'
+            };
+        });
+
+        return {
+            totalScore,
+            maxPossibleScore,
+            percentage: (totalScore / maxPossibleScore) * 100,
+            results
+        };
+    }
 }

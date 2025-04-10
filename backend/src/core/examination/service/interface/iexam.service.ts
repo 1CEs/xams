@@ -1,3 +1,4 @@
+import { Answer, ExamResult } from "../../../../types/exam";
 import { IExamination } from "../../model/interface/iexamination";
 import { IQuestion } from "../../model/interface/iquestion";
 
@@ -15,4 +16,5 @@ export interface IExaminationService {
     updateQuestion: (id: string, question_id: string, payload: Partial<IQuestion>) => Promise<IExamination | null>
     deleteQuestion: (id: string, question_id: string) => Promise<IExamination | null>
     addNestedQuestion: (id: string, payload: { question: string; type: string; score: number; questions: IQuestion[] }) => Promise<IExamination | null>
+    resultSubmit: (examId: string, answers: Answer[]) => Promise<ExamResult>
 }
