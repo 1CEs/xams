@@ -69,14 +69,21 @@ const PreviewExaminationPage = () => {
   const [examResult, setExamResult] = useState<ExamResult | null>(null)
   const [examLoaded, setExamLoaded] = useState(false)
   const questionsPerPage = 5
-  const initialTime = 60 * 60 // 1 hour in seconds
+  const initialTime = 60 * 60 // Default to 1 hour for preview mode
 
-  // Load saved answers from localStorage on component mount
+  // Load saved answers and current page from localStorage on component mount
   useEffect(() => {
     if (_id) {
+      // Load saved answers
       const savedAnswers = localStorage.getItem(`exam_answers_${_id}`)
       if (savedAnswers) {
         setAnswers(JSON.parse(savedAnswers))
+      }
+      
+      // Load saved current page
+      const savedPage = localStorage.getItem(`preview_exam_page_${_id}`)
+      if (savedPage) {
+        setCurrentPage(parseInt(savedPage, 10))
       }
     }
   }, [_id])
@@ -87,11 +94,19 @@ const PreviewExaminationPage = () => {
       localStorage.setItem(`exam_answers_${_id}`, JSON.stringify(answers))
     }
   }, [answers, _id])
+  
+  // Save current page to localStorage whenever it changes
+  useEffect(() => {
+    if (_id) {
+      localStorage.setItem(`preview_exam_page_${_id}`, currentPage.toString())
+    }
+  }, [currentPage, _id])
 
   // Clear localStorage after successful submission
   const clearSavedAnswers = useCallback(() => {
     if (_id) {
       localStorage.removeItem(`exam_answers_${_id}`)
+      localStorage.removeItem(`preview_exam_page_${_id}`) // Also clear saved page
       // Also clear randomized choices from localStorage
       if (exam) {
         exam.questions.forEach(question => {

@@ -1,6 +1,6 @@
 import { Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@nextui-org/react"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "nextjs-toploader/app"
 import { clientAPI } from "@/config/axios.config"
 import { errorHandler } from "@/utils/error"
 import { toast } from "react-toastify"
