@@ -98,7 +98,7 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
                 }
                 return await controller.deleteGroupExamSetting(params.id, params.groupName, index);
             }))
-            .get('', catchAsync(async ({ query, controller }: CourseContext & { query: { course_id: string, group_id: string, setting_id: string } }) => await controller.getSetting(query.course_id, query.group_id, query.setting_id)), {
+            .get('setting', catchAsync(async ({ query, controller }: CourseContext & { query: { course_id: string, group_id: string, setting_id: string } }) => await controller.getSetting(query.course_id, query.group_id, query.setting_id)), {
                 query: t.Object({
                     course_id: t.String(),
                     group_id: t.String(),

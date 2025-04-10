@@ -63,7 +63,7 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
 
     async getUserByEmail(email: string) {
         if (this._repository instanceof UserRepository) {
-            const result = await this._repository.findByEmail(email, { password: 0 })
+            const result = await this._repository.findByEmail(email)
             return result as T | null
         }
         return null
@@ -71,7 +71,7 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
 
     async getUserByUsername(username: string) {
         if (this._repository instanceof UserRepository) {
-            const result = await this._repository.findByUsername(username, { password: 0 })
+            const result = await this._repository.findByUsername(username)
             return result as T | null
         }
         return null

@@ -48,6 +48,7 @@ export class AuthController implements IAuthController {
         }
 
         if (!user) throw new Error('User not found')
+        console.log(user)
 
         const passwordIsValid = await Bun.password.verify(payload.body!.password, user.password)
 
