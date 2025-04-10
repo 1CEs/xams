@@ -20,6 +20,7 @@ interface Question {
     isCorrect: boolean
     score: number
   }[]
+  isMultiAnswer?: boolean
   isTrue?: boolean
   expectedAnswer?: string
   maxWords?: number

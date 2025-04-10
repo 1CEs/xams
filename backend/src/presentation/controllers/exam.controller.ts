@@ -53,24 +53,24 @@ export class ExaminationController implements IExaminationController {
             
             if (sanitized.questions && sanitized.questions.length > 0) {
                 sanitized.questions = sanitized.questions.map((question: IQuestion) => {
-                    if (user && user.role === 'instructor') {
-                        return {
-                            ...question,
-                        };
-                    }
-                    
-                    return {
+                    // if (user && user.role === 'instructor') {
+                    //     return {
+                    //         ...question,
+                    //     };
+                    // }
+                    const sanitizedQuestion = {
                         ...question,
-                        hasAnswers: (question.type === 'mc' && question.choices?.some(c => c.isCorrect)) || 
-                                  (question.type === 'tf' && question.isTrue !== undefined) ||
-                                  (['ses', 'les'].includes(question.type) && question.expectedAnswer !== undefined),
-                        answer: encryptRSA(
-                            (question.type === 'mc' ? question.choices?.filter(c => c.isCorrect).length.toString() :
-                            question.type === 'tf' ? question.isTrue?.toString() :
-                            question.expectedAnswer?.length.toString()) || '0',
-                            process.env.PUBLIC_KEY as string
-                        )
+                        choices: question.choices?.map((choice: typeof question.choices[0]) => ({
+                            ...choice,
+                            isCorrect: "Wow this is correct? LOL",
+                            score: "Just do the exam newbie."
+                        })),
+                        isMultiAnswer: question.choices ? question.choices.filter(choice => choice.isCorrect).length > 1 : false
                     };
+
+                    console.log(sanitizedQuestion)
+
+                    return sanitizedQuestion
                 });
             }
             
