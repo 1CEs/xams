@@ -6,6 +6,7 @@ import { UploadRoute } from "./upload.route"
 import { CourseRoute } from "./course.route"
 import { EnrollmentRoute } from "./enrollment.route"
 import { errorPlugin } from "../../utils/error"
+import { AssistantRoute } from "./assistant.route"
 
 export const indexRouter = new Elysia({ prefix: '/api' })
     .use(errorPlugin)
@@ -15,3 +16,4 @@ export const indexRouter = new Elysia({ prefix: '/api' })
     .use(CourseRoute)
     .use(UploadRoute)
     .use(EnrollmentRoute)
+    .use(AssistantRoute)
