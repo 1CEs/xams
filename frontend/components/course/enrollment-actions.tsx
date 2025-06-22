@@ -65,7 +65,7 @@ const EnrollmentActions = ({
       ) : (
         <Button
           className={`${!isEnrolled && "w-full"}`}
-          color="primary"
+          color="secondary"
           variant="flat"
           size="sm"
           onPress={onEnrollOpen}

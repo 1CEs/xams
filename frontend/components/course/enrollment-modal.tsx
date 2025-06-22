@@ -105,7 +105,6 @@ const EnrollmentModal = ({
               <Select
                 label="Select Group"
                 placeholder="Choose a group"
-                className="mb-4"
                 onChange={(e) => {
                   setSelectedGroup(e.target.value);
                   setError("");
@@ -132,7 +131,7 @@ const EnrollmentModal = ({
               <Button color="danger" variant="light" onPress={onClose}>
                 Cancel
               </Button>
-              <Button color="primary" onPress={handleEnroll} isLoading={loading}>
+              <Button color="secondary" onPress={handleEnroll} isLoading={loading}>
                 Enroll
               </Button>
             </ModalFooter>

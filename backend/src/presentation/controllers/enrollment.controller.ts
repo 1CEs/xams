@@ -59,6 +59,7 @@ export class EnrollmentController implements IEnrollmentController {
             const groupId = course.groups[groupIndex]._id;
             course.groups[groupIndex].students.push(studentId);
             (user as unknown as IStudentDocument).join_groups.push(groupId as unknown as ObjectId);
+            await (user as unknown as IStudentDocument).save();
 
             // Update the course with the modified groups array
             const updated = await this._courseService.updateCourse(courseId, { groups: course.groups });
