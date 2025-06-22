@@ -22,10 +22,11 @@ interface ExamScheduleCardProps {
   setting: ExamSetting
   index: number
   groupName: string
-  onDelete: (groupName: string, examSettingIndex: number) => void
+  isStudent?: boolean
+  onDelete?: (groupName: string, examSettingIndex: number) => void
 }
 
-export default function ExamScheduleCard({ courseId, groupId, setting, index, groupName, onDelete }: ExamScheduleCardProps) {
+export default function ExamScheduleCard({ courseId, groupId, setting, index, groupName, isStudent = false, onDelete }: ExamScheduleCardProps) {
   const { isOpen, onOpen, onOpenChange } = useDisclosure()
   const router = useRouter()
 
@@ -54,7 +55,7 @@ export default function ExamScheduleCard({ courseId, groupId, setting, index, gr
             <Chip size="sm" color="primary" variant="flat" className="font-mono">
               {setting.exam_code}
             </Chip>
-            <Tooltip content="Learner exam submitted">
+            {isStudent ? null : <Tooltip content="Learner exam submitted">
               <Button
                 isIconOnly
                 size="sm"
@@ -63,18 +64,20 @@ export default function ExamScheduleCard({ courseId, groupId, setting, index, gr
               >
                 <MdiPaper fontSize={16} />
               </Button>
-            </Tooltip>
-            <Tooltip content="Delete this exam schedule">
-              <Button
-                isIconOnly
-                size="sm"
-                variant="light"
-                color="danger"
-                onPress={() => onDelete(groupName, index)}
-              >
-                <MdiBin fontSize={16} />
-              </Button>
-            </Tooltip>
+            </Tooltip>}
+            {isStudent ? null : (
+              <Tooltip content="Delete this exam schedule">
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="light"
+                  color="danger"
+                  onPress={() => onDelete?.(groupName, index)}
+                >
+                  <MdiBin fontSize={16} />
+                </Button>
+              </Tooltip>
+            )}
           </div>
         </div>
 
