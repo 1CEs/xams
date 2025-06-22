@@ -15,13 +15,19 @@ export default function OverviewLayout({
     teacher: React.ReactNode
 }>) {
     const { user } = useUserStore()
+    console.log(user)
     return (
         <div className="size-full pt-12 px-14">
             <Breadcrumb />
             <Suspense fallback={
                 <Loading />
             }>
-                {user?.role == 'admin' ? admin : user?.role == 'instructor' ? teacher : user?.role == 'student' ? student : <Loading />}
+                {   
+                    user?.role == 'admin' ? admin : 
+                    user?.role == 'instructor' ? teacher : 
+                    user?.role == 'student' ? student : 
+                    <Loading />
+                }
             </Suspense>
         </div>
     )

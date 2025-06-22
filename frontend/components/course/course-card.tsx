@@ -28,8 +28,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
     group.students.includes(user?._id || '')
   )
   
-  // Get the first group name for enrollment actions (simplified for this example)
-  const firstGroupName = groups.length > 0 ? groups[0].group_name : ''
+  const groupNames = groups.find(group => 
+    group.students.includes(user?._id || '')
+  )?.group_name
 
   const onCourseDelete = async () => {
     try {
@@ -71,29 +72,32 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
       </CardBody>
       <CardFooter className='justify-between'>
         <div className='w-full flex items-center gap-x-3'>
-          {isEnrolled || !isStudent && (<Button
-            className='w-full text-secondary hover:text-white'
-            as={Link}
-            href={`overview/course?id=${id}`}
-            variant='ghost'
-            color='secondary'
-            size='sm'
-          >
-            Visit
+          {(isEnrolled || !isStudent) && (
+            <Button
+              className='w-full text-secondary hover:text-white'
+              as={Link}
+              href={`overview/course?id=${id}`}
+              variant='ghost'
+              color='secondary'
+              size='sm'
+            >
+              Visit
           </Button>)
           }
           
           {/* Show different actions based on user role */}
           {isStudent ? (
             /* Student actions - show enrollment button if there are groups */
-            groups.length > 0 && (
+            groups.length > 0 ? (
               <EnrollmentActions 
                 courseId={id} 
-                groupName={firstGroupName} 
+                groupName={groupNames || ''} 
                 isEnrolled={isEnrolled}
                 groups={groups}
                 courseName={title}
               />
+            ) : (
+              <p className='text-gray-500'>Groups not found</p>
             )
           ) : (
             /* Instructor actions - show settings dropdown with delete option */

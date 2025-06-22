@@ -50,7 +50,6 @@ const EnrollmentActions = ({
       setLoading(false);
     }
   };
-
   return (
     <div className={`${!isEnrolled && "w-full"}`}>
       {isEnrolled ? (

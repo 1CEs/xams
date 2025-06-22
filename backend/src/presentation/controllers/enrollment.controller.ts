@@ -1,5 +1,9 @@
+import { ObjectId } from "mongoose";
 import { CourseService } from "../../core/course/service/course.service";
 import { ICourseService } from "../../core/course/service/interface/icourse.service";
+import { IStudent } from "../../core/user/model/interface/istudent";
+import { UserService } from "../../core/user/service/user.service";
+import { IStudentDocument } from "../../types/user";
 import { IEnrollmentController } from "./interface/ienrollment.controller";
 
 export class EnrollmentController implements IEnrollmentController {
@@ -21,6 +25,12 @@ export class EnrollmentController implements IEnrollmentController {
         try {
             // Get the course
             const course = await this._courseService.getCourseById(courseId);
+            const userService = new UserService("student");
+            const user = await userService.getUserById(studentId);
+
+            if (!user) {
+                return this._response('User not found', 404, null);
+            }
             
             if (!course) {
                 return this._response('Course not found', 404, null);
@@ -46,7 +56,9 @@ export class EnrollmentController implements IEnrollmentController {
             }
 
             // Add student to the group
+            const groupId = course.groups[groupIndex]._id;
             course.groups[groupIndex].students.push(studentId);
+            (user as unknown as IStudentDocument).join_groups.push(groupId as unknown as ObjectId);
 
             // Update the course with the modified groups array
             const updated = await this._courseService.updateCourse(courseId, { groups: course.groups });
@@ -60,36 +72,57 @@ export class EnrollmentController implements IEnrollmentController {
 
     async unenrollStudent(courseId: string, groupName: string, studentId: string) {
         try {
-            // Get the course
+            // Get the course and user
             const course = await this._courseService.getCourseById(courseId);
+            const userService = new UserService("student");
+            const user = await userService.getUserById(studentId);
+    
+            if (!user) {
+                return this._response('User not found', 404, null);
+            }
             
             if (!course) {
                 return this._response('Course not found', 404, null);
             }
-
+    
             // Check if groups exist
             if (!course.groups || !Array.isArray(course.groups)) {
                 return this._response('Course has no groups', 404, null);
             }
-
+    
             // Find the group
             const groupIndex = course.groups.findIndex(group => 
                 group.group_name === groupName
             );
-
+            console.log(groupName)
+    
             if (groupIndex === -1) {
                 return this._response('Group not found', 404, null);
             }
-
+    
             // Check if student is enrolled
             const studentIndex = course.groups[groupIndex].students.indexOf(studentId);
             if (studentIndex === -1) {
                 return this._response('Student not enrolled in this group', 400, null);
             }
-
+    
+            // Get group ID for updating user's join_groups
+            const groupId = course.groups[groupIndex]._id;
+    
             // Remove student from the group
             course.groups[groupIndex].students.splice(studentIndex, 1);
-
+    
+            // Remove group from user's join_groups
+            const userJoinGroups = (user as unknown as IStudentDocument).join_groups;
+            const groupIdIndex = userJoinGroups.findIndex(id => 
+                id.toString() === groupId?.toString()
+            );
+            
+            if (groupIdIndex !== -1) {
+                userJoinGroups.splice(groupIdIndex, 1);
+                await (user as unknown as IStudentDocument).save();
+            }
+    
             // Update the course with the modified groups array
             const updated = await this._courseService.updateCourse(courseId, { groups: course.groups });
             
@@ -99,7 +132,6 @@ export class EnrollmentController implements IEnrollmentController {
             return this._response('Error unenrolling student', 500, null);
         }
     }
-
     async getStudentEnrollments(studentId: string) {
         try {
             // Get all courses
