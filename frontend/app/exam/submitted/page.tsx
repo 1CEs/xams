@@ -1,7 +1,12 @@
 "use client"
 import { useSearchParams } from "next/navigation"
-import { Button } from "@nextui-org/react"
+import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Checkbox, Divider } from "@nextui-org/react"
+import { Card, CardBody } from "@nextui-org/card"
 import { SubmittedTable, type Submission } from "@/components/exam/submitted-table"
+import { MdiRobot } from "@/components/icons/icons"
+import { useState } from "react"
+
+type ValidationScope = 'all' | 'ungraded' | 'selected'; // Added 'selected' type
 
 // Mock data
 const mockSubmissions: Submission[] = [
@@ -60,6 +65,56 @@ const mockSubmissions: Submission[] = [
 export default function SubmittedExamPage() {
   const params = useSearchParams();
   const examId = params.get('id');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [validationScope, setValidationScope] = useState<ValidationScope | null>(null);
+  const [selectedLearners, setSelectedLearners] = useState<Set<string>>(new Set());
+  const [isSelectingLearners, setIsSelectingLearners] = useState(false);
+
+  const openModal = () => {
+    setIsModalOpen(true);
+    setSelectedLearners(new Set());
+    setIsSelectingLearners(false);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setValidationScope(null);
+    setSelectedLearners(new Set());
+    setIsSelectingLearners(false);
+  };
+
+  const toggleLearnerSelection = (learnerId: string) => {
+    const newSelection = new Set(selectedLearners);
+    if (newSelection.has(learnerId)) {
+      newSelection.delete(learnerId);
+    } else {
+      newSelection.add(learnerId);
+    }
+    setSelectedLearners(newSelection);
+  };
+
+  const handleValidation = (scope: ValidationScope) => {
+    if (scope === 'selected' && selectedLearners.size === 0) {
+      alert('Please select at least one learner');
+      return;
+    }
+    
+    setValidationScope(scope);
+    console.log(`AI validation started for ${scope} submissions`);
+    if (scope === 'selected') {
+      console.log('Selected learners:', Array.from(selectedLearners));
+    }
+    // TODO: Implement actual AI validation logic here
+    closeModal();
+  };
+
+  const handleSelectLearners = () => {
+    if (mockSubmissions.length === 0) {
+      alert('No learners available');
+      return;
+    }
+    setIsSelectingLearners(true);
+  };
 
   const handleView = (id: string) => {
     console.log('View submission:', id);
@@ -78,13 +133,120 @@ export default function SubmittedExamPage() {
         <div className="text-gray-500">Exam ID: {examId}</div>
       </div>
       
-      <div className="">
-        <SubmittedTable 
-          submissions={mockSubmissions}
-          onView={handleView}
-          onGrade={handleGrade}
-        />
-      </div>
+      <Card>
+        <CardBody>
+          <SubmittedTable 
+            submissions={mockSubmissions}
+            onView={handleView}
+            onGrade={handleGrade}
+          />
+        </CardBody>
+      </Card>
+
+      {/* Floating Action Button */}
+      <Button
+        isIconOnly
+        color="secondary"
+        radius="full"
+        className="fixed animate-bounce bottom-8 right-8 z-50 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+        size="lg"
+        aria-label="AI Assistant"
+        onPress={openModal}
+      >
+        <MdiRobot className="w-6 h-6" />
+      </Button>
+
+      {/* AI Validation Modal */}
+      <Modal isOpen={isModalOpen} onClose={closeModal} size={isSelectingLearners ? '2xl' : 'md'}>
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            {isSelectingLearners ? 'Select Learners' : 'AI Assistant Validation'}
+          </ModalHeader>
+          <ModalBody>
+            {isSelectingLearners ? (
+              <div className="max-h-[60vh] overflow-y-auto">
+                <div className="flex flex-col gap-2">
+                  {mockSubmissions.map((learner) => (
+                    <div key={learner._id} className="flex items-center gap-4 p-2 hover:bg-default-100 rounded-lg">
+                      <Checkbox
+                        color="secondary"
+                        isSelected={selectedLearners.has(learner._id)}
+                        onValueChange={() => toggleLearnerSelection(learner._id)}
+                        aria-label={`Select ${learner.username}`}
+                      />
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={learner.profile_url}
+                          alt={learner.username}
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <div>
+                          <p className="font-medium">{learner.username}</p>
+                          <p className="text-xs text-gray-500">{learner.email}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                <p>Enable AI assistant to validate:</p>
+                <div className="flex flex-col gap-2 mt-2">
+                  <Button 
+                    color="secondary" 
+                    variant={validationScope === 'all' ? 'solid' : 'bordered'}
+                    onPress={() => handleValidation('all')}
+                    className="justify-start"
+                  >
+                    All Submissions
+                  </Button>
+                  <Button 
+                    color="secondary" 
+                    variant={validationScope === 'ungraded' ? 'solid' : 'bordered'}
+                    onPress={() => handleValidation('ungraded')}
+                    className="justify-start"
+                  >
+                    Ungraded Submissions Only
+                  </Button>
+                  <Button 
+                    variant={validationScope === 'selected' ? 'solid' : 'bordered'}
+                    onPress={handleSelectLearners}
+                    className="justify-start"
+                  >
+                    {selectedLearners.size > 0 
+                      ? `${selectedLearners.size} Learner(s) Selected` 
+                      : 'Select Specific Learners...'}
+                  </Button>
+                </div>
+              </>
+            )}
+          </ModalBody>
+          <ModalFooter className="flex justify-between">
+            {isSelectingLearners ? (
+              <Button color="default" variant="light" onPress={() => setIsSelectingLearners(false)}>
+                Back
+              </Button>
+            ) : (
+              <div />
+            )}
+            <div className="flex gap-2">
+              {isSelectingLearners && (
+                <Button 
+                  color="secondary" 
+                  onPress={() => handleValidation('selected')}
+                  isDisabled={selectedLearners.size === 0}
+                >
+                  Validate Selected ({selectedLearners.size})
+                </Button>
+              )}
+              <Button color="danger" variant="light" onPress={closeModal}>
+                {isSelectingLearners ? 'Cancel' : 'Close'}
+              </Button>
+            </div>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
