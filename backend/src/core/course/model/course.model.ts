@@ -19,7 +19,7 @@ export const CourseSchema = new Schema<ICourse & Document>({
     },
     description: {
         type: Schema.Types.String,
-        required: true
+        required: false
     },
     groups: {
         type: [GroupSchema],

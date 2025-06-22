@@ -1,6 +1,7 @@
 import { Button, Chip, Tooltip, useDisclosure } from "@nextui-org/react"
-import { MdiBin, UisSchedule } from "@/components/icons/icons"
+import { MdiBin, MdiPaper, UisSchedule } from "@/components/icons/icons"
 import ExamPasswordModal from "./modals/exam-password-modal"
+import { useRouter } from "nextjs-toploader/app"
 
 interface ExamSetting {
   _id: string
@@ -26,6 +27,7 @@ interface ExamScheduleCardProps {
 
 export default function ExamScheduleCard({ courseId, groupId, setting, index, groupName, onDelete }: ExamScheduleCardProps) {
   const { isOpen, onOpen, onOpenChange } = useDisclosure()
+  const router = useRouter()
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Prevent opening modal when clicking delete button
@@ -48,10 +50,20 @@ export default function ExamScheduleCard({ courseId, groupId, setting, index, gr
             </div>
             <h4 className="font-medium">Exam #{index + 1}</h4>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Chip size="sm" color="primary" variant="flat" className="font-mono">
               {setting.exam_code}
             </Chip>
+            <Tooltip content="Learner exam submitted">
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                onPress={() => router.push(`/exam/submitted?id=${setting.exam_id}`)}
+              >
+                <MdiPaper fontSize={16} />
+              </Button>
+            </Tooltip>
             <Tooltip content="Delete this exam schedule">
               <Button
                 isIconOnly
@@ -118,4 +130,4 @@ export default function ExamScheduleCard({ courseId, groupId, setting, index, gr
       />
     </>
   )
-} 
+}

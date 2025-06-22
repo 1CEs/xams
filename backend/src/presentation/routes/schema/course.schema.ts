@@ -4,13 +4,13 @@ import { urlRegex } from "../../../utils/regex";
 export const AddCourseSchema = t.Object({
     course_name: t.String({ description: 'Title is required' }),
     background_src: t.String({ pattern: urlRegex, description: 'Profile URL is required' }),
-    description: t.String({ description: 'Description is required' }),
+    description: t.Optional(t.String()),
 })
 
 export const updateCourseSchema = t.Object({
     course_name: t.String({ description: 'Title is required' }),
     background_src: t.String({ pattern: urlRegex, description: 'Profile URL is required' }),
-    description: t.String({ description: 'Description is required' }),
+    description: t.Optional(t.String()),
 })
 
 export const AddGroupSchema = t.Object({

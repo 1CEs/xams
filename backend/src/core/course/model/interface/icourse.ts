@@ -6,6 +6,6 @@ export interface ICourse {
     instructor_id: string
     background_src: string
     course_name: string
-    description: string
+    description?: string
     groups?: IGroup[]
 }

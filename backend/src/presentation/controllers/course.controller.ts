@@ -49,7 +49,7 @@ export class CourseController implements ICourseController {
             const searchLower = search.toLowerCase()
             const filteredCourses = courses.filter(course => 
                 course.course_name.toLowerCase().includes(searchLower) ||
-                course.description.toLowerCase().includes(searchLower)
+                course.description!.toLowerCase().includes(searchLower)
             )
             return this._response<typeof filteredCourses>('Done', 200, filteredCourses)
         }
