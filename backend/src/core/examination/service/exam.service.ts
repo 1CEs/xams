@@ -58,7 +58,6 @@ export class ExaminationService implements IExaminationService {
         return result
     }
 
-    // Nested Question methods
     async addNestedQuestion(id: string, payload: { question: string; type: string; score: number; questions: IQuestion[] }) {
         const result = await this._repository.addNestedQuestion(id, payload)
         return result
