@@ -73,9 +73,10 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
             }))
             // Exam setting routes
             .post('/:id/group/:groupName/exam-setting', catchAsync(async ({ params, body, controller }: CourseContext & { params: { id: string, groupName: string }, body: ExamSettingBody }) => {
-                // Convert date strings to Date objects and ensure all required fields are present
-                const examSetting = {
+                // Convert date strings to Date objects and pass all exam setting data
+                const examSettingData = {
                     exam_id: body.exam_id,
+                    schedule_name: body.schedule_name,
                     open_time: new Date(body.open_time),
                     close_time: new Date(body.close_time),
                     ip_range: body.ip_range || '',
@@ -84,9 +85,10 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
                     allowed_review: body.allowed_review,
                     show_answer: body.show_answer,
                     randomize_question: body.randomize_question,
-                    randomize_choice: body.randomize_choice
+                    randomize_choice: body.randomize_choice,
+                    question_count: body.question_count
                 };
-                return await controller.addGroupExamSetting(params.id, params.groupName, examSetting);
+                return await controller.addGroupExamSetting(params.id, params.groupName, examSettingData);
             }), {
                 body: ExamSettingSchema
             })

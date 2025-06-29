@@ -143,6 +143,21 @@ export class ExaminationController implements IExaminationController {
         }
     }
 
+    async getExaminationScheduleById(id: string) {
+        try {
+            const schedule = await this._scheduleService.getExaminationScheduleById(id);
+            
+            if (!schedule) {
+                return this._response('Examination schedule not found', 404, null);
+            }
+            
+            return this._response<typeof schedule>('Done', 200, schedule);
+        } catch (error: any) {
+            console.error('Error getting examination schedule:', error);
+            return this._response(`Error getting examination schedule: ${error.message || 'Unknown error'}`, 500, null);
+        }
+    }
+
     async getExaminationByInstructorId (instructor_id: string, user?: IInstructor) {
         const exams = await this._service.getExaminationByInstructorId(instructor_id)
         return this._response<typeof exams>('Done', 200, this._sanitizeExamData(exams, user))
@@ -190,5 +205,25 @@ export class ExaminationController implements IExaminationController {
         const exam = await this._service.addNestedQuestionFromExisting(examId, nestedQuestionData, questionIds)
         
         return this._response<typeof exam>('Add Nested Question from Existing Successfully', 200, this._sanitizeExamData(exam, user))
+    }
+
+    async verifyExamPassword(scheduleId: string, password: string) {
+        try {
+            const schedule = await this._scheduleService.getExaminationScheduleById(scheduleId);
+            
+            if (!schedule) {
+                return this._response('Examination schedule not found', 404, null);
+            }
+            
+            // Check if the provided password matches the exam code
+            if (schedule.exam_code === password) {
+                return this._response('Password verified successfully', 200, { verified: true });
+            } else {
+                return this._response('Incorrect password', 401, { verified: false });
+            }
+        } catch (error: any) {
+            console.error('Error verifying exam password:', error);
+            return this._response(`Error verifying password: ${error.message || 'Unknown error'}`, 500, null);
+        }
     }
 }

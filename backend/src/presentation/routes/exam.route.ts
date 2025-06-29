@@ -34,6 +34,8 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
                     schedule_id: t.Optional(t.String())
                 })
             })
+            .get('/schedule/:id', catchAsync(async ({ params, controller }: ExamContext & { params: { id: string } }) => 
+                await controller.getExaminationScheduleById(params.id)))
             .get('', catchAsync(async ({ query, controller, user }: ExamContext & { query: { instructor_id: string } }) => await controller.getExaminationByInstructorId(query.instructor_id, user)), {
                 query: t.Object({
                     instructor_id: t.String()

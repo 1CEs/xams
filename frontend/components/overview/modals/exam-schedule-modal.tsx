@@ -110,6 +110,13 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
       return
     }
     
+    // Validate question count
+    if (examSettingForm.question_count < 1 || examSettingForm.question_count > selectedExamQuestionCount) {
+      setError(`Please enter a valid number of questions (1-${selectedExamQuestionCount})`)
+      setSubmitting(false)
+      return
+    }
+    
     try {
       // Format dates to ISO strings for API
       const formattedForm = {
@@ -307,21 +314,41 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
                     type="number"
                     label="Number of Questions"
                     placeholder="Number of questions to include"
-                    description={`The exam has ${selectedExamQuestionCount} questions in total. Leave at ${selectedExamQuestionCount} to include all questions.`}
+                    description={
+                      examSettingForm.question_count > 0 && examSettingForm.question_count < selectedExamQuestionCount
+                        ? `${examSettingForm.question_count} questions will be randomly selected from ${selectedExamQuestionCount} total questions.`
+                        : examSettingForm.question_count === selectedExamQuestionCount
+                        ? `All ${selectedExamQuestionCount} questions will be included.`
+                        : `The exam has ${selectedExamQuestionCount} questions in total. You can select any number between 1 and ${selectedExamQuestionCount}.`
+                    }
                     min={1}
                     max={selectedExamQuestionCount}
                     value={examSettingForm.question_count.toString()}
                     onValueChange={(value) => {
                       const count = parseInt(value) || 0;
-                      // Ensure count is between 1 and the total number of questions
-                      const validCount = Math.min(
-                        Math.max(count, 1), 
-                        selectedExamQuestionCount || 1
-                      );
-                      setExamSettingForm(prev => ({ 
-                        ...prev, 
-                        question_count: validCount 
-                      }));
+                      // Allow any positive number up to the total questions
+                      if (count >= 1 && count <= selectedExamQuestionCount) {
+                        setExamSettingForm(prev => ({ 
+                          ...prev, 
+                          question_count: count 
+                        }));
+                      } else if (value === '' || count === 0) {
+                        // Allow empty input for user to type
+                        setExamSettingForm(prev => ({ 
+                          ...prev, 
+                          question_count: 0 
+                        }));
+                      }
+                    }}
+                    onChange={(e) => {
+                      // Handle direct input changes to allow typing
+                      const value = e.target.value;
+                      if (value === '') {
+                        setExamSettingForm(prev => ({ 
+                          ...prev, 
+                          question_count: 0 
+                        }));
+                      }
                     }}
                     isDisabled={selectedExamQuestionCount === 0}
                   />
