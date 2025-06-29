@@ -197,9 +197,23 @@ export class CourseController implements ICourseController {
 
         try {
             // Create an examination schedule to snapshot the questions
+            // If question_count is specified, randomly select that many questions
             const examSchedule = await this._examScheduleService.createExaminationSchedule(
                 examSetting.exam_id,
-                course.instructor_id
+                course.instructor_id,
+                examSetting.question_count,
+                examSetting.schedule_name,
+                {
+                    open_time: examSetting.open_time,
+                    close_time: examSetting.close_time,
+                    ip_range: examSetting.ip_range,
+                    exam_code: examSetting.exam_code,
+                    allowed_attempts: examSetting.allowed_attempts,
+                    allowed_review: examSetting.allowed_review,
+                    show_answer: examSetting.show_answer,
+                    randomize_question: examSetting.randomize_question,
+                    randomize_choice: examSetting.randomize_choice
+                }
             );
 
             if (!examSchedule) {
@@ -209,7 +223,7 @@ export class CourseController implements ICourseController {
             // Add the schedule ID to the exam setting
             const settingWithSchedule = {
                 ...examSetting,
-                schedule_id: examSchedule._id.toString()
+                schedule_id: examSchedule?._id?.toString() || ''
             };
 
             // Always add a new exam setting, allowing multiple schedules for the same exam

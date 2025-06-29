@@ -7,12 +7,16 @@ interface ExamSetting {
   _id: string
   exam_code: string
   exam_id: string
+  schedule_id?: string
+  title?: string
+  question_count?: number
   open_time: Date
   close_time: Date
   allowed_attempts: number
   allowed_review: boolean
   show_answer: boolean
   randomize_question: boolean
+  randomize_choice?: boolean
   ip_range?: string
 }
 
@@ -49,7 +53,7 @@ export default function ExamScheduleCard({ courseId, groupId, setting, index, gr
             <div className="bg-secondary text-white p-1.5 rounded-full">
               <UisSchedule fontSize={16} />
             </div>
-            <h4 className="font-medium">Exam #{index + 1}</h4>
+            <h4 className="font-medium">{setting.title || `Schedule #${index + 1}`}</h4>
           </div>
           <div className="flex items-center gap-1">
             <Chip size="sm" color="primary" variant="flat" className="font-mono">
@@ -111,6 +115,16 @@ export default function ExamScheduleCard({ courseId, groupId, setting, index, gr
             <Chip size="sm" variant="flat" color={setting.randomize_question ? "warning" : "default"}>
               {setting.randomize_question ? 'Random questions' : 'Fixed order'}
             </Chip>
+            {setting.randomize_choice && (
+              <Chip size="sm" variant="flat" color="warning">
+                Random choices
+              </Chip>
+            )}
+            {setting.question_count && (
+              <Chip size="sm" variant="flat" color="primary">
+                {setting.question_count} questions
+              </Chip>
+            )}
           </div>
 
           {setting.ip_range && (

@@ -5,16 +5,16 @@ const { Schema } = mongoose;
 
 const QuestionSchema = new Schema<QuestionDocument>({
     type: {
-        type: Schema.Types.String,
+        type: String,
         required: true,
         enum: ['mc', 'tf', 'ses', 'les', 'nested']
     },
     question: {
-        type: Schema.Types.String,
+        type: String,
         required: true
     },
     isRandomChoices: {
-        type: Schema.Types.Boolean,
+        type: Boolean,
         default: false
     },
     choices: {
@@ -32,28 +32,28 @@ const QuestionSchema = new Schema<QuestionDocument>({
         default: []
     },
     isTrue: {
-        type: Schema.Types.Boolean,
+        type: Boolean,
         required: function () {
             return this.type === 'tf';
         },
         default: false
     },
     expectedAnswer: {
-        type: Schema.Types.String,
+        type: String,
         required: function () {
             return this.type === 'ses' || this.type === 'les';
         },
         default: ''
     },
     maxWords: {
-        type: Schema.Types.Number,
+        type: Number,
         required: function () {
             return this.type === 'les';
         },
         default: 0
     },
     score: {
-        type: Schema.Types.Number,
+        type: Number,
         required: true
     },
     questions: [/* placeholder for recursion */]

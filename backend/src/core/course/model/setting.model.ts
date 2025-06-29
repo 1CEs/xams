@@ -11,6 +11,9 @@ export const SettingSchema = new Schema<ISetting>({
     schedule_id: {
         type: Schema.Types.String
     },
+    schedule_name: {
+        type: Schema.Types.String
+    },
     open_time: {
         type: Schema.Types.Date,
         required: true
@@ -44,5 +47,8 @@ export const SettingSchema = new Schema<ISetting>({
     randomize_choice: {
         type: Schema.Types.Boolean,
         required: true
+    },
+    question_count: {
+        type: Schema.Types.Number
     }
 })

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { Answer, ExaminationDocument } from "../../../types/exam";
+import { Answer, ExaminationDocument, ExamResult } from "../../../types/exam";
 import { BaseRepository } from "../../base/base.repository";
 import { ExaminationModel } from "../model/examination.model";
 import { IExamination } from "../model/interface/iexamination";
@@ -236,7 +236,7 @@ export class ExaminationRepository
                     if (!question) return [];
                     
                     if (question.type === 'mc') {
-                        return question.choices?.filter(c => c.isCorrect).map(c => c.content) || [];
+                        return question.choices?.filter((c: any) => c.isCorrect).map((c: any) => c.content) || [];
                     }
                     
                     if (question.type === 'tf') {
@@ -275,7 +275,7 @@ export class ExaminationRepository
                     if (!question) return [];
                     
                     if (question.type === 'mc') {
-                        return question.choices?.filter(c => c.isCorrect).map(c => c.content) || [];
+                        return question.choices?.filter((c: any) => c.isCorrect).map((c: any) => c.content) || [];
                     }
                     
                     if (question.type === 'tf') {
@@ -319,8 +319,8 @@ export class ExaminationRepository
                 case 'mc': // Multiple Choice
                     if (question.choices) {
                         const correctChoices = question.choices
-                            .filter(choice => choice.isCorrect)
-                            .map(choice => choice.content);
+                            .filter((choice: any) => choice.isCorrect)
+                            .map((choice: any) => choice.content);
                         
                         isCorrect = submittedAnswer.answers.length === correctChoices.length &&
                             submittedAnswer.answers.every(answer => correctChoices.includes(answer));
@@ -355,8 +355,8 @@ export class ExaminationRepository
                         // Basic keyword matching
                         const keywords = question.expectedAnswer.toLowerCase().split(/\s+/);
                         const answerWords = submittedAnswer.essayAnswer.toLowerCase().split(/\s+/);
-                        const matchedKeywords = keywords.filter(keyword => 
-                            answerWords.some(word => word.includes(keyword))
+                        const matchedKeywords = keywords.filter((keyword: string) => 
+                            answerWords.some((word: string) => word.includes(keyword))
                         );
                         
                         const keywordScore = (matchedKeywords.length / keywords.length) * question.score;
@@ -367,7 +367,7 @@ export class ExaminationRepository
 
                 case 'nested': // Nested Questions
                     if (question.questions && submittedAnswer.answers.length === question.questions.length) {
-                        const nestedResults = question.questions.map((nestedQ, index) => {
+                        const nestedResults = question.questions.map((nestedQ: any, index: number) => {
                             const nestedAnswer = submittedAnswer.answers[index];
                             // Recursive checking for nested questions
                             // This is a simplified version
@@ -376,7 +376,7 @@ export class ExaminationRepository
                             return { isCorrect, earnedScore };
                         });
                         
-                        earnedScore = nestedResults.reduce((sum, result) => sum + result.earnedScore, 0);
+                        earnedScore = nestedResults.reduce((sum: number, result: any) => sum + result.earnedScore, 0);
                         isCorrect = earnedScore > 0;
                     }
                     break;

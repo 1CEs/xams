@@ -12,21 +12,6 @@ import { UserServiceFactory } from "../../core/user/service/user.factory";
 import { Answer } from "../../types/exam";
 import { UserRole } from "../../types/user";
 import { IExaminationController } from "./interface/iexam.controller";
-import { publicEncrypt, privateDecrypt } from "crypto";
-
-// Encrypt message using public key
-const encryptRSA = (message: string, pubKey: string): string => {
-  const messageBuffer = new TextEncoder().encode(message);
-  const encryptedBuffer = publicEncrypt(pubKey, messageBuffer);
-  return encryptedBuffer.toString("base64");
-};
-
-// Decrypt message using private key
-const decryptRSA = (encryptedMessage: string, privKey: string): string => {
-  const encryptedBuffer = Buffer.from(encryptedMessage, 'base64');
-  const decryptedBuffer = privateDecrypt(privKey, new Uint8Array(encryptedBuffer));
-  return decryptedBuffer.toString('utf8');
-};
 
 export class ExaminationController implements IExaminationController {
     private _service: IExaminationService
@@ -54,7 +39,7 @@ export class ExaminationController implements IExaminationController {
     private _sanitizeExamData(exam: IExamination | IExaminationSchedule | IExamination[] | IExaminationSchedule[] | null, user?: IInstructor): any {
         if (!exam) return null;
 
-        const sanitizeExam = (examination: IExamination) => {
+        const sanitizeExam = (examination: IExamination | IExaminationSchedule) => {
             const sanitized = JSON.parse(JSON.stringify(examination));
             
             if (sanitized.questions && sanitized.questions.length > 0) {
