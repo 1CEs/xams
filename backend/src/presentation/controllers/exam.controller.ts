@@ -54,11 +54,11 @@ export class ExaminationController implements IExaminationController {
             
             if (sanitized.questions && sanitized.questions.length > 0) {
                 sanitized.questions = sanitized.questions.map((question: IQuestion) => {
-                    // if (user && user.role === 'instructor') {
-                    //     return {
-                    //         ...question,
-                    //     };
-                    // }
+                    if (user && user.role === 'instructor') {
+                        return {
+                            ...question,
+                        };
+                    }
                     const sanitizedQuestion = {
                         ...question,
                         choices: question.choices?.map((choice: typeof question.choices[0]) => ({

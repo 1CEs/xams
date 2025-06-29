@@ -5,6 +5,8 @@ import { SignInPayload, SignUpPayload } from "../../types/user"
 import { emailRegex } from "../../utils/regex"
 import { IAuthController } from "./interface/iauth.controller"
 import { SetTokenParameters } from "../../types/auth"
+import { IStudent } from "../../core/user/model/interface/istudent"
+import { IInstructor } from "../../core/user/model/interface/iintructor"
 
 type JWTInstance = {
     sign: (payload: any) => Promise<string>
@@ -26,14 +28,18 @@ export class AuthController implements IAuthController {
     }
 
     async signup(payload: SignUpPayload) {
-        console.log(payload)
+        console.log("in")
         const instance = this._factory.createService(payload.body!.role)
-        const user = await instance.register(payload.body!)
+        const user = await instance.register(payload.body!) as ({ message: string })
+
+        if(user.message.length > 0) {
+            return this._response(user.message, 400, user)
+        }
 
         delete payload.body
-        await this.setToken(String(user?._id), { ...payload })
+        await this.setToken(String((user as unknown as IUser | IStudent | IInstructor)._id), { ...payload })
 
-        return this._response<typeof user>('Sign-up Successfully', 201, user)
+        return this._response('Sign-up Successfully', 201, user)
     }
 
     async signin(payload: SignInPayload) {

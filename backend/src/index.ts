@@ -4,8 +4,14 @@ import { indexRouter } from "./presentation/routes/index.route"
 import { indexMiddleware } from "./presentation/middleware/index.middleware"
 
 const runServer = async () => {
-  console.log(process.env.DB_CONN!)
-  const { db, err } = await new Database().connect(process.env.DB_CONN!)
+  let connection_string = ''
+  if(process.env.MODE! === 'dev') {
+    connection_string = process.env.DB_CONN_LOCAL!
+  } else {
+    connection_string = process.env.DB_CONN!
+  }
+  console.log(connection_string)
+  const { db, err } = await new Database().connect(connection_string)
 
   if(err != null) {
     console.log(`Error: ${err}`)
