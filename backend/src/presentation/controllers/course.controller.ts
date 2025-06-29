@@ -3,6 +3,8 @@ import { IGroup } from "../../core/course/model/interface/igroup";
 import { ISetting } from "../../core/course/model/interface/setting";
 import { CourseService } from "../../core/course/service/course.service";
 import { ICourseService } from "../../core/course/service/interface/icourse.service";
+import { ExaminationScheduleService } from "../../core/examination/service/exam-schedule.service";
+import { IExaminationScheduleService } from "../../core/examination/service/interface/iexam-schedule.service";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
 import { InstructorService } from "../../core/user/service/instructor.service";
 import { StudentService } from "../../core/user/service/student.service";
@@ -12,9 +14,11 @@ import { ICourseController } from "./interface/icourse.controller";
 
 export class CourseController implements ICourseController {
     private _service: ICourseService
+    private _examScheduleService: IExaminationScheduleService
 
     constructor() {
         this._service = new CourseService()
+        this._examScheduleService = new ExaminationScheduleService()
     }
 
     private _response<T>(message: string, code: number, data: T) {
@@ -191,13 +195,34 @@ export class CourseController implements ICourseController {
             course.groups[groupIndex].exam_setting = []
         }
 
-        // Always add a new exam setting, allowing multiple schedules for the same exam
-        course.groups[groupIndex].exam_setting.push(examSetting)
-        
-        // Update the course with the modified groups array
-        const updated = await this._service.updateCourse(courseId, { groups: course.groups })
-        
-        return this._response('Exam setting added successfully', 200, updated)
+        try {
+            // Create an examination schedule to snapshot the questions
+            const examSchedule = await this._examScheduleService.createExaminationSchedule(
+                examSetting.exam_id,
+                course.instructor_id
+            );
+
+            if (!examSchedule) {
+                return this._response('Failed to create examination schedule', 500, null);
+            }
+
+            // Add the schedule ID to the exam setting
+            const settingWithSchedule = {
+                ...examSetting,
+                schedule_id: examSchedule._id.toString()
+            };
+
+            // Always add a new exam setting, allowing multiple schedules for the same exam
+            course.groups[groupIndex].exam_setting.push(settingWithSchedule);
+            
+            // Update the course with the modified groups array
+            const updated = await this._service.updateCourse(courseId, { groups: course.groups });
+            
+            return this._response('Exam setting added successfully', 200, updated);
+        } catch (error: any) {
+            console.error('Error creating examination schedule:', error);
+            return this._response(`Failed to create examination schedule: ${error.message || 'Unknown error'}`, 500, null);
+        }
     }
 
     async deleteGroupExamSetting(courseId: string, groupName: string, examSettingIndex: number) {

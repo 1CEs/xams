@@ -3,6 +3,7 @@ import { Answer, ExaminationDocument } from "../../../types/exam";
 import { BaseRepository } from "../../base/base.repository";
 import { ExaminationModel } from "../model/examination.model";
 import { IExamination } from "../model/interface/iexamination";
+import { IExaminationSchedule } from "../model/interface/iexamination-schedule";
 import { IQuestion } from "../model/interface/iquestion";
 import { IExaminationRepository } from "./interface/iexam.repository";
 
@@ -47,6 +48,7 @@ export class ExaminationRepository
     // Nested Question methods
     async addNestedQuestion(id: string, payload: { question: string; type: string; score: number; questions: IQuestion[] }) {
         // Prepare nested questions with appropriate default values
+        console.log(payload)
         const preparedQuestions = payload.questions.map(q => {
             // Create a new object with required fields
             const baseQuestion: any = {
@@ -101,12 +103,80 @@ export class ExaminationRepository
             throw new Error(`Examination with ID ${id} not found`);
         }
 
-        // preparedQuestions.forEach(async (question) => {
-        //     await this.removeQuestionFromNestedQuestion(id, result._id.toString(), question._id.toString());
-        // })
-
         return result;
+    }
 
+    async addNestedQuestionFromExisting(
+        examId: string,
+        nestedQuestionData: { question: string; score: number },
+        questionIds: string[]
+    ) {
+        // First, get the examination to validate and extract questions
+        const examination = await this._model.findById(examId).exec();
+        if (!examination) {
+            throw new Error(`Examination with ID ${examId} not found`);
+        }
+
+        // Extract the questions that will be nested
+        const questionsToNest = examination.questions.filter(q => 
+            questionIds.includes(q._id?.toString() || '')
+        );
+
+        if (questionsToNest.length !== questionIds.length) {
+            throw new Error('Some questions were not found in the examination');
+        }
+
+        // Prepare the questions for nesting (remove _id to avoid conflicts)
+        const preparedQuestions = questionsToNest.map(q => {
+            const { _id, ...questionWithoutId } = JSON.parse(JSON.stringify(q));
+            return questionWithoutId;
+        });
+
+        // Create the nested question structure
+        const nestedQuestion = {
+            question: nestedQuestionData.question,
+            type: 'nested',
+            score: nestedQuestionData.score,
+            questions: preparedQuestions,
+            choices: [],
+            isTrue: false,
+            expectedAnswer: '',
+            maxWords: 0
+        };
+
+        // Remove the original questions and add the nested question in a single operation
+        const result = await this._model.findByIdAndUpdate(
+            examId,
+            {
+                $pull: { 
+                    questions: { 
+                        _id: { $in: questionIds.map(id => new mongoose.Types.ObjectId(id)) } 
+                    } 
+                }
+            },
+            { new: true }
+        ).exec();
+
+        if (!result) {
+            throw new Error('Failed to remove original questions');
+        }
+
+        // Now add the nested question
+        const finalResult = await this._model.findByIdAndUpdate(
+            examId,
+            { $push: { questions: nestedQuestion } },
+            {
+                new: true,
+                runValidators: true,
+                setDefaultsOnInsert: true
+            }
+        ).exec();
+
+        if (!finalResult) {
+            throw new Error('Failed to add nested question');
+        }
+
+        return finalResult;
     }
 
     async removeQuestionFromNestedQuestion(examId: string, parentQuestionId: string, nestedQuestionId: string) {
@@ -177,6 +247,157 @@ export class ExaminationRepository
                 })(),
                 score: r.score
             }))
+        };
+    }
+
+    async resultSubmitWithSchedule(examId: string, answers: Answer[], examSchedule: IExaminationSchedule) {
+        // We don't need to fetch the exam since we already have the schedule with the questions
+        // Just check the answers against the schedule's questions
+        
+        // First update the exam with the submitted answers (for record keeping)
+        const updatedExam = await this._model.findByIdAndUpdate(examId, { $push: { answers: answers } }, { new: true }).exec();
+        
+        // Then check the answers using the examination schedule
+        const result = await this.checkAnswersWithSchedule(examSchedule, answers);
+        
+        // Format the result to match what the frontend expects
+        return {
+            totalScore: result.maxPossibleScore,
+            obtainedScore: result.totalScore,
+            correctAnswers: result.results.filter((r: any) => r.isCorrect).length,
+            totalQuestions: result.results.length,
+            details: result.results.map((r: any) => ({
+                questionId: r.questionId,
+                isCorrect: r.isCorrect,
+                userAnswer: answers.find(a => a.questionId === r.questionId)?.answers || [],
+                correctAnswer: (() => {
+                    const question = examSchedule.questions.find(q => q._id?.toString() === r.questionId);
+                    if (!question) return [];
+                    
+                    if (question.type === 'mc') {
+                        return question.choices?.filter(c => c.isCorrect).map(c => c.content) || [];
+                    }
+                    
+                    if (question.type === 'tf') {
+                        return [question.isTrue?.toString() || ''];
+                    }
+                    
+                    return [];
+                })(),
+                score: r.score
+            }))
+        };
+    }
+
+    async checkAnswersWithSchedule(examSchedule: IExaminationSchedule, submittedAnswers: Answer[]) {
+        // Similar to checkAnswers but uses the examination schedule instead of fetching the exam
+        if (!examSchedule) {
+            throw new Error('Examination schedule not found');
+        }
+
+        let totalScore = 0;
+        let maxPossibleScore = 0;
+        const results = submittedAnswers.map(submittedAnswer => {
+            // Find the corresponding question in the schedule
+            const question = examSchedule.questions.find(q => q._id?.toString() === submittedAnswer.questionId);
+            if (!question) {
+                return {
+                    questionId: submittedAnswer.questionId,
+                    isCorrect: false,
+                    score: 0,
+                    maxScore: 0,
+                    feedback: 'Question not found'
+                };
+            }
+
+            maxPossibleScore += question.score;
+            let isCorrect = false;
+            let earnedScore = 0;
+            let feedback = '';
+
+            switch (question.type) {
+                case 'mc': // Multiple Choice
+                    if (question.choices) {
+                        const correctChoices = question.choices
+                            .filter(choice => choice.isCorrect)
+                            .map(choice => choice.content);
+                        
+                        isCorrect = submittedAnswer.answers.length === correctChoices.length &&
+                            submittedAnswer.answers.every(answer => correctChoices.includes(answer));
+                        
+                        if (isCorrect) {
+                            earnedScore = question.score;
+                        }
+                    }
+                    break;
+
+                case 'tf': // True/False
+                    isCorrect = submittedAnswer.answers[0] === (question.isTrue ? 'true' : 'false');
+                    earnedScore = isCorrect ? question.score : 0;
+                    break;
+
+                case 'ses': // Short Essay
+                    if (question.expectedAnswer && submittedAnswer.essayAnswer) {
+                        // Simple string comparison for short essays
+                        isCorrect = submittedAnswer.essayAnswer.toLowerCase().trim() === 
+                                  question.expectedAnswer.toLowerCase().trim();
+                        earnedScore = isCorrect ? question.score : 0;
+                    }
+                    break;
+
+                case 'les': // Long Essay
+                    if (question.expectedAnswer && submittedAnswer.essayAnswer) {
+                        // For long essays, we might want to implement more sophisticated checking
+                        // This is a basic implementation
+                        const wordCount = submittedAnswer.essayAnswer.split(/\s+/).length;
+                        const meetsWordCount = !question.maxWords || wordCount <= question.maxWords;
+                        
+                        // Basic keyword matching
+                        const keywords = question.expectedAnswer.toLowerCase().split(/\s+/);
+                        const answerWords = submittedAnswer.essayAnswer.toLowerCase().split(/\s+/);
+                        const matchedKeywords = keywords.filter(keyword => 
+                            answerWords.some(word => word.includes(keyword))
+                        );
+                        
+                        const keywordScore = (matchedKeywords.length / keywords.length) * question.score;
+                        earnedScore = meetsWordCount ? keywordScore : 0;
+                        isCorrect = earnedScore > 0;
+                    }
+                    break;
+
+                case 'nested': // Nested Questions
+                    if (question.questions && submittedAnswer.answers.length === question.questions.length) {
+                        const nestedResults = question.questions.map((nestedQ, index) => {
+                            const nestedAnswer = submittedAnswer.answers[index];
+                            // Recursive checking for nested questions
+                            // This is a simplified version
+                            isCorrect = nestedAnswer === nestedQ.expectedAnswer;
+                            earnedScore = isCorrect ? nestedQ.score : 0;
+                            return { isCorrect, earnedScore };
+                        });
+                        
+                        earnedScore = nestedResults.reduce((sum, result) => sum + result.earnedScore, 0);
+                        isCorrect = earnedScore > 0;
+                    }
+                    break;
+            }
+
+            totalScore += earnedScore;
+
+            return {
+                questionId: submittedAnswer.questionId,
+                isCorrect,
+                score: earnedScore,
+                maxScore: question.score,
+                feedback: isCorrect ? 'Correct' : 'Incorrect'
+            };
+        });
+
+        return {
+            totalScore,
+            maxPossibleScore,
+            percentage: (totalScore / maxPossibleScore) * 100,
+            results
         };
     }
 

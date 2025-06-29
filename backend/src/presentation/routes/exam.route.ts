@@ -1,7 +1,7 @@
 import Elysia, { t } from "elysia";
 import { ExaminationController } from "../controllers/exam.controller";
 import { tokenVerifier } from "../middleware/token-verify.middleware";
-import { AddExaminationSchema, QuestionFormSchema, NestedQuestionSchema, updateExaminationSchema } from "./schema/exam.schema";
+import { AddExaminationSchema, QuestionFormSchema, NestedQuestionSchema, NestedQuestionFromExistingSchema, updateExaminationSchema } from "./schema/exam.schema";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
 import { catchAsync } from "../../utils/error";
 import { Static } from "@sinclair/typebox";
@@ -16,6 +16,7 @@ type ExamContext = Context & {
 type AddExamBody = Static<typeof AddExaminationSchema>
 type QuestionBody = Static<typeof QuestionFormSchema>
 type NestedQuestionBody = Static<typeof NestedQuestionSchema>
+type NestedQuestionFromExistingBody = Static<typeof NestedQuestionFromExistingSchema>
 type UpdateExamBody = Static<typeof updateExaminationSchema>
 
 export const ExamRoute = new Elysia({ prefix: '/exam' })
@@ -27,7 +28,12 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
         app
             // Examination-Only routes
             .get('', catchAsync(async ({ controller, user }: ExamContext) => await controller.getExaminations(user)))
-            .get('/:id', catchAsync(async ({ params, controller, user }: ExamContext & { params: { id: string } }) => await controller.getExaminationById(params.id, user)))
+            .get('/:id', catchAsync(async ({ params, query, controller, user }: ExamContext & { params: { id: string }, query: { schedule_id?: string } }) => 
+                await controller.getExaminationById(params.id, user, query.schedule_id)), {
+                query: t.Object({
+                    schedule_id: t.Optional(t.String())
+                })
+            })
             .get('', catchAsync(async ({ query, controller, user }: ExamContext & { query: { instructor_id: string } }) => await controller.getExaminationByInstructorId(query.instructor_id, user)), {
                 query: t.Object({
                     instructor_id: t.String()
@@ -57,11 +63,16 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
             .post('/nested-question/:id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { id: string }, body: NestedQuestionBody }) => await controller.addNestedQuestion(params.id, body, user)), {
                 body: NestedQuestionSchema
             })
+            .post('/nested-question-from-existing/:id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { id: string }, body: NestedQuestionFromExistingBody }) => await controller.addNestedQuestionFromExisting(params.id, body.nestedQuestionData, body.questionIds, user)), {
+                body: NestedQuestionFromExistingSchema
+            })
 
             // Result-Only routes
-            .post('/submit', catchAsync(async ({ body, controller }: ExamContext & { body: SubmitAnswer }) => await controller.resultSubmit(body.exam_id, body.answers)), {
+            .post('/submit', catchAsync(async ({ body, controller }: ExamContext & { body: SubmitAnswer & { schedule_id?: string } }) => 
+                await controller.resultSubmit(body.exam_id, body.answers, body.schedule_id)), {
                 body: t.Object({
                     exam_id: t.String(),
+                    schedule_id: t.Optional(t.String()),
                     answers: t.Array(t.Object({
                         questionId: t.String(),
                         answers: t.Array(t.String()),

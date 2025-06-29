@@ -1,6 +1,9 @@
 import { IExamination } from "../../core/examination/model/interface/iexamination";
+import { IExaminationSchedule } from "../../core/examination/model/interface/iexamination-schedule";
 import { IQuestion } from "../../core/examination/model/interface/iquestion";
+import { ExaminationScheduleService } from "../../core/examination/service/exam-schedule.service";
 import { ExaminationService } from "../../core/examination/service/exam.service";
+import { IExaminationScheduleService } from "../../core/examination/service/interface/iexam-schedule.service";
 import { IExaminationService } from "../../core/examination/service/interface/iexam.service";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
 import { InstructorService } from "../../core/user/service/instructor.service";
@@ -27,9 +30,11 @@ const decryptRSA = (encryptedMessage: string, privKey: string): string => {
 
 export class ExaminationController implements IExaminationController {
     private _service: IExaminationService
+    private _scheduleService: IExaminationScheduleService
 
     constructor() {
         this._service = new ExaminationService()
+        this._scheduleService = new ExaminationScheduleService()
     }
 
     private _response<T>(message: string, code: number, data: T) {
@@ -46,7 +51,7 @@ export class ExaminationController implements IExaminationController {
      * @param user The user making the request
      * @returns Sanitized examination object(s) with role-based answer visibility
      */
-    private _sanitizeExamData(exam: IExamination | IExamination[] | null, user?: IInstructor): any {
+    private _sanitizeExamData(exam: IExamination | IExaminationSchedule | IExamination[] | IExaminationSchedule[] | null, user?: IInstructor): any {
         if (!exam) return null;
 
         const sanitizeExam = (examination: IExamination) => {
@@ -85,9 +90,29 @@ export class ExaminationController implements IExaminationController {
         }
     }
 
-    async resultSubmit(examId: string, answers: Answer[]) {
-        const result = await this._service.resultSubmit(examId, answers)
-        return this._response('Exam submitted successfully', 200, result)
+    async resultSubmit(examId: string, answers: Answer[], scheduleId?: string) {
+        // If a scheduleId is provided, use the examination schedule instead of the original exam
+        if (scheduleId) {
+            try {
+                // Get the examination schedule
+                const schedule = await this._scheduleService.getExaminationScheduleById(scheduleId);
+                
+                if (!schedule) {
+                    return this._response<null>('Examination schedule not found', 404, null);
+                }
+                
+                // Use the examination service to check the answers against the schedule's questions
+                const result = await this._service.resultSubmit(examId, answers, schedule);
+                return this._response('Exam submitted successfully', 200, result);
+            } catch (error: any) {
+                console.error('Error submitting exam with schedule:', error);
+                return this._response<null>(`Error submitting exam: ${error.message || 'Unknown error'}`, 500, null);
+            }
+        } else {
+            // Use the original exam if no scheduleId is provided (backward compatibility)
+            const result = await this._service.resultSubmit(examId, answers);
+            return this._response('Exam submitted successfully', 200, result);
+        }
     }
 
     // Examination-Only methods
@@ -111,9 +136,26 @@ export class ExaminationController implements IExaminationController {
         return this._response<typeof exams>('Done', 200, this._sanitizeExamData(exams, user))
     }
 
-    async getExaminationById(id: string, user?: IInstructor) {
-        const exam = await this._service.getExaminationById(id)
-        return this._response<typeof exam>('Done', 200, this._sanitizeExamData(exam, user))
+    async getExaminationById(id: string, user?: IInstructor, scheduleId?: string) {
+        // If a scheduleId is provided, get the examination schedule instead of the original exam
+        if (scheduleId) {
+            try {
+                const schedule = await this._scheduleService.getExaminationScheduleById(scheduleId);
+                
+                if (!schedule) {
+                    return this._response('Examination schedule not found', 404, null);
+                }
+                
+                return this._response<typeof schedule>('Done', 200, this._sanitizeExamData(schedule, user));
+            } catch (error: any) {
+                console.error('Error getting examination schedule:', error);
+                return this._response(`Error getting examination: ${error.message || 'Unknown error'}`, 500, null);
+            }
+        } else {
+            // Use the original exam if no scheduleId is provided
+            const exam = await this._service.getExaminationById(id);
+            return this._response<typeof exam>('Done', 200, this._sanitizeExamData(exam, user));
+        }
     }
 
     async getExaminationByInstructorId (instructor_id: string, user?: IInstructor) {
@@ -157,5 +199,11 @@ export class ExaminationController implements IExaminationController {
         const exam = await this._service.addNestedQuestion(id, payload)
        
         return this._response<typeof exam>('Add Nested Question Successfully', 200, this._sanitizeExamData(exam, user))
+    }
+
+    async addNestedQuestionFromExisting(examId: string, nestedQuestionData: { question: string; score: number }, questionIds: string[], user?: IInstructor) {
+        const exam = await this._service.addNestedQuestionFromExisting(examId, nestedQuestionData, questionIds)
+        
+        return this._response<typeof exam>('Add Nested Question from Existing Successfully', 200, this._sanitizeExamData(exam, user))
     }
 }

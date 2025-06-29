@@ -8,6 +8,9 @@ export const SettingSchema = new Schema<ISetting>({
         type: Schema.Types.String,
         required: true
     },
+    schedule_id: {
+        type: Schema.Types.String
+    },
     open_time: {
         type: Schema.Types.Date,
         required: true
