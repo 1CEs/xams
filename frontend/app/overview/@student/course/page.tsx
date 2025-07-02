@@ -102,9 +102,8 @@ export default function StudentCoursePage() {
                                                         courseId={courseId!}
                                                         groupId={group._id}
                                                         setting={{
-                                                            ...setting,
-                                                            open_time: new Date(setting.open_time),
-                                                            close_time: new Date(setting.close_time)
+                                                            _id: setting._id,
+                                                            schedule_id: setting.schedule_id
                                                         }}
                                                         index={idx}
                                                         groupName={group.group_name}

@@ -30,12 +30,8 @@ export class AuthController implements IAuthController {
     async signup(payload: SignUpPayload) {
         console.log("in")
         const instance = this._factory.createService(payload.body!.role)
-        const user = await instance.register(payload.body!) as ({ message: string })
-
-        if(user.message.length > 0) {
-            return this._response(user.message, 400, user)
-        }
-
+        const user = await instance.register(payload.body!)
+        if (!user) throw new Error('User not found')
         delete payload.body
         await this.setToken(String((user as unknown as IUser | IStudent | IInstructor)._id), { ...payload })
 

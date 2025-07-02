@@ -1,5 +1,5 @@
 export interface IUserService<T> {
-    register: (payload: Partial<T>) => Promise<(T) | null | { message: string }>
+    register: (payload: Partial<T>) => Promise<(T) | null>
     getUsers: () => Promise<(T)[] | null>
     getUserById: (_id: string) => Promise<(T) | null>
     getUserByEmail: (email: string) => Promise<(T) | null>

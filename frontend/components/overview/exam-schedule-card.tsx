@@ -46,7 +46,7 @@ export default function ExamScheduleCard({ courseId, groupId, setting, index, gr
   const router = useRouter()
 
   // Fetch exam schedule data using the schedule_id
-  const { data: examSchedule, isLoading, error } = useFetch<{ data: ExamSchedule }>(`/exam/schedule/${setting.schedule_id}`)
+  const { data: examSchedule, isLoading, error } = useFetch<{ data: ExamSchedule }>(`/exam-schedule/${setting.schedule_id}`)
 
   // Check if exam is currently open
   const examStatus = useMemo(() => {

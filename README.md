@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Examination and Assignment Management System (EAMS) is designed to streamline the process of creating, managing, and grading examinations and assignments in educational institutions. This system aims to enhance the efficiency of academic operations, reduce administrative burdens, and improve the overall experience for students and educators.
+The Examination and Assignment Management System (EAMS) is designed to streamline the process of creating, managing, and grading examinations and assignments in educational institutions. This system aims to enhance the efficiency of academic operations, reduce administrative burdens, and improve the experience for students and educators.
 
 ## Features
 

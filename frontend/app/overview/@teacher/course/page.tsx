@@ -200,7 +200,10 @@ export default function CoursePage() {
                                                             courseId={_id as string}
                                                             key={idx}
                                                             groupId={group._id}
-                                                            setting={setting}
+                                                            setting={{
+                                                                _id: setting._id,
+                                                                schedule_id: setting.schedule_id
+                                                            }}
                                                             index={idx}
                                                             groupName={group.group_name}
                                                             onDelete={openDeleteExamConfirmation}

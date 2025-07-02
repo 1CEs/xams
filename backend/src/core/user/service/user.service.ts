@@ -24,22 +24,20 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
 
     async register(payload: Partial<T>) {
         if (!payload.email || !payload.username || !payload.password) {
-            return {
-                message: "Email, username, and password are required fields."
-            }
+            throw new Error("Email, username, and password are required fields.")
         }
 
-        const [userFromEmail, userFromUsername] = await Promise.all([
-            this.getUserByEmail(payload.email),
-            this.getUserByUsername(payload.username)
-        ])
+        // const [userFromEmail, userFromUsername] = await Promise.all([
+        //     this.getUserByEmail(payload.email),
+        //     this.getUserByUsername(payload.username)
+        // ])
 
-        console.log(userFromEmail, userFromUsername)
-        if (userFromEmail || userFromUsername) {
-            return {
-                message: `User with ${userFromEmail ? 'email' : 'username'} already exists.`
-            }
-        }
+        // console.log(userFromEmail, userFromUsername)
+        // if (userFromEmail || userFromUsername) {
+        //     return {
+        //         message: `User with ${userFromEmail ? 'email' : 'username'} already exists.`
+        //     }
+        // }
         const hashedPassword = await Bun.password.hash(payload.password, {
             algorithm: 'bcrypt',
             cost: 4,

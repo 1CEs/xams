@@ -24,6 +24,7 @@ const Form = (props: Props) => {
     const cookies = useCookies()
 
     const onFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
+        console.log('asdasd')
         e.preventDefault()
         setError(null)
         setLoading(true)
@@ -45,7 +46,6 @@ const Form = (props: Props) => {
                 delete signUpPayload.first_name
                 delete signUpPayload.last_name
                 delete signUpPayload.birth
-
                 const res = await clientAPI.post('auth/sign-up', signUpPayload)
                 const userData = res.data.data as UserResponse
                 setUser(userData)
@@ -53,6 +53,8 @@ const Form = (props: Props) => {
                 // Set cookie with the user data from the API response
                 const oneDay = 24 * 60 * 60 * 1000
                 cookies.set('user', JSON.stringify(userData), { expires: Date.now() + oneDay})
+                console.log("dadasdxx")
+
             } else {
                 const signInFormEntries = Object.fromEntries(formData.entries())
                 const res = await clientAPI.post('auth/sign-in', signInFormEntries)

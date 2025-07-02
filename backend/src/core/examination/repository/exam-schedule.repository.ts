@@ -1,23 +1,22 @@
-import { ExaminationScheduleDocument } from "../../../types/exam";
 import { BaseRepository } from "../../base/base.repository";
 import { ExaminationModel } from "../model/examination.model";
 import { ExaminationScheduleModel } from "../model/examination-schedule.model";
 import { IExaminationScheduleRepository } from "./interface/iexam-schedule.repository";
 
 export class ExaminationScheduleRepository
-    extends BaseRepository<ExaminationScheduleDocument>
+    extends BaseRepository<any>
     implements IExaminationScheduleRepository {
 
     constructor() {
         super(ExaminationScheduleModel)
     }
 
-    async getExaminationScheduleByExamId(exam_id: string): Promise<ExaminationScheduleDocument | null> {
+    async getExaminationScheduleByExamId(exam_id: string): Promise<any | null> {
         const result = await this._model.findOne({ original_exam_id: exam_id }).exec();
         return result;
     }
 
-    async createExaminationSchedule(examId: string, instructorId: string, questionCount?: number, scheduleName?: string, examSettings?: any): Promise<ExaminationScheduleDocument | null> {
+    async createExaminationSchedule(examId: string, instructorId: string, questionCount?: number, scheduleName?: string, examSettings?: any): Promise<any | null> {
         // First, get the original examination
         const originalExam = await ExaminationModel.findById(examId).exec();
         
