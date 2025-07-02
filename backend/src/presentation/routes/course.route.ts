@@ -31,11 +31,11 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
         app
             // Course-Only routes
             .get('/:id', catchAsync(async ({ params, controller }: CourseContext & { params: { id: string } }) => await controller.getCourseById(params.id)))
-            // .get('', async ({ query, controller }) => await controller.getCourseByInstructorId(query.instructor_id), {
-            //     query: t.Object({
-            //         instructor_id: t.String()
-            //     })
-            // })
+            .get('', catchAsync(async ({ query, controller }: CourseContext & { query: { instructor_id: string } }) => await controller.getCourseByInstructorId(query.instructor_id)), {
+                query: t.Object({
+                    instructor_id: t.String()
+                })
+            })
 
             .post('', catchAsync(async ({ body, user, controller }: CourseContext & { body: AddCourseBody }) => await controller.addCourse({ ...body, instructor_id: user._id as unknown as string }, user)), {
                 body: AddCourseSchema

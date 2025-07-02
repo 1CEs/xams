@@ -13,7 +13,8 @@ export class CourseRepository extends BaseRepository<ICourse & Document> impleme
     }
 
     async getCourseByInstructorId (instructor_id: string) {
-        const courses = await this._model.find({ instructor_id }).exec()
+        console.log(instructor_id)
+        const courses = await this._model.find({instructor_id}).exec()
         return courses
     }
 

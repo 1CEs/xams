@@ -14,6 +14,7 @@ const CourseList = (props: Props) => {
   const { data, error, isLoading } = useFetch<ServerResponse<CourseResponse[]>>(
     `course?instructor_id=${user?._id}`
   );
+  console.log(user?._id)
 
   if (isLoading) {
     return (
