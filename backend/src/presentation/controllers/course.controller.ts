@@ -61,6 +61,11 @@ export class CourseController implements ICourseController {
         return this._response<typeof courses>('Done', 200, courses)
     }
 
+    async getCourseByStudentId (student_id: string) {
+        const courses = await this._service.getCourseByStudentId(student_id)
+        return this._response<typeof courses>('Done', 200, courses)
+    }
+
     async getCourseById(id: string) {
         const course = await this._service.getCourseById(id)
         return this._response<typeof course>('Done', 200, course)

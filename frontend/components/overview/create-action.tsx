@@ -51,12 +51,12 @@ const CreateAction = (props: Props) => {
                         New Examination
                     </DropdownItem>
                     <DropdownItem
-                        key="category"
-                        description="Create a new category"
-                        startContent={<MaterialSymbolsAssignment fontSize={24} />}
-                        onPress={() => onModalOpen('category')}
+                        startContent={<HealthiconsIExamMultipleChoice fontSize={24} />}
+                        key="schedule"
+                        description="Create a new question bank"
+                        onPress={() => onModalOpen('exam')}
                     >
-                        Category
+                        New Bank
                     </DropdownItem>
                 </DropdownMenu>
             </Dropdown>

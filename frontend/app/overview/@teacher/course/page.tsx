@@ -23,6 +23,7 @@ import CourseUpdateModal from "@/components/overview/modals/course-update-modal"
 import ExamScheduleCard from "@/components/overview/exam-schedule-card"
 
 export default function CoursePage() {
+
     const params = useSearchParams()
     const _id = params.get('id')
     const { data, error, isLoading } = useFetch<ServerResponse<CourseResponse>>(`/course/${_id}`)
@@ -340,8 +341,7 @@ export default function CoursePage() {
                                     return
                                 }
 
-                                // Open the modal directly, group selection is handled in the modal
-                                onScheduleModalOpen()
+                                router.push(`/overview/create/schedule?courseId=${_id}`)
                             }}
                         >
                             <UisSchedule />

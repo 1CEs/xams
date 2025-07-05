@@ -10,6 +10,7 @@ export interface ICourseController {
     getCourses: () => Promise<ControllerResponse<ICourse[] | null>>
     getCourseById: (id: string) => Promise<ControllerResponse<ICourse | null>>
     getCourseByInstructorId: (instructor_id: string) => Promise<ControllerResponse<ICourse[] | null>>
+    getCourseByStudentId: (student_id: string) => Promise<ControllerResponse<ICourse[] | null>>
     updateCourse: (id: string, payload: Partial<ICourse>) => Promise<ControllerResponse<ICourse | null>>
     deleteCourse: (id: string) => Promise<ControllerResponse<ICourse | null>>
     verifyPassword: (course_id: string, group_id: string, setting_id: string, password: string) => Promise<ControllerResponse<Boolean | null>>

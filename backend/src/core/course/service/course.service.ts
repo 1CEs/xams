@@ -30,6 +30,11 @@ export class CourseService implements ICourseService {
         return courses
     }
 
+    async getCourseByStudentId (student_id: string) {
+        const courses = await this._repository.getCourseByStudentId(student_id)
+        return courses
+    }
+
     async updateCourse (id: string, payload: Partial<ICourse>) {
         const updated = await this._repository.update(id, payload)
         return updated
