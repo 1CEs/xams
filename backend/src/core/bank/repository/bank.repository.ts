@@ -12,7 +12,7 @@ export class BankRepository {
     }
 
     async getBanksByExamId(examId: string): Promise<IBank[]> {
-        return await BankModel.find({ exam_id: examId }).exec();
+        return await BankModel.find({ exam_ids: examId }).exec();
     }
 
     async updateBank(id: string, bank: Partial<IBank>): Promise<IBank | null> {
@@ -37,7 +37,7 @@ export class BankRepository {
         const bank = await BankModel.findById(bankId).exec();
         if (!bank) return null;
 
-        let currentLevel = bank.sub_banks;
+        let currentLevel = bank.sub_banks || [];
         let targetSubBank: ISubBank | null = null;
 
         for (const subBankId of subBankPath) {
@@ -46,9 +46,23 @@ export class BankRepository {
             targetSubBank = currentLevel.find(sb => sb._id.toString() === subBankId) || null;
             if (!targetSubBank) return null;
             
-            currentLevel = targetSubBank.sub_banks;
+            currentLevel = targetSubBank.sub_banks || [];
         }
 
         return targetSubBank;
+    }
+    
+    async getSubBankHierarchy(bankId: string): Promise<IBank | null> {
+        return await BankModel.findById(bankId).exec();
+    }
+    
+    async getBanksByExamIdInSubBanks(examId: string): Promise<IBank[]> {
+        // Find banks that have the exam ID in any of their sub-banks (recursively)
+        return await BankModel.find({
+            $or: [
+                { exam_ids: examId },
+                { 'sub_banks.exam_ids': examId }
+            ]
+        }).exec();
     }
 }

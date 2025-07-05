@@ -57,6 +57,11 @@ export class UserController implements IUserController {
         const categories = await (this._factory.createService('instructor') as InstructorService).getCategory(instructor_id)
         return this._response<typeof categories>('Done', 200, categories)
     }
+    
+    async getBank (instructor_id: string) {
+        const banks = await (this._factory.createService('instructor') as InstructorService).getBank(instructor_id)
+        return this._response<typeof banks>('Done', 200, banks)
+    }
 
     async updateCategory(id: string, payload: CategoryPayload) {
         const updated = await (this._factory.createService('instructor') as InstructorService).updateCategory(id, payload)

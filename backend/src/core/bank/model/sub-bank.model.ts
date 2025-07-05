@@ -9,6 +9,10 @@ export const SubBankSchema = new Schema<ISubBank & Document>({
         type: Schema.Types.String,
         required: true
     },
+    exam_ids: {
+        type: [Schema.Types.String],
+        default: []
+    },
     parent_id: {
         type: Schema.Types.String,
         required: false
@@ -17,7 +21,7 @@ export const SubBankSchema = new Schema<ISubBank & Document>({
         type: [/* placeholder for recursion */],
         default: []
     }
-}, { _id: true });
+}, { _id: true, timestamps: true });
 
 // Add recursive self-reference for nested sub-banks
 SubBankSchema.add({

@@ -13,9 +13,19 @@ export class InstructorService extends UserService<IInstructor> implements IInst
         const result = await (this._repository as InstructorRepository).getCategory(instructor_id)
         return result
     }
+    
+    async getBank(instructor_id: string) {
+        const result = await (this._repository as InstructorRepository).getBank(instructor_id)
+        return result
+    }
 
     async updateExam(instructor_id: string, examination_id: string) {
         const result = await (this._repository as InstructorRepository).updateExamination(instructor_id, examination_id)
+        return result
+    }
+
+    async updateBank(instructor_id: string, bank_id: string) {
+        const result = await (this._repository as InstructorRepository).updateBank(instructor_id, bank_id)
         return result
     }
 

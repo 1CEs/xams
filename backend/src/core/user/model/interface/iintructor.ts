@@ -9,5 +9,5 @@ export interface ICategory {
 export interface IInstructor extends IUser {
     categories: ICategory[]
     courses: ObjectId[]
-    exam_bank: ObjectId[]
+    bank: ObjectId[]
 }
