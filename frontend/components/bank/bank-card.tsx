@@ -14,6 +14,7 @@ type Props = {
   id: string;
   title: string;
   examId?: string;
+  exam_ids?: string[];
   subBanks?: BankNode[];
   className?: string;
   fetchSubBanks?: (id: string) => Promise<BankNode[]>;
@@ -21,9 +22,9 @@ type Props = {
   onRename?: (id: string, newName: string) => void;
   onDelete?: (id: string) => void;
 };
-const BankCard = ({ id, title, examId, subBanks = [], className, onDoubleClick, onRename, onDelete }: Props) => {
-  // Check if the bank is empty (no exam and no sub-banks)
-  const isEmpty = !examId && (!subBanks || subBanks.length === 0);
+const BankCard = ({ id, title, examId, exam_ids = [], subBanks = [], className, onDoubleClick, onRename, onDelete }: Props) => {
+  // Check if the bank is empty (no exams and no sub-banks)
+  const isEmpty = !examId && (!exam_ids || exam_ids.length === 0) && (!subBanks || subBanks.length === 0);
   
   // State for context menu
   const [showContextMenu, setShowContextMenu] = useState(false);

@@ -12,14 +12,17 @@ import { UserServiceFactory } from "../../core/user/service/user.factory";
 import { Answer } from "../../types/exam";
 import { UserRole } from "../../types/user";
 import { IExaminationController } from "./interface/iexam.controller";
+import { BankService } from "../../core/bank/service/bank.service";
 
 export class ExaminationController implements IExaminationController {
     private _service: IExaminationService
     private _scheduleService: IExaminationScheduleService
+    private _bankService: BankService
 
     constructor() {
         this._service = new ExaminationService()
         this._scheduleService = new ExaminationScheduleService()
+        this._bankService = new BankService()
     }
 
     private _response<T>(message: string, code: number, data: T) {
@@ -101,17 +104,40 @@ export class ExaminationController implements IExaminationController {
     }
 
     // Examination-Only methods
-    async addExamination(payload: Omit<IExamination, "_id" | "questions">, user: IInstructor) {
+    async addExamination(payload: Omit<IExamination, "_id" | "questions">, user: IInstructor, bankId?: string, subBankPath?: string[]) {
         console.log(user)
         // Ensure category is set, default to empty array if not provided
         if (!payload.category) {
             payload.category = []
         }
         
+        // Create the exam
         const exam = await this._service.addExamination(payload)
+        
+        // Update the instructor's exams list
         const service = new UserServiceFactory().createService(user.role)
-
         const update = (service as InstructorService).updateExam(user._id as unknown as string, exam?._id as unknown as string)
+        
+        // If bankId is provided, associate the exam with the appropriate bank level
+        if (bankId && exam) {
+            const examId = exam._id.toString();
+            
+            try {
+                // If subBankPath is provided and valid (not containing just the parent bank ID), add to sub-bank
+                if (subBankPath && subBankPath.length > 0 && !(subBankPath.length === 1 && subBankPath[0] === bankId)) {
+                    console.log(`Adding exam ${examId} to sub-bank in bank ${bankId} with path:`, subBankPath);
+                    await this._bankService.addExamToSubBank(bankId, subBankPath, examId);
+                } 
+                // Otherwise, add to the parent bank
+                else {
+                    console.log(`Adding exam ${examId} to parent bank ${bankId}`);
+                    await this._bankService.addExamToBank(bankId, examId);
+                }
+            } catch (error) {
+                console.error('Error associating exam with bank:', error);
+                // Note: We don't fail the request if bank association fails
+            }
+        }
 
         return this._response<typeof exam>('Create Examination Successfully', 200, this._sanitizeExamData(exam, user))
     }

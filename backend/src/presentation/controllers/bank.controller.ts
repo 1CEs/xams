@@ -61,6 +61,13 @@ export class BankController implements IBankController {
         const bank = await this._service.createSubBank(bankId, name, examIdsArray, parentId);
         return this._response<typeof bank>('SubBank created successfully', 201, bank);
     }
+    
+    async createNestedSubBank(bankId: string, subBankPath: string[], name: string, examIds?: string | string[]) {
+        // Convert single examId to array if provided
+        const examIdsArray = examIds ? (Array.isArray(examIds) ? examIds : [examIds]) : undefined;
+        const bank = await this._service.createNestedSubBank(bankId, subBankPath, name, examIdsArray);
+        return this._response<typeof bank>('Nested SubBank created successfully', 201, bank);
+    }
 
     async getSubBankHierarchy(bankId: string) {
         const hierarchy = await this._service.getSubBankHierarchy(bankId);
@@ -93,5 +100,11 @@ export class BankController implements IBankController {
     async updateSubBank(bankId: string, subBankPath: string[], subBankId: string, updateData: any) {
         const bank = await this._service.updateSubBank(bankId, subBankPath, subBankId, updateData);
         return this._response<typeof bank>('Sub-bank updated successfully', 200, bank);
+    }
+    
+    // Delete a sub-bank
+    async deleteSubBank(bankId: string, subBankPath: string[], subBankId: string) {
+        const bank = await this._service.deleteSubBank(bankId, subBankPath, subBankId);
+        return this._response<typeof bank>('Sub-bank deleted successfully', 200, bank);
     }
 }

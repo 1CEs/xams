@@ -48,6 +48,16 @@ export const BankRoute = new Elysia({ prefix: '/bank' })
                     await controller.createSubBank(params.id, body.name, body.exam_ids, body.parent_id)), {
                     body: CreateSubBankSchema
                 })
+                
+                // Nested SubBank routes
+                .post('/sub-bank-nested/:nestedPath', catchAsync(async ({ params, body, controller }: BankContext & { params: { id: string, nestedPath: string }, body: CreateSubBankBody }) => {
+                    // The path should already include all necessary IDs in the correct order
+                    const subBankPath = params.nestedPath.split(',');
+                    console.log('Creating nested sub-bank with path:', subBankPath);
+                    return await controller.createNestedSubBank(params.id, subBankPath, body.name, body.exam_ids);
+                }), {
+                    body: CreateSubBankSchema
+                })
                 .get('/hierarchy', catchAsync(async ({ params, controller }: BankContext & { params: { id: string } }) => 
                     await controller.getSubBankHierarchy(params.id)))
                 
@@ -61,6 +71,16 @@ export const BankRoute = new Elysia({ prefix: '/bank' })
                     return await controller.updateSubBank(params.id, subBankPath, params.targetId, body);
                 }))
                 
+                // Delete sub-bank routes
+                .delete('/sub-bank/:subBankId', catchAsync(async ({ params, controller }: BankContext & { params: { id: string, subBankId: string } }) => 
+                    await controller.deleteSubBank(params.id, [], params.subBankId)))
+                
+                // Delete nested sub-bank route
+                .delete('/sub-bank-nested/:nestedPath/:targetId', catchAsync(async ({ params, controller }: BankContext & { params: { id: string, nestedPath: string, targetId: string } }) => {
+                    const subBankPath = params.nestedPath.split(',');
+                    return await controller.deleteSubBank(params.id, subBankPath, params.targetId);
+                }))
+                
                 // Exam management in banks
                 .post('/exam/:examId', catchAsync(async ({ params, controller }: BankContext & { params: { id: string, examId: string } }) => 
                     await controller.addExamToBank(params.id, params.examId)))
@@ -68,13 +88,34 @@ export const BankRoute = new Elysia({ prefix: '/bank' })
                     await controller.removeExamFromBank(params.id, params.examId)))
                 
                 // Exam management in sub-banks
-                .post('/sub-bank/:path/exam/:examId', catchAsync(async ({ params, controller }: BankContext & { params: { id: string, path: string, examId: string } }) => {
-                    const subBankPath = params.path.split(',');
-                    return await controller.addExamToSubBank(params.id, subBankPath, params.examId);
+                .post('/sub-bank-path/:subBankPath/exam/:examId', catchAsync(async ({ params, controller }: BankContext & { params: { id: string, subBankPath: string, examId: string } }) => {
+                    const subBankPathArray = params.subBankPath.split(',');
+                    return await controller.addExamToSubBank(params.id, subBankPathArray, params.examId);
                 }))
-                .delete('/sub-bank/:path/exam/:examId', catchAsync(async ({ params, controller }: BankContext & { params: { id: string, path: string, examId: string } }) => {
-                    const subBankPath = params.path.split(',');
-                    return await controller.removeExamFromSubBank(params.id, subBankPath, params.examId);
+                .delete('/sub-bank-path/:subBankPath/exam/:examId', catchAsync(async ({ params, controller }: BankContext & { params: { id: string, subBankPath: string, examId: string } }) => {
+                    const subBankPathArray = params.subBankPath.split(',');
+                    return await controller.removeExamFromSubBank(params.id, subBankPathArray, params.examId);
                 }))
+                
+                // Direct sub-bank exam management (shortcut route)
+                .post('/sub-bank-exam/:examId', catchAsync(async ({ params, controller, body }: BankContext & { params: { id: string, examId: string }, body: any }) => {
+                    // This route handles direct sub-bank exam associations
+                    // If subBankId is provided in body, use it to determine which sub-bank to add the exam to
+                    const subBankId = body.subBankId;
+                    console.log('Adding exam to sub-bank with: bankId=', params.id, 'subBankId=', subBankId, 'examId=', params.examId);
+                    
+                    if (!subBankId) {
+                        throw new Error('subBankId is required in request body');
+                    }
+                    
+                    // Call the service method to add the exam to the sub-bank
+                    const result = await controller.addExamToSubBank(params.id, [subBankId], params.examId);
+                    console.log('Result from addExamToSubBank:', result);
+                    return result;
+                }), {
+                    body: t.Object({
+                        subBankId: t.String()
+                    })
+                })
             )
     );
