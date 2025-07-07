@@ -23,8 +23,12 @@ type Props = {
   onDelete?: (id: string) => void;
 };
 const BankCard = ({ id, title, examId, exam_ids = [], subBanks = [], className, onDoubleClick, onRename, onDelete }: Props) => {
+  console.log(`BankCard ${title} (${id}) - examId: ${examId}, exam_ids:`, exam_ids, 'subBanks:', subBanks);
+  
   // Check if the bank is empty (no exams and no sub-banks)
-  const isEmpty = !examId && (!exam_ids || exam_ids.length === 0) && (!subBanks || subBanks.length === 0);
+  const isEmpty = !examId && 
+                 (!exam_ids || exam_ids.length === 0) && 
+                 (!subBanks || !Array.isArray(subBanks) || subBanks.length === 0);
   
   // State for context menu
   const [showContextMenu, setShowContextMenu] = useState(false);

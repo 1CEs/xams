@@ -69,9 +69,14 @@ export class BankController implements IBankController {
         return this._response<typeof bank>('Nested SubBank created successfully', 201, bank);
     }
 
-    async getSubBankHierarchy(bankId: string) {
-        const hierarchy = await this._service.getSubBankHierarchy(bankId);
+    async getSubBankHierarchy(bankId: string, instructorId?: string) {
+        const hierarchy = await this._service.getSubBankHierarchy(bankId, instructorId);
         return this._response<typeof hierarchy>('SubBank hierarchy retrieved successfully', 200, hierarchy);
+    }
+    
+    async getSubBankHierarchyByParentAndId(parentBankId: string, subBankId: string) {
+        const result = await this._service.getSubBankHierarchyByParentAndId(parentBankId, subBankId);
+        return this._response<typeof result>('SubBank hierarchy with path retrieved successfully', 200, result);
     }
     
     // Exam management in banks

@@ -58,8 +58,12 @@ export const BankRoute = new Elysia({ prefix: '/bank' })
                 }), {
                     body: CreateSubBankSchema
                 })
-                .get('/hierarchy', catchAsync(async ({ params, controller }: BankContext & { params: { id: string } }) => 
-                    await controller.getSubBankHierarchy(params.id)))
+                .get('/hierarchy', catchAsync(async ({ params, controller, user }: BankContext & { params: { id: string }, user: any }) => 
+                    await controller.getSubBankHierarchy(params.id, user._id)))
+                
+                // New route to get sub-bank by both parent ID and sub-bank ID
+                .get('/hierarchy/:subBankId', catchAsync(async ({ params, controller }: BankContext & { params: { id: string, subBankId: string } }) => 
+                    await controller.getSubBankHierarchyByParentAndId(params.id, params.subBankId)))
                 
                 // Sub-bank update routes
                 .put('/sub-bank/:subBankId', catchAsync(async ({ params, body, controller }: BankContext & { params: { id: string, subBankId: string }, body: any }) => 

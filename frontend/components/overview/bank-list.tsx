@@ -3,13 +3,13 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import BankCard from "../bank/bank-card";
-import { IcRoundFolder, SolarRefreshLineDuotone, BankAdd, MingcuteFileTextFill } from "../icons/icons";
+import { SolarRefreshLineDuotone, BankAdd, ExamFile } from "../icons/icons";
 import ExamFormModal from "./modals/exam-form-modal";
 import ExamCard from "../exam/exam-card";
 import { useUserStore } from "@/stores/user.store";
 import { useBankNavigation, BankBreadcrumb } from "@/stores/bank-selector.store";
 import { useFetch } from "@/hooks/use-fetch";
-import { Alert, Button, Card, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, useDisclosure } from "@nextui-org/react";
+import { Alert, Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, useDisclosure } from "@nextui-org/react";
 import { BankResponse } from "@/types/bank";
 import Link from "next/link";
 import { clientAPI } from "@/config/axios.config";
@@ -91,31 +91,62 @@ const BankList = ({ examId }: Props) => {
     useEffect(() => {
         const loadSubBanks = async () => {
             if (currentBankId) {
+                console.log('Loading sub-banks for bank ID:', currentBankId);
+                console.log('Current breadcrumbs:', breadcrumbs);
+                
                 setIsLoadingSubBanks(true);
                 setIsLoadingExams(true);
+                
+                // Fetch the sub-banks for the current bank ID
                 const subBanks = await fetchSubBanks(currentBankId);
+                
+                // Log the structure to help with debugging
+                console.log('Setting current banks to:', subBanks);
+                
+                // Update the state with the fetched sub-banks
                 setCurrentBanks(subBanks);
                 setIsLoadingSubBanks(false);
             }
         };
 
         loadSubBanks();
-    }, [currentBankId]);
+    }, [currentBankId, breadcrumbs.length]);
 
-    const fetchSubBanks = async (bankId: string) => {
+    // Helper function to recursively process sub-banks at all nesting levels
+    // Defined outside of the fetch functions so it can be reused
+    const processSubBanksRecursively = (banks: any[]): any[] => {
+        if (!banks || !Array.isArray(banks) || banks.length === 0) {
+            return [];
+        }
+        
+        return banks.map((bank: any) => ({
+            _id: bank._id,
+            bank_name: bank.name || bank.bank_name,
+            exam_ids: bank.exam_ids || [],
+            // Recursively process any nested sub-banks
+            sub_banks: processSubBanksRecursively(bank.sub_banks || [])
+        }));
+    };
+    
+    const fetchSubBanks = async (subBankId: string) => {
         try {
             setIsLoadingSubBanks(true);
             setIsLoadingExams(true);
 
+            console.log('Fetching sub-banks for bank ID:', subBankId);
+            
             // Using the correct API endpoint based on the bank.route.ts backend route
             // The endpoint for getting bank hierarchy is: GET /bank/bank-:id/hierarchy
-            const response = await clientAPI.get(`bank/bank-${bankId}/hierarchy`);
+            const response = await clientAPI.get(`bank/bank-${subBankId}/hierarchy`);
+
+            console.log('Response data:', response.data);
 
             if (!response.data || !response.data.data) {
                 throw new Error("Failed to fetch sub-banks");
             }
 
             const bankData = response.data.data;
+            console.log('Received bank hierarchy data:', bankData);
 
             // Check if the current bank has examinations and fetch them
             if (bankData.exam_ids && bankData.exam_ids.length > 0) {
@@ -128,12 +159,23 @@ const BankList = ({ examId }: Props) => {
             // Map sub-banks to the correct format for display
             // Sub-banks use 'name' field while parent banks use 'bank_name'
             const subBanks = bankData.sub_banks || [];
-            return subBanks.map((subBank: any) => ({
-                _id: subBank._id,
-                bank_name: subBank.name, // Map 'name' to 'bank_name' for consistency
-                exam_ids: subBank.exam_ids,
-                sub_banks: subBank.sub_banks
-            }));
+            console.log('Number of direct sub-banks:', subBanks.length);
+            
+            if (subBanks.length > 0) {
+                console.log('First sub-bank details:', subBanks[0]);
+                for (let i = 0; i < subBanks.length; i++) {
+                    if (subBanks[i].sub_banks && subBanks[i].sub_banks.length > 0) {
+                        console.log(`Sub-bank ${i} (${subBanks[i].name}) has ${subBanks[i].sub_banks.length} nested sub-banks:`, 
+                        subBanks[i].sub_banks.map((sb: { name?: string; bank_name?: string }) => sb.name || sb.bank_name || 'Unknown'));
+                    }
+                }
+            }
+            
+            // Recursively process all sub-banks to ensure proper rendering
+            const processedSubBanks = processSubBanksRecursively(subBanks);
+            
+            console.log('Processed sub-banks:', processedSubBanks);
+            return processedSubBanks;
         } catch (error) {
             console.error("Error fetching sub-banks:", error);
             errorHandler(error);
@@ -260,15 +302,43 @@ const BankList = ({ examId }: Props) => {
     const handleBankDoubleClick = async (bank: Bank) => {
         if (!bank._id) return;
 
+        console.log('Double-clicked bank:', bank);
+        console.log('Bank has sub-banks:', bank.sub_banks ? bank.sub_banks.length : 0);
+
         // Using the bank navigation store for persistent navigation state
         navigateTo(bank._id, bank.bank_name);
-        
-        // Fetch and display sub-banks and exams of the selected bank
-        await fetchSubBanks(bank._id);
+        if (bank.sub_banks && bank.sub_banks.length > 0) {
+            console.log('Using pre-loaded sub-banks:', bank.sub_banks);
+            
+            // Debug the nested structure
+            if (bank.sub_banks.length > 0) {
+                bank.sub_banks.forEach((subBank: any, idx: number) => {
+                    console.log(`Pre-loaded sub-bank ${idx} (${subBank.name || subBank.bank_name})`);
+                    if (subBank.sub_banks && subBank.sub_banks.length > 0) {
+                        console.log(` - Has ${subBank.sub_banks.length} nested sub-banks`);
+                    }
+                });
+            }
+            
+            // Process all sub-banks recursively
+            const processedSubBanks = processSubBanksRecursively(bank.sub_banks);
+            
+            console.log('Processed sub-banks to display:', processedSubBanks);
+            setCurrentBanks(processedSubBanks);
+            setIsLoadingSubBanks(false);
+        } else {
+            // Need to fetch from API
+            console.log('Fetching sub-banks from API for:', bank._id);
+            const subBanks = await fetchSubBanks(bank._id);
+            setCurrentBanks(subBanks);
+        }
         
         // Also check if this bank has exams to display
         if (bank.exam_ids && bank.exam_ids.length > 0) {
             await fetchExaminations(bank.exam_ids);
+        } else {
+            setCurrentExams([]);
+            setIsLoadingExams(false);
         }
     };
 
@@ -346,6 +416,8 @@ const BankList = ({ examId }: Props) => {
         try {
             setIsCreatingBank(true);
             console.log('Creating bank with name:', bankName, 'parent ID:', newBankParentId);
+            console.log('Current breadcrumbs:', breadcrumbs);
+            console.log('Current bank ID:', currentBankId);
     
             // If no parent ID and no current bank ID, create a root bank
             if (!newBankParentId && !currentBankId) {
@@ -356,14 +428,48 @@ const BankList = ({ examId }: Props) => {
                 });
                 console.log('Root bank created:', response.data);
             }
-            // If we have a current bank ID but no parent ID, create a direct sub-bank
+            // If we have a current bank ID but no parent ID, create a direct sub-bank under the current bank
             else if (!newBankParentId && currentBankId) {
-                console.log('Creating direct sub-bank under current bank');
-                const response = await clientAPI.post(
-                    `bank/bank-${currentBankId}/sub-bank`,
-                    { name: bankName, exam_ids: examId ? [examId] : [] }
-                );
-                console.log('Direct sub-bank created:', response.data);
+                // If we have breadcrumbs, we're in a nested context
+                if (breadcrumbs.length > 0) {
+                    console.log('Creating sub-bank in nested context using breadcrumbs');
+                    
+                    // The bank ID is the first breadcrumb (root bank)
+                    const rootBankId = breadcrumbs[0].id;
+                    
+                    // If we have more than one breadcrumb, we need to create a sub-bank in a nested path
+                    if (breadcrumbs.length > 1) {
+                        // Last breadcrumb ID is our current position/parent for the new sub-bank
+                        const currentLocationId = breadcrumbs[breadcrumbs.length - 1].id;
+                        const subBankPath = breadcrumbs.map(crumb => crumb.id);
+                        
+                        console.log('Creating nested sub-bank with path:', subBankPath, 'and parent:', currentLocationId);
+                        
+                        // Use the nested sub-bank endpoint with the full path
+                        const pathString = subBankPath.join(',');
+                        const response = await clientAPI.post(
+                            `bank/bank-${rootBankId}/sub-bank-nested/${pathString}`,
+                            { name: bankName, exam_ids: examId ? [examId] : [] }
+                        );
+                        console.log('Nested sub-bank created:', response.data);
+                    } else {
+                        // Single breadcrumb, create direct sub-bank under the root bank
+                        console.log('Creating direct sub-bank under root bank');
+                        const response = await clientAPI.post(
+                            `bank/bank-${rootBankId}/sub-bank`,
+                            { name: bankName, exam_ids: examId ? [examId] : [] }
+                        );
+                        console.log('Direct sub-bank created:', response.data);
+                    }
+                } else {
+                    // No breadcrumbs but we have currentBankId, create direct sub-bank
+                    console.log('Creating direct sub-bank under current bank');
+                    const response = await clientAPI.post(
+                        `bank/bank-${currentBankId}/sub-bank`,
+                        { name: bankName, exam_ids: examId ? [examId] : [] }
+                    );
+                    console.log('Direct sub-bank created:', response.data);
+                }
             } 
             // If we have a parent ID, create a sub-bank under that parent
             else if (newBankParentId) {
@@ -378,6 +484,7 @@ const BankList = ({ examId }: Props) => {
                         `bank/bank-${currentBankId}/sub-bank`,
                         { name: bankName, exam_ids: examId ? [examId] : [] }
                     );
+                    console.log('Direct sub-bank created:', response.data);
                 } else {
                     // We need to find the path to the parent sub-bank
                     const bankResponse = await clientAPI.get(`bank/bank-${currentBankId}/hierarchy`);
@@ -491,6 +598,46 @@ const BankList = ({ examId }: Props) => {
         };
     }, []);
 
+    const navigateToTopLevel = () => {
+        console.log('Navigating to top level banks');
+        navigateToRoot();
+        setCurrentBanks([]);
+        fetchTopLevelBanks();
+    };
+
+    const fetchTopLevelBanks = async () => {
+        // Fetch top-level banks (direct API call)
+        try {
+            setIsLoadingSubBanks(true);
+            console.log('Fetching top-level banks...');
+            
+            const response = await clientAPI.get(examId ? `bank/by-exam/${examId}` : `bank`);
+            
+            if (!response.data || !response.data.data) {
+                console.error('Invalid response format when fetching top-level banks');
+                setIsLoadingSubBanks(false);
+                return [];
+            }
+            
+            const banks = response.data.data;
+            console.log('Top-level banks:', banks);
+            
+            setCurrentBanks(banks);
+            setIsLoadingSubBanks(false);
+            setCurrentExams([]);
+            
+            // Clear current bank selection
+            setCurrentBank(null);
+            
+            return banks;
+        } catch (error) {
+            console.error('Error fetching top-level banks:', error);
+            errorHandler(error);
+            setIsLoadingSubBanks(false);
+            return [];
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="size-full flex gap-4 justify-center items-center">
@@ -570,20 +717,26 @@ return (
         ) : (currentBanks.length > 0 || currentExams.length > 0) ? (
             <div className="flex flex-wrap justify-start gap-4">
                 {/* Display all the bank cards */}
-                {currentBanks.map((bank, idx) => (
-                    <BankCard
-                        id={bank._id}
-                        className="w-[222px]"
-                        key={`bank-${idx}`}
-                        title={bank.bank_name}
-                        examId={bank.exam_id}
-                        exam_ids={bank.exam_ids}
-                        subBanks={bank.sub_banks}
-                        onDoubleClick={() => handleBankDoubleClick(bank)}
-                        onRename={handleBankRename}
-                        onDelete={handleBankDelete}
-                    />
-                ))}
+                {currentBanks.map((bank, idx) => {
+                    // Log each bank to debug what's being rendered
+                    console.log(`Rendering bank ${idx}:`, bank.bank_name, 'with sub-banks:', 
+                        bank.sub_banks ? bank.sub_banks.length : 0);
+                    
+                    return (
+                        <BankCard
+                            id={bank._id}
+                            className="w-[150px]"
+                            key={`bank-${idx}`}
+                            title={bank.bank_name}
+                            examId={bank.exam_id}
+                            exam_ids={bank.exam_ids}
+                            subBanks={bank.sub_banks}
+                            onDoubleClick={() => handleBankDoubleClick(bank)}
+                            onRename={handleBankRename}
+                            onDelete={handleBankDelete}
+                        />
+                    );
+                })}
                 {/* Display all examination cards */}
                 {isLoadingExams ? (
                     <div className="w-[222px] h-32 flex items-center justify-center">
@@ -596,13 +749,13 @@ return (
                             id={exam._id}
                             title={exam.title || 'Untitled Examination'}
                             description={exam.description || ''}
-                            className=""
+                            className="w-[150px]"
                         />
                     ))
                 )}
                 {/* Add folder button at the end of the list */}
                 {currentBankId && (
-                    <div className="w-[222px]">
+                    <div className="w-[150px]">
                             <div
                                 className="flex flex-col items-center w-full relative cursor-pointer animate-pulse transition-colors"
                                 onClick={() => {
@@ -629,7 +782,7 @@ return (
                     )}
                 </div>
             ) : (
-                <div className="flex flex-col">
+                <div className="flex flex-col w-[150px]">
                     {currentBankId && (
                         <div
                             className="flex w-fit flex-col items-center cursor-pointer animate-pulse transition-colors"
@@ -701,19 +854,40 @@ return (
                                     // Open examination form modal with proper context
                                     try {
                                         // Determine the bank context (bank or sub-bank ID)
-                                        let bankContext = currentBankId;
+                                        let bankContext: string;
                                         let subBankIds: string[] = [];
 
-                                        // If inside a sub-bank, use the breadcrumbs to build the full path
+                                        // We're always in some bank context
                                         if (breadcrumbs.length > 0) {
-                                            // Create path from all breadcrumbs to capture the exact location
-                                            subBankIds = breadcrumbs.map(crumb => crumb.id);
-                                            bankContext = currentBankId; // Parent bank ID
+                                            // We're in a sub-bank
+                                            // The first breadcrumb is the root bank ID
+                                            bankContext = breadcrumbs[0].id;
+                                            
+                                            // If we have more breadcrumbs, they form the sub-bank path
+                                            if (breadcrumbs.length > 1) {
+                                                // Get all breadcrumb IDs to form the complete path
+                                                subBankIds = breadcrumbs.map(crumb => crumb.id);
+                                            }
+                                        } else if (currentBankId) {
+                                            // We're at the root level with a selected bank
+                                            bankContext = currentBankId;
+                                            // Since we're directly in this bank, add it to the path
+                                            subBankIds = [currentBankId];
+                                        } else {
+                                            // Fallback - we should always have either breadcrumbs or currentBankId
+                                            console.error('No bank context found!');
+                                            bankContext = '';
                                         }
 
+                                        console.log('Setting exam bank context:', {
+                                            bankContext,
+                                            breadcrumbs: breadcrumbs.map(b => `${b.name} (${b.id})`),
+                                            subBankIds
+                                        });
+                                        
                                         // Store the bank context for examination creation
                                         setExamBankContext({
-                                            bankId: bankContext!,
+                                            bankId: bankContext,
                                             subBankPath: subBankIds.length > 0 ? subBankIds : undefined
                                         });
 
@@ -752,7 +926,8 @@ return (
                                 const formData = new FormData(e.currentTarget);
                                 const formEntries = Object.fromEntries(formData.entries());
 
-                                // Step 1: Create the examination with bank context
+                                // Create the examination with bank context
+                                // The backend will handle adding the exam to the correct bank/sub-bank
                                 const examRes = await clientAPI.post('exam', {
                                     title: formEntries.title,
                                     description: formEntries.description,
@@ -762,53 +937,40 @@ return (
 
                                 const newExamId = examRes.data.data._id;
                                 console.log('Examination created with ID:', newExamId);
-
-                                // Step 2: Add the examination to the bank or sub-bank
-                                // Check if we're in a real sub-bank (not just at the parent bank level)
-                                // A real sub-bank has a path that's either longer than 1,
-                                // or if it's length 1, the ID should be different from the parent bankId
-                                const subBankPath = examBankContext.subBankPath || [];
-                                const isRealSubBank = subBankPath.length > 0 && 
-                                    !(subBankPath.length === 1 && subBankPath[0] === examBankContext.bankId);
                                 
-                                if (isRealSubBank) {
-                                    // If we're in a sub-bank, add the exam to the sub-bank
-                                    const lastSubBankId = subBankPath[subBankPath.length - 1];
-                                    console.log(`Adding exam ${newExamId} to sub-bank ${lastSubBankId} in bank ${examBankContext.bankId}`);
-                                    console.log(`Full sub-bank path: ${subBankPath.join(' > ')}`);
+                                console.log('Exam created successfully with bank association:', {
+                                    examId: newExamId,
+                                    bankId: examBankContext.bankId,
+                                    subBankPath: examBankContext.subBankPath
+                                });
+                                
+                                // Refresh the view after creating the exam
+                                setIsExamModalOpen(false);
+                                
+                                // Refresh the bank data
+                                // If we have a current bank ID, refresh the sub-banks
+                                if (currentBankId) {
+                                    console.log('Refreshing sub-banks after exam creation for bank:', currentBankId);
                                     
-                                    console.log('Adding exam to sub-bank with:', {
-                                        bankId: examBankContext.bankId,
-                                        subBankPath: subBankPath,
-                                        examId: newExamId
-                                    });
-
-                                    // Get the last sub-bank ID in the path (the current one)
-                                    const subBankIdStr = String(lastSubBankId);
-                                    
-                                    try {
-                                        const result = await clientAPI.post(`bank/bank-${examBankContext.bankId}/sub-bank-exam/${newExamId}`, {
-                                            subBankId: subBankIdStr
-                                        });
-                                        console.log('Response from adding exam to sub-bank:', result.data);
-                                    } catch (error) {
-                                        console.error('Error adding exam to sub-bank:', error);
-                                        throw error;
+                                    // If we're in a nested location (breadcrumbs has more than one entry),
+                                    // we need to refresh the current location
+                                    if (breadcrumbs.length > 1) {
+                                        console.log('In nested location, refreshing the last breadcrumb bank');
+                                        const currentLocationBankId = breadcrumbs[breadcrumbs.length - 1].id;
+                                        const refreshedSubBanks = await fetchSubBanks(currentLocationBankId);
+                                        setCurrentBanks(refreshedSubBanks);
+                                    } else {
+                                        // Just refresh the current bank's direct sub-banks
+                                        const refreshedSubBanks = await fetchSubBanks(currentBankId);
+                                        setCurrentBanks(refreshedSubBanks);
                                     }
-                                    
-                                    toast.success('Examination added to sub-bank successfully');
                                 } else {
-                                    // If we're in a regular bank, add the exam directly to the bank
-                                    console.log(`Adding exam ${newExamId} to bank ${examBankContext.bankId}`);
-                                    
-                                    await clientAPI.post(`bank/bank-${examBankContext.bankId}/exam/${newExamId}`);
-                                    
-                                    toast.success('Examination added to bank successfully');
+                                    // Otherwise refresh the root banks
+                                    console.log('Refreshing root banks');
+                                    mutate();
                                 }
-                                
-                                // Close the modal and refresh the bank data
+                                toast.success('Examination created successfully');
                                 onClose();
-                                mutate(); // Refresh bank data to show new examination
                             } catch (error) {
                                 console.error('Error creating examination:', error);
                                 errorHandler(error);

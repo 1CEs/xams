@@ -339,10 +339,22 @@ export function BankAdd(props: SVGProps<SVGSVGElement>) {
 	);
 }
 
-export function MingcuteFileTextFill(props: SVGProps<SVGSVGElement>) {
+export function ExamFile(props: SVGProps<SVGSVGElement>) {
 	return (
-		<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
-			<path fill="currentColor" d="M21 9.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5L21 9.5Zm-9-2a2 2 0 0 1 2-2V8a2 2 0 0 1-2 2H9.5v2H16a1 1 0 1 1 0 2H9.5v2H16a1 1 0 1 1 0 2H8.5a1 1 0 0 1-1-1V8.5a1 1 0 0 1 1-1H12Z" />
+		<svg {...props} viewBox="0 0 350 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+			<path d="M0 20C0 8.9543 8.95431 0 20 0H279.95C291.023 0 300 8.97669 300 20.05V100H0V20Z" fill="white" />
+			<path d="M295 11.2476C295 9.81363 296.9 9.30682 297.614 10.5502L347.795 97.9026C348.331 98.836 347.658 100 346.581 100H296.4C295.627 100 295 99.3732 295 98.6V11.2476Z" fill="white" />
+			<path d="M0 87H329.95C341.023 87 350 95.9767 350 107.05V480C350 491.046 341.046 500 330 500H20C8.9543 500 0 491.046 0 480V87Z" fill="white" />
+			<rect x="50" y="131" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="166" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="201" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="236" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="271" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="306" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="341" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="376" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="411" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="446" width="250" height="10" rx="5" fill="#D9D9D9" />
 		</svg>
 	);
 }

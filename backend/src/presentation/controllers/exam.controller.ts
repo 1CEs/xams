@@ -200,8 +200,12 @@ export class ExaminationController implements IExaminationController {
     }
 
     async deleteExamination(id: string, user?: IInstructor) {
-        const deleted = await this._service.deleteExamination(id)
-        return this._response<typeof deleted>('Delete Examination Successfully', 200, this._sanitizeExamData(deleted, user))
+        // First, remove the exam ID from all banks and sub-banks
+        await this._bankService.removeExamFromAllBanks(id);
+        
+        // Then delete the exam
+        const deleted = await this._service.deleteExamination(id);
+        return this._response<typeof deleted>('Delete Examination Successfully', 200, this._sanitizeExamData(deleted, user));
     }
 
     // Question-Only methods

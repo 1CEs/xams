@@ -18,7 +18,7 @@ export interface IBankController {
     // SubBank methods
     createSubBank: (bankId: string, name: string, examIds?: string | string[], parentId?: string) => Promise<ControllerResponse<IBank | null>>;
     createNestedSubBank: (bankId: string, subBankPath: string[], name: string, examIds?: string | string[]) => Promise<ControllerResponse<IBank | null>>;
-    getSubBankHierarchy: (bankId: string) => Promise<ControllerResponse<IBank | null>>;
+    getSubBankHierarchy: (bankId: string) => Promise<ControllerResponse<IBank | ISubBank | null>>;
     
     // Exam management in banks
     addExamToBank: (bankId: string, examId: string) => Promise<ControllerResponse<IBank | null>>;

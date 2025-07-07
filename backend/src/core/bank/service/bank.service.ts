@@ -96,6 +96,45 @@ export class BankService {
         };
         console.log('Created new sub-bank object:', newSubBank);
         
+        // Handle the case where the first path ID is the root bank ID itself
+        let pathToProcess = [...subBankPath];
+        console.log('Path to process:', pathToProcess);
+        
+        // If the first ID in the path is the current bank ID, remove it
+        if (pathToProcess.length > 0 && pathToProcess[0] === bankId) {
+            console.log('First ID in path matches bank ID, removing it from path');
+            pathToProcess = pathToProcess.slice(1);
+        }
+        
+        // If after removing the root bank ID, we have an empty path, just add directly to the bank
+        if (pathToProcess.length === 0) {
+            console.log('After processing, path is empty. Adding directly to bank');
+            if (!bank.sub_banks) {
+                bank.sub_banks = [];
+            }
+            bank.sub_banks.push(newSubBank as ISubBank);
+            const updatedBank = await this.bankRepository.updateBank(bankId, { sub_banks: bank.sub_banks });
+            return updatedBank;
+        } 
+        
+        // If we only have one ID left (the parent ID), look for it directly in the bank's sub-banks
+        if (pathToProcess.length === 1) {
+            console.log('Single ID path, looking directly in bank\'s sub-banks');
+            const parentSubBankIndex = bank.sub_banks?.findIndex(sb => sb._id.toString() === pathToProcess[0]);
+            
+            if (parentSubBankIndex !== undefined && parentSubBankIndex !== -1) {
+                if (!bank.sub_banks![parentSubBankIndex].sub_banks) {
+                    bank.sub_banks![parentSubBankIndex].sub_banks = [];
+                }
+                bank.sub_banks![parentSubBankIndex].sub_banks.push(newSubBank as ISubBank);
+                console.log('Bank after adding sub-bank:', bank);
+                console.log('Added new sub-bank to parent at index', parentSubBankIndex);
+                const updatedBank = await this.bankRepository.updateBank(bankId, { sub_banks: bank.sub_banks });
+                return updatedBank;
+            }
+        }
+        
+        // For deeper nesting, use the recursive function
         // Function to recursively find and update a sub-bank
         const findAndAddSubBank = (subBanks: ISubBank[], path: string[], currentIndex: number): boolean => {
             // If we've reached the end of the path, we've found the parent
@@ -105,7 +144,7 @@ export class BankService {
             const subBankIndex = subBanks.findIndex(sb => sb._id.toString() === currentPathId);
             
             if (subBankIndex === -1) {
-                console.log('Sub-bank not found in path at index', currentIndex);
+                console.log('Sub-bank not found in path at index', currentIndex, 'looking for ID:', currentPathId);
                 return false;
             }
             
@@ -130,8 +169,8 @@ export class BankService {
             return findAndAddSubBank(subBanks[subBankIndex].sub_banks, path, currentIndex + 1);
         };
         
-        // Start the recursive search from the root level
-        if (!findAndAddSubBank(bank.sub_banks || [], subBankPath, 0)) {
+        // Start the recursive search from the root level, using the processed path
+        if (!findAndAddSubBank(bank.sub_banks || [], pathToProcess, 0)) {
             console.log('Failed to find parent sub-bank in the hierarchy');
             return null;
         }
@@ -299,9 +338,81 @@ export class BankService {
         return await this.bankRepository.findSubBank(bankId, subBankPath);
     }
 
+    /**
+     * Remove an exam from all banks and sub-banks when an exam is deleted
+     * This should be called before deleting an exam to maintain data consistency
+     */
+    async removeExamFromAllBanks(examId: string): Promise<void> {
+        console.log(`Removing exam ${examId} from all banks and sub-banks`);
+        
+        // Step 1: Find all banks that directly contain the exam
+        const banksWithExam = await this.bankRepository.getBanksByExamId(examId);
+        console.log(`Found ${banksWithExam.length} banks with exam ID`);
+        
+        // Step 2: Remove the exam from each bank's exam_ids array
+        for (const bank of banksWithExam) {
+            await this.removeExamFromBank(bank._id.toString(), examId);
+        }
+        
+        // Step 3: Handle sub-banks - we need to check all banks to find sub-banks with the exam
+        const allBanks = await this.bankRepository.getAllBanks();
+        
+        for (const bank of allBanks) {
+            // Skip if bank has no sub-banks
+            if (!bank.sub_banks || bank.sub_banks.length === 0) continue;
+            
+            // Define recursive function to find and update sub-banks
+            const removeExamFromSubBankRecursive = (subBanks: ISubBank[], path: string[] = []): boolean => {
+                let modified = false;
+                
+                for (let i = 0; i < subBanks.length; i++) {
+                    const currentSubBank = subBanks[i];
+                    const currentPath = [...path, currentSubBank._id.toString()];
+                    
+                    // Check if this sub-bank contains the exam
+                    if (currentSubBank.exam_ids && currentSubBank.exam_ids.includes(examId)) {
+                        // Remove the exam ID
+                        currentSubBank.exam_ids = currentSubBank.exam_ids.filter(id => id !== examId);
+                        modified = true;
+                    }
+                    
+                    // Recursively check nested sub-banks
+                    if (currentSubBank.sub_banks && currentSubBank.sub_banks.length > 0) {
+                        const nestedModified = removeExamFromSubBankRecursive(currentSubBank.sub_banks, currentPath);
+                        if (nestedModified) {
+                            modified = true;
+                        }
+                    }
+                }
+                
+                return modified;
+            };
+            
+            // Process all sub-banks and update the bank if changes were made
+            const bankModified = removeExamFromSubBankRecursive(bank.sub_banks);
+            if (bankModified) {
+                await this.bankRepository.updateBank(bank._id.toString(), { sub_banks: bank.sub_banks });
+            }
+        }
+    }
+
     // Helper method to navigate through the nested structure
-    async getSubBankHierarchy(bankId: string): Promise<IBank | null> {
-        return await this.bankRepository.getBankById(bankId);
+    async getSubBankHierarchy(bankId: string, instructorId?: string): Promise<IBank | ISubBank | null> {
+        console.log('Fetching sub-bank hierarchy for bank ID:', bankId);
+        return await this.bankRepository.getHierarchyById(bankId, instructorId);
+    }
+    
+    /**
+     * Get a sub-bank hierarchy using both parent bank ID and sub-bank ID
+     * This allows direct navigation to deeply nested sub-banks
+     */
+    async getSubBankHierarchyByParentAndId(parentBankId: string, subBankId: string): Promise<{
+        parentBank: IBank | null,
+        subBank: ISubBank | null,
+        breadcrumbPath: string[]
+    }> {
+        console.log(`Fetching sub-bank hierarchy for parent ID: ${parentBankId} and sub-bank ID: ${subBankId}`);
+        return await this.bankRepository.getSubBankByParentAndId(parentBankId, subBankId);
     }
     
     async updateSubBank(bankId: string, subBankPath: string[], subBankId: string, updateData: Partial<ISubBank>): Promise<IBank | null> {
