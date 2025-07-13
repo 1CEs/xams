@@ -71,11 +71,22 @@ export class BankController implements IBankController {
     }
 
     // SubBank methods
-    async createSubBank(bankId: string, name: string, examIds?: string | string[], parentId?: string) {
+    
+    // Direct sub-bank creation under main bank (no parent sub-bank)
+    async createSubBank(bankId: string, name: string, examIds?: string | string[]) {
         // Convert single examId to array if provided
         const examIdsArray = examIds ? (Array.isArray(examIds) ? examIds : [examIds]) : undefined;
-        const bank = await this._service.createSubBank(bankId, name, examIdsArray, parentId);
-        return this._response<typeof bank>('SubBank created successfully', 201, bank);
+        const bank = await this._service.createSubBank(bankId, name, examIdsArray);
+        return this._response<typeof bank>('Direct SubBank created successfully', 201, bank);
+    }
+    
+    // Nested sub-bank creation within a specific parent sub-bank (requires parent bank ID + parent sub-bank ID)
+    async createNestedSubBankWithParent(parentBankId: string, parentSubBankId: string, name: string, examIds?: string | string[]) {
+        // Convert single examId to array if provided
+        const examIdsArray = examIds ? (Array.isArray(examIds) ? examIds : [examIds]) : undefined;
+        console.log(`Controller: Creating nested sub-bank '${name}' under parent bank: ${parentBankId}, parent sub-bank: ${parentSubBankId}`);
+        const bank = await this._service.createSubBankInSubBank(parentBankId, parentSubBankId, name, examIdsArray);
+        return this._response<typeof bank>('Nested SubBank created successfully', 201, bank);
     }
     
     async createNestedSubBank(bankId: string, subBankPath: string[], name: string, examIds?: string | string[]) {

@@ -65,14 +65,28 @@ export const BankRoute = new Elysia({ prefix: '/bank' })
                 .delete('', catchAsync(async ({ params, controller }: BankContext & { params: { id: string } }) => 
                     await controller.deleteBank(params.id)))
                 
-                // SubBank routes
-                .post('/sub-bank', catchAsync(async ({ params, body, controller }: BankContext & { params: { id: string }, body: CreateSubBankBody }) => 
-                    await controller.createSubBank(params.id, body.name, body.exam_ids, body.parent_id)), {
+                // SubBank creation routes
+                // For creating direct sub-bank under main bank (top level)
+                .post('/sub-bank/direct', catchAsync(async ({ params, body, controller }: BankContext & { params: { id: string }, body: CreateSubBankBody }) => {
+                    // Direct sub-bank creation under main bank - no parent sub-bank
+                    return await controller.createSubBank(params.id, body.name, body.exam_ids);
+                }), {
                     body: CreateSubBankSchema
                 })
                 
-                // Simplified route for creating sub-bank within a specific sub-bank
+                // For creating nested sub-bank within a specific parent sub-bank
+                // Requires both parent bank ID (from URL) and parent sub-bank ID (from URL)
+                .post('/sub-bank/nested/:parentSubBankId', catchAsync(async ({ params, body, controller }: BankContext & { params: { id: string, parentSubBankId: string }, body: CreateSubBankBody }) => {
+                    // Nested sub-bank creation: parent bank ID + parent sub-bank ID + new sub-bank data
+                    console.log(`Route: Creating nested sub-bank under parent bank: ${params.id}, parent sub-bank: ${params.parentSubBankId}`);
+                    return await controller.createNestedSubBankWithParent(params.id, params.parentSubBankId, body.name, body.exam_ids);
+                }), {
+                    body: CreateSubBankSchema
+                })
+                
+                // Legacy route for backward compatibility (DEPRECATED - use /direct or /nested instead)
                 .post('/sub-bank-in/:subBankId', catchAsync(async ({ params, body, controller }: BankContext & { params: { id: string, subBankId: string }, body: CreateSubBankBody }) => {
+                    console.warn('DEPRECATED: Use /sub-bank/nested/:parentSubBankId instead of /sub-bank-in/:subBankId');
                     return await controller.createSubBankInSubBank(params.id, params.subBankId, body.name, body.exam_ids);
                 }), {
                     body: CreateSubBankSchema

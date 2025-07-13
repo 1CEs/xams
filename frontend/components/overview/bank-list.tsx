@@ -578,7 +578,7 @@ const BankList = ({ examId }: Props) => {
                 console.log('Root bank created:', response.data);
             }
             // If we have a current bank ID but no parent ID, create a direct sub-bank under the current bank
-            else if (!newBankParentId && currentBankId) {
+            else if (newBankParentId && currentBankId) {
                 // If we have breadcrumbs, we're in a nested context
                 if (breadcrumbs.length > 0) {
                     console.log('Creating sub-bank in nested context using breadcrumbs');
@@ -591,23 +591,23 @@ const BankList = ({ examId }: Props) => {
                         // Last breadcrumb ID is our current position/parent for the new sub-bank
                         const currentSubBankId = breadcrumbs[breadcrumbs.length - 1].id;
                         
-                        console.log('Creating sub-bank within sub-bank using simplified API:', {
+                        console.log('Creating nested sub-bank using new API:', {
                             rootBankId,
                             currentSubBankId,
                             bankName
                         });
                         
-                        // Use the simplified sub-bank-in endpoint
+                        // Use the new nested sub-bank endpoint
                         const response = await clientAPI.post(
-                            `bank/bank-${rootBankId}/sub-bank-in/${currentSubBankId}`,
+                            `bank/bank-${rootBankId}/sub-bank/nested/${currentSubBankId}`,
                             { name: bankName, exam_ids: examId ? [examId] : [] }
                         );
-                        console.log('Sub-bank created within sub-bank:', response.data);
+                        console.log('Nested sub-bank created:', response.data);
                     } else {
                         // Single breadcrumb, create direct sub-bank under the root bank
                         console.log('Creating direct sub-bank under root bank');
                         const response = await clientAPI.post(
-                            `bank/bank-${rootBankId}/sub-bank`,
+                            `bank/bank-${rootBankId}/sub-bank/direct`,
                             { name: bankName, exam_ids: examId ? [examId] : [] }
                         );
                         console.log('Direct sub-bank created:', response.data);
@@ -616,7 +616,7 @@ const BankList = ({ examId }: Props) => {
                     // No breadcrumbs but we have currentBankId, create direct sub-bank
                     console.log('Creating direct sub-bank under current bank');
                     const response = await clientAPI.post(
-                        `bank/bank-${currentBankId}/sub-bank`,
+                        `bank/bank-${currentBankId}/sub-bank/direct`,
                         { name: bankName, exam_ids: examId ? [examId] : [] }
                     );
                     console.log('Direct sub-bank created:', response.data);
@@ -632,7 +632,7 @@ const BankList = ({ examId }: Props) => {
                     // Create a direct sub-bank under the current bank
                     console.log('Creating direct sub-bank under current bank');
                     const response = await clientAPI.post(
-                        `bank/bank-${currentBankId}/sub-bank`,
+                        `bank/bank-${currentBankId}/sub-bank/direct`,
                         { name: bankName, exam_ids: examId ? [examId] : [] }
                     );
                     console.log('Direct sub-bank created:', response.data);
@@ -675,18 +675,19 @@ const BankList = ({ examId }: Props) => {
                             // Parent is directly under the current bank - use direct sub-bank endpoint
                             console.log('Parent is direct child of current bank, using direct sub-bank creation');
                             const response = await clientAPI.post(
-                                `bank/bank-${currentBankId}/sub-bank`,
-                                { name: bankName, parent_id: newBankParentId as string, exam_ids: examId ? [examId] : [] }
+                                `bank/bank-${currentBankId}/sub-bank/nested/${newBankParentId}`,
+                                { name: bankName, exam_ids: examId ? [examId] : [] }
                             );
-                            console.log('Direct sub-bank created:', response.data);
+                            console.log('Nested sub-bank created:', response.data);
                         } else {
                             // Parent is nested - include parent in the path for correct placement
                             const fullPath = [...path, newBankParentId as string];
                             const pathString = fullPath.join(',');
 
-                            // Creating a sub-bank inside a nested sub-bank
-                            console.log('Creating nested sub-bank with path:', pathString);
-                            const url = `bank/bank-${currentBankId}/sub-bank-nested/${pathString}`;
+                            // Creating a sub-bank inside a nested sub-bank - use the last parent ID
+                            const parentSubBankId = newBankParentId as string;
+                            console.log('Creating nested sub-bank with parent sub-bank ID:', parentSubBankId);
+                            const url = `bank/bank-${currentBankId}/sub-bank/nested/${parentSubBankId}`;
                             const body = { name: bankName, exam_ids: examId ? [examId] : [] };
                             console.log('API request:', { url, body });
 
@@ -695,10 +696,10 @@ const BankList = ({ examId }: Props) => {
                         }
                     } else {
                         // Fallback: create a direct sub-bank under the current bank
-                        console.log('Path not found, creating direct sub-bank with parent_id:', newBankParentId);
+                        console.log('Path not found, creating direct sub-bank fallback');
                         const response = await clientAPI.post(
-                            `bank/bank-${currentBankId}/sub-bank`,
-                            { name: bankName, parent_id: newBankParentId as string, exam_ids: examId ? [examId] : [] }
+                            `bank/bank-${currentBankId}/sub-bank/direct`,
+                            { name: bankName, exam_ids: examId ? [examId] : [] }
                         );
                         console.log('Fallback direct sub-bank created:', response.data);
                     }
