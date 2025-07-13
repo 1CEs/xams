@@ -1,5 +1,5 @@
-import { Avatar, Button, Card, CardBody, CardFooter, CardHeader, Divider, Input, Radio, RadioGroup } from '@nextui-org/react'
-import React, { ChangeEvent, FormEvent } from 'react'
+import { Avatar, Button, Card, CardBody, CardFooter, CardHeader, Divider, Input, Radio, RadioGroup, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@nextui-org/react'
+import React, { ChangeEvent, FormEvent, useState } from 'react'
 import TextEditor from '../text-editor'
 import { StepProvider } from '../provider'
 import MultipleChoiceForm from './question/multiple-choice'
@@ -28,6 +28,9 @@ type Props = {
 
 const NewQuestionForm = ({ examination_id }: Props) => {
     const { trigger, setTrigger } = useTrigger()
+    const [formKey, setFormKey] = useState<number>(0)
+    const [validationError, setValidationError] = useState<string>('')
+    const [showValidationModal, setShowValidationModal] = useState<boolean>(false)
     const formRenderer = {
         mc: {
             form: <MultipleChoiceForm />,
@@ -52,41 +55,56 @@ const NewQuestionForm = ({ examination_id }: Props) => {
     }
 
     return (
-        <Formik
-            initialValues={{
-                question: '',
-                type: 'mc',
-                choices: [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
-                isTrue: false,
-                expectedAnswer: '',
-                maxWords: 0,
-                score: 1
-            }}
-            onSubmit={async (
-                values: QuestionForm,
-                formikHelpers: FormikHelpers<QuestionForm>
-            ) => {
-                try {
-                    formikHelpers.setSubmitting(false)
-                    const res = await clientAPI.post(`exam/question/${examination_id}`, {...values, score: Number(values.score)})
-                    toast.success(res.data.message)
-                    setTrigger(!trigger)
-                    formikHelpers.resetForm({
-                        values: {
-                            question: '',
-                            type: 'mc',
-                            choices: [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
-                            isTrue: false,
-                            expectedAnswer: '',
-                            maxWords: 0,
-                            score: 1
+        <>
+            <Formik
+                key={formKey}
+                initialValues={{
+                    question: '',
+                    type: 'mc',
+                    choices: [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
+                    isTrue: false,
+                    expectedAnswer: '',
+                    maxWords: 0,
+                    score: 1
+                }}
+                onSubmit={async (
+                    values: QuestionForm,
+                    formikHelpers: FormikHelpers<QuestionForm>
+                ) => {
+                    try {
+                        // Validate multiple choice questions have at least one correct answer
+                        if (values.type === 'mc') {
+                            const hasCorrectChoice = values.choices?.some(choice => choice.isCorrect) || false;
+                            if (!hasCorrectChoice) {
+                                setValidationError('You must select at least one correct answer for multiple choice questions.');
+                                setShowValidationModal(true);
+                                formikHelpers.setSubmitting(false);
+                                return;
+                            }
                         }
-                    })
-                } catch (error) {
-                    errorHandler(error)
-                }
-            }}
-        >
+                        
+                        formikHelpers.setSubmitting(false)
+                        const res = await clientAPI.post(`exam/question/${examination_id}`, {...values, score: Number(values.score)})
+                        toast.success(res.data.message)
+                        setTrigger(!trigger)
+                        // Reset the form by incrementing the key to force a complete re-render
+                        setFormKey(prevKey => prevKey + 1)
+                        formikHelpers.resetForm({
+                            values: {
+                                question: '',
+                                type: 'mc',
+                                choices: [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
+                                isTrue: false,
+                                expectedAnswer: '',
+                                maxWords: 0,
+                                score: 1
+                            }
+                        })
+                    } catch (error) {
+                        errorHandler(error)
+                    }
+                }}
+            >
             {({
                 values,
                 errors,
@@ -146,7 +164,65 @@ const NewQuestionForm = ({ examination_id }: Props) => {
                 )
             }}
 
-        </Formik>
+            </Formik>
+            
+            {/* Validation Error Modal */}
+            <Modal 
+                isOpen={showValidationModal} 
+                onClose={() => setShowValidationModal(false)}
+                classNames={{
+                    base: "bg-gradient-to-b from-gray-900 to-black border border-red-500/30",
+                    header: "border-b border-red-500/20",
+                    footer: "border-t border-red-500/20",
+                    closeButton: "text-red-400 hover:text-red-300"
+                }}
+                motionProps={{
+                    variants: {
+                        enter: {
+                            y: 0,
+                            opacity: 1,
+                            transition: {
+                                duration: 0.3,
+                                ease: "easeOut"
+                            }
+                        },
+                        exit: {
+                            y: 20,
+                            opacity: 0,
+                            transition: {
+                                duration: 0.2,
+                                ease: "easeIn"
+                            }
+                        }
+                    }
+                }}
+            >
+                <ModalContent>
+                    <ModalHeader className="flex items-center gap-2">
+                        <div className="p-2 rounded-full bg-red-500/20 text-red-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </div>
+                        <span className="text-xl bg-gradient-to-r from-red-400 to-red-300 text-transparent bg-clip-text font-semibold">Validation Error</span>
+                    </ModalHeader>
+                    <ModalBody>
+                        <p className="text-gray-300 border-l-2 border-red-500/50 pl-3">{validationError}</p>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button 
+                            color="danger" 
+                            className="bg-gradient-to-r from-red-600 to-red-500 text-white shadow-md shadow-red-900/30 hover:shadow-lg hover:shadow-red-900/40 transition-all" 
+                            onPress={() => setShowValidationModal(false)}
+                        >
+                            Close
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+        </>
 
     )
 }
