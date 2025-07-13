@@ -73,14 +73,22 @@ export class AuthController implements IAuthController {
     }
 
     async setToken(id: string, { jwt, accessToken, refreshToken }: SetTokenParameters) {
+        // For JWT, exp should be in seconds since epoch, not duration in seconds
+        const accessTokenExp = Number(process.env.ACCESS_TOKEN_EXP! || 84600); // Default 24 hours in seconds
+        const refreshTokenExp = Number(process.env.REFRESH_TOKEN_EXP! || 604800); // Default 7 days in seconds
+        
+        const currentTimestamp = Math.floor(Date.now() / 1000); // Current time in seconds
+        
         const accToken = await jwt.sign({
             sub: id,
-            exp: Number(process.env.ACCESS_TOKEN_EXP! || 84600)
+            iat: currentTimestamp,
+            exp: currentTimestamp + accessTokenExp
         })
+        
         accessToken.set({
             value: accToken,
             httpOnly: true,
-            maxAge: Number(process.env.ACCESS_TOKEN_EXP! || 84600),
+            maxAge: accessTokenExp,
             path: '/',
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax'
@@ -88,12 +96,14 @@ export class AuthController implements IAuthController {
 
         const refToken = await jwt.sign({
             sub: id,
-            exp: Number(process.env.REFRESH_TOKEN_EXP! || 604800)
+            iat: currentTimestamp,
+            exp: currentTimestamp + refreshTokenExp
         })
+        
         refreshToken.set({
             value: refToken,
             httpOnly: true,
-            maxAge: Number(process.env.REFRESH_TOKEN_EXP! || 604800),
+            maxAge: refreshTokenExp,
             path: '/',
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax'

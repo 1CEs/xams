@@ -1,474 +1,468 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { 
-  Button, 
-  Checkbox, 
-  Card, 
-  CardBody,
-  Breadcrumbs, 
-  BreadcrumbItem,
-  Spinner,
-  Input
-} from "@nextui-org/react";
-import { 
-  IcRoundFolder, 
-  HealthiconsIExamMultipleChoice,
-  SolarRefreshLineDuotone
-} from "../icons/icons";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Breadcrumbs, BreadcrumbItem, Card, CardBody, Spinner } from "@nextui-org/react";
+import { SolarRefreshLineDuotone, BankAdd, ExamFile, MingcuteRightFill, IcRoundFolder, MaterialSymbolsFolderOutlineRounded, BankEmpty, BankFill } from "../icons/icons";
 import { clientAPI } from "@/config/axios.config";
 import { errorHandler } from "@/utils/error";
+import { toast } from "react-toastify";
 
-// Define interfaces
-interface SubBank {
-  _id: string;
-  name: string;
-  exam_id?: string;
-  exam_ids?: string[];
-  sub_banks?: SubBank[];
+// Define interfaces matching the bank-list.tsx structure
+interface ServerResponse<T> {
+    data: T;
+    message?: string;
+    status?: number;
 }
 
-interface Bank {
-  _id: string;
-  bank_name: string;
-  exam_id?: string;
-  exam_ids?: string[];
-  sub_banks?: SubBank[];
-}
-
-// Union type for bank navigation
-type BankItem = Bank | SubBank;
-
-interface Examination {
-  _id: string;
-  title: string;
-  description?: string;
-  created_at?: string;
-}
-
-interface BreadcrumbItem {
-  id: string;
-  name: string;
-}
-
-interface ExamSelectorProps {
-  selectedExamIds: string[];
-  onExamSelectionChange: (examIds: string[]) => void;
-  instructorId: string;
-  className?: string;
-}
-
-const ExamSelector: React.FC<ExamSelectorProps> = ({
-  selectedExamIds,
-  onExamSelectionChange,
-  instructorId,
-  className = ""
-}) => {
-  // Navigation state
-  const [currentBankId, setCurrentBankId] = useState<string | null>(null);
-  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([]);
-  const [currentBanks, setCurrentBanks] = useState<BankItem[]>([]);
-  const [currentExams, setCurrentExams] = useState<Examination[]>([]);
-  const [bankHierarchy, setBankHierarchy] = useState<BankItem[]>([]); // Store the navigation hierarchy
-  
-  // Loading states
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingSubBanks, setIsLoadingSubBanks] = useState(false);
-  const [isLoadingExams, setIsLoadingExams] = useState(false);
-  
-  // Search state
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  // Filtered results based on search term
-  const filteredBanks = currentBanks.filter(bank => {
-    if (!bank) return false;
-    // Handle both bank_name (top-level banks) and name (sub-banks)
-    const bankName = 'bank_name' in bank ? bank.bank_name : bank.name;
-    return bankName && bankName.toLowerCase().includes(searchTerm.toLowerCase());
-  });
-  
-  const filteredExams = currentExams.filter(exam => 
-    exam && exam.title && exam.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (exam && exam.description && exam.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-
-  // Fetch top-level banks on component mount
-  useEffect(() => {
-    fetchTopLevelBanks();
-  }, []);
-
-  const fetchTopLevelBanks = async () => {
-    try {
-      setIsLoading(true);
-      const response = await clientAPI.get(`bank/by-instructor/${instructorId}`);
-      
-      if (response.data && response.data.data) {
-        const banks = response.data.data;
-        setCurrentBanks(banks);
-        setCurrentBankId(null);
-        setBreadcrumbs([]);
-        setBankHierarchy([]); // Reset bank hierarchy
-        
-        // At top level, don't show exams - only show banks
-        setCurrentExams([]);
-      }
-    } catch (error) {
-      console.error('Error fetching banks for instructor:', error);
-      errorHandler(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchSubBanks = async (bankId: string): Promise<BankItem[]> => {
-    try {
-      const response = await clientAPI.get(`bank/bank-${bankId}/sub-banks`);
-      if (response.data && response.data.data) {
-        return response.data.data;
-      }
-      return [];
-    } catch (error) {
-      console.error('Error fetching sub-banks:', error);
-      return [];
-    }
-  };
-
-  const fetchExamsFromBanks = async (banks: BankItem[]) => {
-    try {
-      setIsLoadingExams(true);
-      const allExams: Examination[] = [];
-      
-      // Collect exams from all banks
-      for (const bank of banks) {
-        if (bank.exam_ids && bank.exam_ids.length > 0) {
-          // Fetch exam details for each exam ID
-          for (const examId of bank.exam_ids) {
-            try {
-              const examResponse = await clientAPI.get(`/exam/${examId}`);
-              if (examResponse.data && examResponse.data.data) {
-                allExams.push(examResponse.data.data);
-              }
-            } catch (error) {
-              console.error(`Error fetching exam ${examId}:`, error);
-            }
-          }
-        }
-      }
-      
-      setCurrentExams(allExams);
-    } catch (error) {
-      console.error('Error fetching exams from banks:', error);
-      setCurrentExams([]);
-    } finally {
-      setIsLoadingExams(false);
-    }
-  };
-
-  const fetchExams = async (bankId: string, subBankPath?: string[]) => {
-    try {
-      setIsLoadingExams(true);
-      let url = `bank/bank-${bankId}/exams`;
-      
-      if (subBankPath && subBankPath.length > 0) {
-        const pathString = subBankPath.join(',');
-        url = `bank/bank-${bankId}/sub-bank-exams/${pathString}`;
-      }
-      
-      const response = await clientAPI.get(url);
-      if (response.data && response.data.data) {
-        setCurrentExams(response.data.data);
-      } else {
-        setCurrentExams([]);
-      }
-    } catch (error) {
-      console.error('Error fetching exams:', error);
-      setCurrentExams([]);
-    } finally {
-      setIsLoadingExams(false);
-    }
-  };
-
-  const handleBankClick = async (bank: BankItem) => {
-    try {
-      setIsLoadingSubBanks(true);
-      
-      // Add current bank to breadcrumbs and hierarchy
-      const bankName = 'bank_name' in bank ? bank.bank_name : bank.name;
-      const newBreadcrumbs = [...breadcrumbs, { id: bank._id, name: bankName }];
-      const newHierarchy = [...bankHierarchy, bank];
-      setBreadcrumbs(newBreadcrumbs);
-      setBankHierarchy(newHierarchy);
-      setCurrentBankId(bank._id);
-
-      // Use the embedded sub-banks from the bank data instead of making API calls
-      const subBanks = bank.sub_banks || [];
-      setCurrentBanks(subBanks);
-
-      // Fetch exams for this bank level
-      await fetchExamsFromBanks([bank]);
-      
-    } catch (error) {
-      console.error('Error navigating to bank:', error);
-      errorHandler(error);
-    } finally {
-      setIsLoadingSubBanks(false);
-    }
-  };
-
-  const handleBreadcrumbClick = async (index: number) => {
-    try {
-      setIsLoadingSubBanks(true);
-      
-      if (index === -1) {
-        // Navigate to root - clear all navigation state
-        setCurrentBankId(null);
-        setBreadcrumbs([]);
-        setCurrentExams([]);
-        await fetchTopLevelBanks();
-        return;
-      }
-
-      // Navigate to specific breadcrumb level
-      const newBreadcrumbs = breadcrumbs.slice(0, index + 1);
-      const newHierarchy = bankHierarchy.slice(0, index + 1);
-      setBreadcrumbs(newBreadcrumbs);
-      setBankHierarchy(newHierarchy);
-      
-      if (newBreadcrumbs.length === 0) {
-        // Clear navigation state before fetching top level
-        setCurrentBankId(null);
-        setCurrentExams([]);
-        await fetchTopLevelBanks();
-        return;
-      }
-
-      // Use the stored bank from hierarchy instead of making API calls
-      const targetBank = newHierarchy[newHierarchy.length - 1];
-      setCurrentBankId(targetBank._id);
-      
-      // Use embedded sub-banks from the target bank
-      const subBanks = targetBank.sub_banks || [];
-      setCurrentBanks(subBanks);
-      
-      // Fetch exams from the target bank
-      await fetchExamsFromBanks([targetBank]);
-
-    } catch (error) {
-      console.error('Error navigating via breadcrumb:', error);
-      errorHandler(error);
-    } finally {
-      setIsLoadingSubBanks(false);
-    }
-  };
-
-  const handleExamToggle = (examId: string, isSelected: boolean) => {
-    let newSelectedIds: string[];
-    
-    if (isSelected) {
-      newSelectedIds = [...selectedExamIds, examId];
-    } else {
-      newSelectedIds = selectedExamIds.filter(id => id !== examId);
-    }
-    
-    onExamSelectionChange(newSelectedIds);
-  };
-
-  const fetchExamDetails = async (examId: string) => {
-    try {
-      const response = await clientAPI.get(`/exam/${examId}`);
-      return response.data.data;
-    } catch (error) {
-      console.error('Error fetching exam details:', error);
-      return null;
-    }
-  };
-
-  const BankCard = ({ bank }: { bank: BankItem }) => {  
-    // Get the correct name property based on bank type
-    const bankName = 'bank_name' in bank ? bank.bank_name : bank.name;
-    
-    return (
-    <div
-      className="w-[150px] cursor-pointer transition-all duration-200 hover:scale-105"
-      onClick={() => handleBankClick(bank)}
-    >
-      <Card className="h-32 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 hover:bg-zinc-700">
-        <CardBody className="flex flex-col items-center justify-center p-4">
-          <IcRoundFolder className="text-secondary text-4xl mb-2" />
-          <p className="text-sm font-medium text-center truncate w-full">
-            {bankName}
-          </p>
-          <div className="flex gap-1 mt-1 text-xs text-gray-400">
-            {bank.sub_banks && bank.sub_banks.length > 0 && (
-              <span>{bank.sub_banks.length} folders</span>
-            )}
-            {bank.exam_ids && bank.exam_ids.length > 0 && (
-              <span>{bank.exam_ids.length} exams</span>
-            )}
-          </div>
-        </CardBody>
-      </Card>
-    </div>
-  );
-  }
-
-  const ExamCard = ({ exam }: { exam: Examination }) => (
-    <div className="w-[150px]">
-      <Card className="h-32 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 transition-all duration-200">
-        <CardBody className="flex flex-col p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Checkbox
-              isSelected={selectedExamIds.includes(exam._id)}
-              onValueChange={(isSelected) => handleExamToggle(exam._id, isSelected)}
-              color="secondary"
-              size="sm"
-            />
-            <HealthiconsIExamMultipleChoice className="text-secondary text-lg" />
-          </div>
-          <div className="flex-1 min-h-0">
-            <p className="text-sm font-medium line-clamp-2 mb-1">
-              {exam.title}
-            </p>
-            {exam.description && (
-              <p className="text-xs text-gray-400 line-clamp-1 mb-1">
-                {exam.description}
-              </p>
-            )}
-            <p className="text-xs text-gray-500">
-              Created: {exam.created_at ? new Date(exam.created_at).toLocaleDateString() : 'Unknown'}
-            </p>
-          </div>
-        </CardBody>
-      </Card>
-    </div>
-  );
-
-  if (isLoading) {
-    return (
-      <div className={`flex justify-center items-center py-20 ${className}`}>
-        <Spinner size="lg" color="secondary" />
-      </div>
-    );
-  }
-
-  return (
-    <div className={className}>
-      {/* Navigation Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          {/* Breadcrumbs */}
-          <Breadcrumbs separator=">" className="text-sm">
-            <BreadcrumbItem 
-              className="cursor-pointer hover:text-secondary"
-              onClick={() => handleBreadcrumbClick(-1)}
-            >
-              All Banks
-            </BreadcrumbItem>
-            {breadcrumbs.map((crumb, index) => (
-              <BreadcrumbItem 
-                key={crumb.id}
-                className="cursor-pointer hover:text-secondary"
-                onClick={() => handleBreadcrumbClick(index)}
-              >
-                {crumb.name}
-              </BreadcrumbItem>
-            ))}
-          </Breadcrumbs>
-        </div>
-        
-        <Button
-          isIconOnly
-          variant="light"
-          size="sm"
-          onClick={breadcrumbs.length === 0 ? fetchTopLevelBanks : () => handleBreadcrumbClick(breadcrumbs.length - 1)}
-          className="text-gray-400 hover:text-white"
-        >
-          <SolarRefreshLineDuotone className="text-lg" />
-        </Button>
-      </div>
-
-      {/* Search Input */}
-      <div className="mb-4">
-        <Input
-          placeholder="Search banks and exams..."
-          value={searchTerm}
-          onValueChange={setSearchTerm}
-          variant="bordered"
-          size="md"
-          className="max-w-md"
-          startContent={
-            <div className="pointer-events-none flex items-center">
-              <span className="text-default-400 text-small">🔍</span>
-            </div>
-          }
-          isClearable
-          onClear={() => setSearchTerm('')}
-        />
-      </div>
-
-      {/* Search Results Summary */}
-      {searchTerm && (filteredBanks.length > 0 || filteredExams.length > 0) && (
-        <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
-          <p className="text-sm text-primary font-medium">
-            Found {filteredBanks.length} bank{filteredBanks.length === 1 ? '' : 's'} and {filteredExams.length} exam{filteredExams.length === 1 ? '' : 's'} for "{searchTerm}"
-          </p>
-        </div>
-      )}
-
-      {/* Selection Summary */}
-      {selectedExamIds.length > 0 && (
-        <div className="mb-4 p-3 bg-secondary/10 border border-secondary/20 rounded-lg">
-          <p className="text-sm text-secondary font-medium">
-            {selectedExamIds.length} exam{selectedExamIds.length === 1 ? '' : 's'} selected
-          </p>
-        </div>
-      )}
-
-      {/* Content */}
-      {isLoadingSubBanks ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="flex flex-col items-center gap-4">
-            <Spinner color="secondary" />
-            <p className="text-gray-500">Loading folders...</p>
-          </div>
-        </div>
-      ) : (filteredBanks.length > 0 || filteredExams.length > 0) ? (
-        <div className="flex flex-wrap justify-start gap-4">
-          {/* Display banks */}
-          {filteredBanks.map((bank) => (
-            <BankCard key={`${bank._id}-${currentBankId || 'root'}-${breadcrumbs.length}`} bank={bank} />
-          ))}
-          {/* Display exams */}
-          {isLoadingExams ? (
-            <div className="w-[150px] h-32 flex items-center justify-center">
-              <Spinner size="sm" color="secondary" />
-            </div>
-          ) : (
-            filteredExams.map((exam) => (
-              <ExamCard key={exam._id} exam={exam} />
-            ))
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="text-gray-400 mb-4">
-            <IcRoundFolder className="text-6xl mx-auto mb-2 opacity-50" />
-            {searchTerm ? (
-              <>
-                <p className="text-lg font-medium">No results found for "{searchTerm}"</p>
-                <p className="text-sm">Try adjusting your search terms or clearing the search</p>
-              </>
-            ) : (
-              <>
-                <p className="text-lg font-medium">No folders or exams found</p>
-                <p className="text-sm">Navigate to a folder that contains exams to select them</p>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+type Bank = {
+    _id: string;
+    bank_name?: string;
+    name?: string; // For sub-banks
+    exam_id?: string;
+    exam_ids?: string[];
+    sub_banks?: any[];
 };
 
-export default ExamSelector;
+type Examination = {
+    _id: string;
+    title: string;
+    description?: string;
+    created_at?: string;
+};
+
+type BreadcrumbItem = {
+    id: string;
+    name: string;
+};
+
+interface ExamSelectorModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSelectExam?: (exam: Examination) => void;
+    // Multi-selection support
+    selectedExamIds?: string[];
+    onExamSelectionChange?: (examIds: string[]) => void;
+    allowMultiSelect?: boolean;
+    title?: string;
+    instructorId?: string;
+}
+
+const ExamSelectorModal: React.FC<ExamSelectorModalProps> = ({
+    isOpen,
+    onClose,
+    onSelectExam,
+    selectedExamIds = [],
+    onExamSelectionChange,
+    allowMultiSelect = false,
+    title = "Select Examination",
+    instructorId
+}) => {
+    // State management similar to bank-list.tsx
+    const [currentBanks, setCurrentBanks] = useState<Bank[]>([]);
+    const [currentExams, setCurrentExams] = useState<Examination[]>([]);
+    const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([]);
+    const [currentBankId, setCurrentBankId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingSubBanks, setIsLoadingSubBanks] = useState(false);
+    const [isLoadingExams, setIsLoadingExams] = useState(false);
+    const [rootBanks, setRootBanks] = useState<Bank[]>([]);
+
+    // Reset state when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            resetToRoot();
+        }
+    }, [isOpen, instructorId]);
+
+    // Reset to root level
+    const resetToRoot = async () => {
+        setBreadcrumbs([]);
+        setCurrentBankId(null);
+        setCurrentExams([]);
+        await fetchTopLevelBanks();
+    };
+
+    // Fetch top-level banks
+    const fetchTopLevelBanks = async () => {
+        setIsLoading(true);
+        try {
+            const endpoint = instructorId ? `user/bank/${instructorId}` : 'bank';
+            const response = await clientAPI.get(endpoint);
+            
+            if (response.data?.data) {
+                const banks = response.data.data as Bank[];
+                setCurrentBanks(banks);
+                setRootBanks(banks);
+            }
+        } catch (error) {
+            console.error('Error fetching banks:', error);
+            errorHandler(error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Helper function to recursively process sub-banks at all nesting levels
+    const processSubBanksRecursively = (banks: any[]): any[] => {
+        return banks.map(bank => {
+            if (bank.sub_banks && bank.sub_banks.length > 0) {
+                return {
+                    ...bank,
+                    sub_banks: processSubBanksRecursively(bank.sub_banks)
+                };
+            }
+            return bank;
+        });
+    };
+
+    // Fetch sub-banks for a specific bank
+    const fetchSubBanks = async (subBankId: string): Promise<any[]> => {
+        setIsLoadingSubBanks(true);
+        try {
+            const response = await clientAPI.get(`bank/bank-${subBankId}`);
+            
+            if (response.data?.data?.sub_banks) {
+                return processSubBanksRecursively(response.data.data.sub_banks);
+            }
+            return [];
+        } catch (error) {
+            console.error('Error fetching sub-banks:', error);
+            errorHandler(error);
+            return [];
+        } finally {
+            setIsLoadingSubBanks(false);
+        }
+    };
+
+    // Fetch examinations for given exam IDs
+    const fetchExaminations = async (examIds: string[]): Promise<Examination[]> => {
+        if (!examIds || examIds.length === 0) return [];
+        
+        setIsLoadingExams(true);
+        try {
+            const examPromises = examIds.map(async (examId) => {
+                try {
+                    const response = await clientAPI.get(`exam/${examId}`);
+                    return response.data?.data || null;
+                } catch (error) {
+                    console.error(`Error fetching exam ${examId}:`, error);
+                    return null;
+                }
+            });
+            
+            const exams = await Promise.all(examPromises);
+            return exams.filter(exam => exam !== null) as Examination[];
+        } catch (error) {
+            console.error('Error fetching examinations:', error);
+            return [];
+        } finally {
+            setIsLoadingExams(false);
+        }
+    };
+
+    // Handle bank click (navigation)
+    const handleBankClick = async (bank: Bank) => {
+        setCurrentBankId(bank._id);
+        
+        // Add current bank to breadcrumbs
+        const newBreadcrumb = {
+            id: bank._id,
+            name: (bank as any).bank_name || (bank as any).name || 'Unnamed Bank'
+        };
+        setBreadcrumbs(prev => [...prev, newBreadcrumb]);
+
+        // Check if bank has embedded sub-banks
+        if (bank.sub_banks && bank.sub_banks.length > 0) {
+            setCurrentBanks(processSubBanksRecursively(bank.sub_banks));
+        } else {
+            // Fetch sub-banks from API
+            const subBanks = await fetchSubBanks(bank._id);
+            setCurrentBanks(subBanks);
+        }
+
+        // Fetch examinations if there are exam IDs
+        if (bank.exam_ids && bank.exam_ids.length > 0) {
+            const exams = await fetchExaminations(bank.exam_ids);
+            setCurrentExams(exams);
+        } else if (bank.exam_id) {
+            // Handle legacy single exam_id
+            const exams = await fetchExaminations([bank.exam_id]);
+            setCurrentExams(exams);
+        } else {
+            setCurrentExams([]);
+        }
+    };
+
+    // Handle breadcrumb click
+    const handleBreadcrumbClick = async (clickedIndex: number) => {
+        if (clickedIndex === -1) {
+            // Navigate to root
+            await resetToRoot();
+            return;
+        }
+
+        const targetBreadcrumb = breadcrumbs[clickedIndex];
+        const newBreadcrumbs = breadcrumbs.slice(0, clickedIndex + 1);
+        setBreadcrumbs(newBreadcrumbs);
+        setCurrentBankId(targetBreadcrumb.id);
+
+        try {
+            // Fetch the target bank's sub-banks and exams
+            const subBanks = await fetchSubBanks(targetBreadcrumb.id);
+            setCurrentBanks(subBanks);
+
+            // Find the bank data to get exam IDs
+            const response = await clientAPI.get(`bank/bank-${targetBreadcrumb.id}`);
+            if (response.data?.data) {
+                const bankData = response.data.data;
+                if (bankData.exam_ids && bankData.exam_ids.length > 0) {
+                    const exams = await fetchExaminations(bankData.exam_ids);
+                    setCurrentExams(exams);
+                } else {
+                    setCurrentExams([]);
+                }
+            }
+        } catch (error) {
+            console.error('Error navigating to breadcrumb:', error);
+            errorHandler(error);
+        }
+    };
+
+    // Handle exam selection
+    const handleExamClick = (exam: Examination) => {
+        if (allowMultiSelect && onExamSelectionChange) {
+            // Multi-selection mode
+            const isSelected = selectedExamIds.includes(exam._id);
+            let updatedExamIds: string[];
+            
+            if (isSelected) {
+                // Remove from selection
+                updatedExamIds = selectedExamIds.filter(id => id !== exam._id);
+            } else {
+                // Add to selection
+                updatedExamIds = [...selectedExamIds, exam._id];
+            }
+            
+            onExamSelectionChange(updatedExamIds);
+            // Don't close modal in multi-select mode
+        } else {
+            // Single selection mode
+            if (onSelectExam) {
+                onSelectExam(exam);
+            }
+            onClose();
+        }
+    };
+
+    // Render bank card (matching bank-list.tsx style)
+    const renderBankCard = (bank: Bank) => {
+        const subBankCount = bank.sub_banks?.length || 0;
+        const examCount = bank.exam_ids?.length || 0;
+        const isEmpty = subBankCount === 0 && examCount === 0;
+        
+        return (
+            <Card 
+                key={bank._id}
+                className="w-[150px] hover:bg-default-100 cursor-pointer transition-colors"
+                isPressable
+                onPress={() => handleBankClick(bank)}
+            >
+                <CardBody className="p-4 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                        {isEmpty ? 
+                            <BankEmpty className="w-12 h-12 text-blue-500" /> : 
+                            <BankFill className="w-12 h-12 text-blue-500" />
+                        }
+                        <div className="w-full">
+                            <h3 className="font-medium text-sm truncate" title={bank.bank_name || bank.name}>
+                                {bank.bank_name || bank.name}
+                            </h3>
+                            <div className="flex items-center justify-center gap-3 mt-2 text-xs text-gray-500">
+                                {subBankCount > 0 && (
+                                    <span className="flex items-center gap-1">
+                                        <BankFill className="w-3 h-3" />
+                                        {subBankCount}
+                                    </span>
+                                )}
+                                {examCount > 0 && (
+                                    <span className="flex items-center gap-1">
+                                        <ExamFile className="w-3 h-3" />
+                                        {examCount}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </CardBody>
+            </Card>
+        );
+    };
+
+    // Render exam card (matching bank-list.tsx style)
+    const renderExamCard = (exam: Examination) => {
+        const isSelected = allowMultiSelect && selectedExamIds.includes(exam._id);
+        
+        return (
+            <Card 
+                key={exam._id}
+                className={`w-[150px] cursor-pointer transition-colors ${
+                    isSelected ? 'ring-2 ring-secondary bg-secondary/10' : 'hover:bg-default-100'
+                }`}
+                isPressable
+                onPress={() => handleExamClick(exam)}
+            >
+                <CardBody className="p-4 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="relative">
+                            <ExamFile className={`w-12 h-12 ${
+                                isSelected ? 'text-secondary' : 'text-green-500'
+                            }`} />
+                            {allowMultiSelect && isSelected && (
+                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-secondary rounded-full flex items-center justify-center">
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            )}
+                        </div>
+                        <div className="w-full">
+                            <h3 className="font-medium text-sm truncate" title={exam.title}>
+                                {exam.title}
+                            </h3>
+                            {exam.description && (
+                                <p className="text-xs text-gray-500 truncate mt-1" title={exam.description}>
+                                    {exam.description}
+                                </p>
+                            )}
+                            {exam.created_at && (
+                                <p className="text-xs text-gray-400 mt-2">
+                                    {new Date(exam.created_at).toLocaleDateString()}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </CardBody>
+            </Card>
+        );
+    };
+
+    return (
+        <Modal 
+            isOpen={isOpen} 
+            onClose={onClose}
+            size="5xl"
+            scrollBehavior="inside"
+            classNames={{
+                body: "p-4",
+                base: "max-h-[90vh]"
+            }}
+        >
+            <ModalContent>
+                <ModalHeader className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between w-full">
+                        <h2 className="text-xl font-semibold">{title}</h2>
+                        
+                    </div>
+                </ModalHeader>
+                
+                <ModalBody>
+                    {/* Loading States */}
+                    {(isLoading || isLoadingSubBanks || isLoadingExams) && (
+                        <div className="size-full flex gap-4 justify-center items-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary"></div>
+                        </div>
+                    )}
+                    
+                    {/* Content Display */}
+                    {!isLoading && !isLoadingSubBanks && !isLoadingExams && (
+                        <div className="w-full">
+                            {/* Breadcrumb navigation - always show root */}
+                            <div className="flex items-center mb-4 text-sm">
+                                <button
+                                    onClick={() => handleBreadcrumbClick(-1)}
+                                    className={`${breadcrumbs.length === 0 ? "text-secondary font-medium" : "text-secondary hover:underline"}`}
+                                >
+                                    Root
+                                </button>
+                                {breadcrumbs.map((crumb, idx) => (
+                                    <div key={crumb.id} className="flex items-center">
+                                        <span className="mx-2 text-gray-500">/</span>
+                                        <button
+                                            onClick={() => handleBreadcrumbClick(idx)}
+                                            className={`${idx === breadcrumbs.length - 1
+                                                    ? "text-white font-medium"
+                                                    : "text-blue-600 hover:underline"
+                                                }`}
+                                        >
+                                            {crumb.name}
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {(currentBanks.length > 0 || currentExams.length > 0) ? (
+                                <div className="flex flex-wrap justify-start gap-4">
+                                    {/* Display all the bank cards */}
+                                    {currentBanks.map(renderBankCard)}
+                                    
+                                    {/* Display all examination cards */}
+                                    {isLoadingExams ? (
+                                        <div className="w-[222px] h-32 flex items-center justify-center">
+                                            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-secondary"></div>
+                                        </div>
+                                    ) : (
+                                        currentExams.map(renderExamCard)
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="size-full flex flex-col gap-4 justify-center items-center py-12">
+                                    {breadcrumbs.length > 0 ? (
+                                        <>
+                                            <BankEmpty className="w-16 h-16 text-gray-300" />
+                                            <h1 className="font-semibold">This folder is empty</h1>
+                                            <p className="text-gray-500 text-center">
+                                                No banks or examinations in this folder
+                                            </p>
+                                            <Button 
+                                                variant="bordered" 
+                                                onPress={() => handleBreadcrumbClick(-1)}
+                                            >
+                                                Back to Root
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <h1 className="font-semibold">No Banks or Examinations Found</h1>
+                                            <p className="text-gray-500 text-center">
+                                                No banks or examinations are available
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </ModalBody>
+                {allowMultiSelect && (
+                    <ModalFooter>
+                        <Button 
+                            color="danger" 
+                            variant="light" 
+                            onPress={onClose}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            color="secondary" 
+                            onPress={onClose}
+                        >
+                            Done ({selectedExamIds.length} selected)
+                        </Button>
+                    </ModalFooter>
+                )}
+            </ModalContent>
+        </Modal>
+    );
+};
+
+export default ExamSelectorModal;

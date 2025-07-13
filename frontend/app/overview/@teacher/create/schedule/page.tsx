@@ -25,7 +25,7 @@ import {
   IcRoundFolder,
   HealthiconsIExamMultipleChoice
 } from "@/components/icons/icons"
-import ExamSelector from "@/components/overview/exam-selector"
+import ExamSelectorModal from "@/components/overview/exam-selector"
 import { useRouter } from "nextjs-toploader/app"
 import { useSearchParams } from "next/navigation"
 import { clientAPI } from '@/config/axios.config'
@@ -318,46 +318,15 @@ export default function CreateSchedulePage() {
                   </Button>
                   
                   {/* Exam Selection Modal */}
-                  <Modal 
-                    isOpen={isExamModalOpen} 
-                    onOpenChange={setIsExamModalOpen}
-                    size="5xl"
-                    scrollBehavior="inside"
-                    classNames={{
-                      body: "py-6",
-                      backdrop: "bg-black/50 backdrop-opacity-40",
-                      base: "border-zinc-700 bg-zinc-900",
-                      header: "border-b-1 border-zinc-700",
-                      footer: "border-t-1 border-zinc-700",
-                      closeButton: "hover:bg-white/5 active:bg-white/10",
-                    }}
-                  >
-                    <ModalContent>
-                      {(onClose) => (
-                        <>
-                          <ModalHeader className="flex flex-col gap-1">
-                            Select Examinations
-                          </ModalHeader>
-                          <ModalBody>
-                            <ExamSelector
-                              selectedExamIds={examSettingForm.exam_ids}
-                              onExamSelectionChange={handleExamSelectionChange}
-                              instructorId={user?._id || ''}
-                              className="min-h-[400px] max-h-[600px] overflow-y-auto"
-                            />
-                          </ModalBody>
-                          <ModalFooter>
-                            <Button color="danger" variant="light" onPress={onClose}>
-                              Cancel
-                            </Button>
-                            <Button color="secondary" onPress={onClose}>
-                              Done ({examSettingForm.exam_ids.length} selected)
-                            </Button>
-                          </ModalFooter>
-                        </>
-                      )}
-                    </ModalContent>
-                  </Modal>
+                  <ExamSelectorModal
+                    isOpen={isExamModalOpen}
+                    onClose={() => setIsExamModalOpen(false)}
+                    selectedExamIds={examSettingForm.exam_ids}
+                    onExamSelectionChange={handleExamSelectionChange}
+                    allowMultiSelect={true}
+                    title="Select Examinations for Schedule"
+                    instructorId={user?._id || ''}
+                  />
                 </div>
                 
                 <div>
