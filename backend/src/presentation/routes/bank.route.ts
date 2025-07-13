@@ -31,9 +31,31 @@ export const BankRoute = new Elysia({ prefix: '/bank' })
             })
             .get('/by-exam/:examId', catchAsync(async ({ params, controller }: BankContext & { params: { examId: string } }) => 
                 await controller.getBanksByExamId(params.examId)))
+            .get('/by-instructor/:instructorId', catchAsync(async ({ params, controller }: BankContext & { params: { instructorId: string } }) => 
+                await controller.getBanksByInstructorId(params.instructorId)))
+            
+            // Get maximum allowed sub-bank depth
+            .get('/max-depth', catchAsync(async ({ controller }: BankContext) => {
+                return await controller.getMaxSubBankDepth();
+            }))
             
             // Bank by ID group
             .group('/bank-:id', app => app
+                // Check if sub-bank creation is allowed - supports both direct bank and sub-bank contexts
+                .post('/can-create-subbank', catchAsync(async ({ params, body, controller }: BankContext & { params: { id: string }, body: { parentBankId?: string, subBankId?: string, subBankPath?: string[] } }) => {
+                    // If parentBankId and subBankId are provided, we're checking from within a sub-bank context
+                    if (body.parentBankId && body.subBankId) {
+                        return await controller.canCreateSubBankInSubBank(body.parentBankId, body.subBankId);
+                    }
+                    // Otherwise, use the original logic with the bank ID from URL
+                    return await controller.canCreateSubBank(params.id, body.subBankPath || []);
+                }), {
+                    body: t.Object({
+                        parentBankId: t.Optional(t.String()),
+                        subBankId: t.Optional(t.String()),
+                        subBankPath: t.Optional(t.Array(t.String()))
+                    })
+                })
                 .get('', catchAsync(async ({ params, controller }: BankContext & { params: { id: string } }) => 
                     await controller.getBankById(params.id)))
                 .put('', catchAsync(async ({ params, body, controller }: BankContext & { params: { id: string }, body: UpdateBankBody }) => 
@@ -46,6 +68,13 @@ export const BankRoute = new Elysia({ prefix: '/bank' })
                 // SubBank routes
                 .post('/sub-bank', catchAsync(async ({ params, body, controller }: BankContext & { params: { id: string }, body: CreateSubBankBody }) => 
                     await controller.createSubBank(params.id, body.name, body.exam_ids, body.parent_id)), {
+                    body: CreateSubBankSchema
+                })
+                
+                // Simplified route for creating sub-bank within a specific sub-bank
+                .post('/sub-bank-in/:subBankId', catchAsync(async ({ params, body, controller }: BankContext & { params: { id: string, subBankId: string }, body: CreateSubBankBody }) => {
+                    return await controller.createSubBankInSubBank(params.id, params.subBankId, body.name, body.exam_ids);
+                }), {
                     body: CreateSubBankSchema
                 })
                 
@@ -68,6 +97,14 @@ export const BankRoute = new Elysia({ prefix: '/bank' })
                 // Sub-bank update routes
                 .put('/sub-bank/:subBankId', catchAsync(async ({ params, body, controller }: BankContext & { params: { id: string, subBankId: string }, body: any }) => 
                     await controller.updateSubBank(params.id, [], params.subBankId, body)))
+                
+                // Simple rename route - just parent ID and sub-bank ID
+                .put('/rename/:parentId/:subBankId', catchAsync(async ({ params, body, controller }: BankContext & { params: { id: string, parentId: string, subBankId: string }, body: { name: string } }) => 
+                    await controller.renameSubBank(params.parentId, params.subBankId, body.name)))
+                
+                // Simple add exam to sub-bank route - just parent ID, sub-bank ID, and exam ID
+                .post('/add-exam/:parentId/:subBankId/:examId', catchAsync(async ({ params, controller }: BankContext & { params: { id: string, parentId: string, subBankId: string, examId: string } }) => 
+                    await controller.addExamToSubBankSimple(params.parentId, params.subBankId, params.examId)))
                 
                 // Use a different route structure for nested sub-banks to avoid parameter conflicts
                 .put('/sub-bank-nested/:nestedPath/:targetId', catchAsync(async ({ params, body, controller }: BankContext & { params: { id: string, nestedPath: string, targetId: string }, body: any }) => {
@@ -119,6 +156,15 @@ export const BankRoute = new Elysia({ prefix: '/bank' })
                 }), {
                     body: t.Object({
                         subBankId: t.String()
+                    })
+                })
+                
+                // Check if sub-bank creation is allowed at current depth
+                .post('/can-create-subbank', catchAsync(async ({ params, controller, body }: BankContext & { params: { id: string }, body: { subBankPath: string[] } }) => {
+                    return await controller.canCreateSubBank(params.id, body.subBankPath || []);
+                }), {
+                    body: t.Object({
+                        subBankPath: t.Optional(t.Array(t.String()))
                     })
                 })
             )

@@ -131,6 +131,10 @@ export class BankRepository {
         return await BankModel.find({ exam_ids: examId }).exec();
     }
     
+    async getBanksByIds(bankIds: string[]): Promise<IBank[]> {
+        return await BankModel.find({ _id: { $in: bankIds } }).exec();
+    }
+    
     async getAllBanks(): Promise<IBank[]> {
         return await BankModel.find({}).exec();
     }

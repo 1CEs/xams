@@ -78,14 +78,137 @@ const BankList = ({ examId }: Props) => {
     // State for examinations
     const [currentExams, setCurrentExams] = useState<Examination[]>([]);
     const [isLoadingExams, setIsLoadingExams] = useState(false);
+    
+    // State for depth validation
+    const [canCreateSubBank, setCanCreateSubBank] = useState(true);
+    const [maxDepth, setMaxDepth] = useState(3);
+    const [currentDepth, setCurrentDepth] = useState(1);
+    const [depthValidationReason, setDepthValidationReason] = useState<string | undefined>();
 
+    // Fetch maximum depth on component mount
+    useEffect(() => {
+        const fetchMaxDepth = async () => {
+            try {
+                const response = await clientAPI.get('/bank/max-depth');
+                if (response.data && typeof response.data.data === 'number') {
+                    setMaxDepth(response.data.data);
+                }
+            } catch (error) {
+                console.error('Error fetching max depth:', error);
+                // Keep default value of 3
+            }
+        };
+        
+        fetchMaxDepth();
+    }, []);
+    
     useEffect(() => {
         // If we're at the root level and data is loaded, set the current banks
         if (data && data.data && !currentBankId) {
             setCurrentBanks(data.data as unknown as Bank[]);
             setCurrentExams([]);
+            
+            // At root level (no breadcrumbs, no currentBankId), we can create sub-banks
+            setCurrentDepth(0); // At root level, depth is 0
+            setCanCreateSubBank(true); // Can always create banks at root level
+            setDepthValidationReason(undefined);
         }
     }, [data, currentBankId]);
+    
+    // Separate effect to handle depth validation when navigation changes without currentBankId
+    useEffect(() => {
+        if (!currentBankId && breadcrumbs.length === 0) {
+            // We're at the root level
+            setCurrentDepth(0);
+            setCanCreateSubBank(true);
+            setDepthValidationReason(undefined);
+            
+            console.log('At root level - depth validation:', {
+                currentDepth: 0,
+                canCreateSubBank: true
+            });
+        }
+    }, [currentBankId, breadcrumbs]);
+    
+    // Function to validate if sub-bank creation is allowed at current depth
+    const validateSubBankCreation = async (bankId: string, subBankPath: string[]) => {
+        try {
+            let requestBody: any = {};
+            let targetBankId = bankId;
+            
+            // Check if we're in a sub-bank context by looking at breadcrumbs
+            if (breadcrumbs.length > 1) {
+                // We're in a sub-bank context
+                // First breadcrumb is the root bank, last breadcrumb is the current sub-bank
+                const rootBankId = breadcrumbs[0].id;
+                const currentSubBankId = breadcrumbs[breadcrumbs.length - 1].id;
+                
+                console.log('Validating sub-bank creation in sub-bank context:', {
+                    rootBankId,
+                    currentSubBankId,
+                    breadcrumbs
+                });
+                
+                requestBody = {
+                    parentBankId: rootBankId,
+                    subBankId: currentSubBankId
+                };
+                targetBankId = rootBankId; // Use root bank ID in URL
+            } else {
+                // We're in a direct bank context
+                console.log('Validating sub-bank creation in direct bank context:', {
+                    bankId,
+                    subBankPath
+                });
+                
+                requestBody = {
+                    subBankPath: subBankPath
+                };
+            }
+            
+            const response = await clientAPI.post(`/bank/bank-${targetBankId}/can-create-subbank`, requestBody);
+            
+            if (response.data && response.data.data) {
+                const validation = response.data.data;
+                
+                console.log('Backend validation result:', {
+                    canCreate: validation.canCreate,
+                    currentDepth: validation.currentDepth,
+                    reason: validation.reason,
+                    localCalculation: {
+                        currentDepth: breadcrumbs.length,
+                        canCreate: breadcrumbs.length < maxDepth
+                    }
+                });
+                
+                // Only override local state if backend explicitly disagrees and provides a reason
+                // This prevents unnecessary overrides that could cause UI inconsistencies
+                // IMPORTANT: Don't let the backend override local calculation for level 2 sub-banks
+                // We're going to prioritize our local calculation for level 2
+                const isAtLevel2 = breadcrumbs.length === 2;
+                
+                if (validation.reason && validation.currentDepth !== currentDepth && !isAtLevel2) {
+                    console.log('Backend disagrees with local calculation, updating state');
+                    setCanCreateSubBank(validation.canCreate);
+                    setCurrentDepth(validation.currentDepth);
+                    setDepthValidationReason(validation.reason);
+                } else if (isAtLevel2) {
+                    // At level 2, we force the ability to create sub-banks
+                    console.log('At level 2, forcing canCreateSubBank = true');
+                    // This ensures we can always create multiple sub-banks at level 2
+                    setCanCreateSubBank(true);
+                }
+                
+                return validation.canCreate;
+            }
+        } catch (error) {
+            console.error('Error validating sub-bank creation:', error);
+            // Don't override local state on API failure - let local calculation stand
+            console.log('API validation failed, keeping local calculation');
+            return breadcrumbs.length < maxDepth;
+        }
+        return true; // Default to allowing creation
+    };
 
     // Effect to load sub-banks when currentBankId changes (from store)
     useEffect(() => {
@@ -106,11 +229,64 @@ const BankList = ({ examId }: Props) => {
                 // Update the state with the fetched sub-banks
                 setCurrentBanks(subBanks);
                 setIsLoadingSubBanks(false);
+                
+                // Depth validation logic
+                // breadcrumbs already include the current location, so:
+                // breadcrumbs.length = 1: root bank level (depth 1)
+                // breadcrumbs.length = 2: first sub-bank (depth 2) 
+                // breadcrumbs.length = 3: second sub-bank (depth 3) - MAX ALLOWED
+                // etc.
+                const calculatedDepth = breadcrumbs.length; // breadcrumbs already includes current location
+                
+                // Allow sub-bank creation only when current depth < maxDepth
+                // This means:
+                // - At depth 1 and 2: can create sub-banks (will become depth 2 and 3)
+                // - At depth 3: cannot create sub-banks (would become depth 4, exceeding max)
+                // - At depth 3: can still create exams
+                
+                // Force level 2 to always allow sub-bank creation
+                // This fixes the issue where only one sub-bank can be created at level 2
+                const isAtLevel2 = calculatedDepth === 2;
+                const canCreateMoreSubBanks = isAtLevel2 ? true : calculatedDepth < maxDepth;
+                
+                console.log('Setting depth validation in loadSubBanks:', {
+                    currentBankId,
+                    breadcrumbsLength: breadcrumbs.length,
+                    calculatedDepth,
+                    maxDepth,
+                    canCreateMoreSubBanks,
+                    isAtLevel2,
+                    breadcrumbs: breadcrumbs.map(b => b.name)
+                });
+                
+                // Set the state based on local calculation first
+                setCurrentDepth(calculatedDepth);
+                setCanCreateSubBank(canCreateMoreSubBanks);
+                
+                if (!canCreateMoreSubBanks && calculatedDepth === maxDepth) {
+                    setDepthValidationReason(`Maximum folder depth of ${maxDepth} levels reached. You can still create exams here.`);
+                } else if (!canCreateMoreSubBanks) {
+                    setDepthValidationReason(`Maximum folder depth exceeded`);
+                } else {
+                    setDepthValidationReason(undefined);
+                }
+                
+                // Optional: Validate with backend API but don't override local logic unless there's a real error
+                // This prevents API inconsistencies from affecting the UI
+                try {
+                    const subBankPath = breadcrumbs.slice(1).map(b => b.id); // Convert breadcrumbs to path
+                    await validateSubBankCreation(currentBankId, subBankPath);
+                } catch (error) {
+                    console.warn('Backend validation failed, using local calculation:', error);
+                    // Keep local calculation
+                }
             }
         };
 
         loadSubBanks();
-    }, [currentBankId, breadcrumbs.length]);
+    }, [currentBankId, breadcrumbs, maxDepth]);
+
+    // Note: Depth validation is now handled in the loadSubBanks useEffect above to avoid conflicts
 
     // Helper function to recursively process sub-banks at all nesting levels
     // Defined outside of the fetch functions so it can be reused
@@ -342,57 +518,27 @@ const BankList = ({ examId }: Props) => {
         }
     };
 
-    // Handle bank rename
+    // Handle bank rename - simplified version
     const handleBankRename = async (bankId: string, newName: string) => {
+        if (!newName.trim()) {
+            toast.error("Bank name cannot be empty");
+            return;
+        }
+
         try {
             if (currentBankId) {
-                // It's a sub-bank - we need to find the path to this sub-bank
-                // First, get the current bank hierarchy
-                const response = await clientAPI.get(`bank/bank-${currentBankId}/hierarchy`);
-                if (!response.data || !response.data.data) {
-                    throw new Error("Failed to fetch bank hierarchy");
-                }
-
-                const bank = response.data.data;
-
-                // Find the sub-bank in the hierarchy and its path
-                let subBankPath: string[] = [];
-                const findSubBankPath = (subBanks: any[], path: string[] = []): boolean => {
-                    for (let i = 0; i < subBanks.length; i++) {
-                        const subBank = subBanks[i];
-                        if (subBank._id === bankId) {
-                            subBankPath = [...path, subBank._id];
-                            return true;
-                        }
-                        if (subBank.sub_banks && subBank.sub_banks.length > 0) {
-                            if (findSubBankPath(subBank.sub_banks, [...path, subBank._id])) {
-                                return true;
-                            }
-                        }
-                    }
-                    return false;
-                };
-
-                if (bank.sub_banks && findSubBankPath(bank.sub_banks)) {
-                    // We found the path to the sub-bank
-                    // The API expects the path as a comma-separated string of sub-bank IDs
-                    const pathString = subBankPath.slice(0, -1).join(','); // Remove the last ID which is the target bank itself
-
-                    if (pathString) {
-                        // If there's a path, it means the sub-bank is nested inside other sub-banks
-                        // Using the updated route structure to avoid parameter conflicts
-                        await clientAPI.put(`bank/bank-${currentBankId}/sub-bank-nested/${pathString}/${bankId}`, { name: newName });
-                    } else {
-                        // If there's no path, it means the sub-bank is directly under the current bank
-                        await clientAPI.put(`bank/bank-${currentBankId}/sub-bank/${bankId}`, { name: newName });
-                    }
-                } else {
-                    // Fallback to direct sub-bank update if path not found
-                    await clientAPI.put(`bank/bank-${currentBankId}/sub-bank/${bankId}`, { name: newName });
-                }
+                // It's a sub-bank - use the new simple API
+                // Get the root bank ID from breadcrumbs or use currentBankId
+                const rootBankId = breadcrumbs.length > 0 ? breadcrumbs[0].id : currentBankId;
+                
+                await clientAPI.put(`bank/bank-${rootBankId}/rename/${rootBankId}/${bankId}`, {
+                    name: newName
+                });
             } else {
                 // It's a root bank
-                await clientAPI.put(`bank/bank-${bankId}`, { bank_name: newName });
+                await clientAPI.put(`bank/bank-${bankId}`, {
+                    bank_name: newName
+                });
             }
 
             // Update the local state
@@ -406,9 +552,12 @@ const BankList = ({ examId }: Props) => {
             if (breadcrumbs.some(crumb => crumb.id === bankId)) {
                 updateBreadcrumbName(bankId, newName);
             }
+
+            toast.success("Bank renamed successfully");
         } catch (error) {
             console.error("Error renaming bank:", error);
             errorHandler(error);
+            toast.error("Failed to rename bank");
         }
     };
 
@@ -440,18 +589,20 @@ const BankList = ({ examId }: Props) => {
                     // If we have more than one breadcrumb, we need to create a sub-bank in a nested path
                     if (breadcrumbs.length > 1) {
                         // Last breadcrumb ID is our current position/parent for the new sub-bank
-                        const currentLocationId = breadcrumbs[breadcrumbs.length - 1].id;
-                        const subBankPath = breadcrumbs.map(crumb => crumb.id);
+                        const currentSubBankId = breadcrumbs[breadcrumbs.length - 1].id;
                         
-                        console.log('Creating nested sub-bank with path:', subBankPath, 'and parent:', currentLocationId);
+                        console.log('Creating sub-bank within sub-bank using simplified API:', {
+                            rootBankId,
+                            currentSubBankId,
+                            bankName
+                        });
                         
-                        // Use the nested sub-bank endpoint with the full path
-                        const pathString = subBankPath.join(',');
+                        // Use the simplified sub-bank-in endpoint
                         const response = await clientAPI.post(
-                            `bank/bank-${rootBankId}/sub-bank-nested/${pathString}`,
+                            `bank/bank-${rootBankId}/sub-bank-in/${currentSubBankId}`,
                             { name: bankName, exam_ids: examId ? [examId] : [] }
                         );
-                        console.log('Nested sub-bank created:', response.data);
+                        console.log('Sub-bank created within sub-bank:', response.data);
                     } else {
                         // Single breadcrumb, create direct sub-bank under the root bank
                         console.log('Creating direct sub-bank under root bank');
@@ -555,12 +706,34 @@ const BankList = ({ examId }: Props) => {
             }
             
             // Refresh the view after creating the sub-bank
-            if (currentBankId) {
+            if (breadcrumbs.length > 0) {
+                console.log('Refreshing with breadcrumbs context');
+                if (breadcrumbs.length > 1) {
+                    // We're in a nested context, need to refresh sub-banks from the last breadcrumb
+                    const currentBreadcrumb = breadcrumbs[breadcrumbs.length - 1];
+                    console.log('Refreshing sub-banks using breadcrumb:', currentBreadcrumb);
+                    
+                    // Force re-fetch the sub-banks at the current path
+                    const lastBreadcrumbId = currentBreadcrumb.id;
+                    const updatedSubBanks = await fetchSubBanks(lastBreadcrumbId);
+                    console.log('Updated sub-banks from breadcrumb refresh:', updatedSubBanks);
+                    setCurrentBanks(updatedSubBanks);
+                } else {
+                    // Only one breadcrumb, we're at the root bank level
+                    const rootBankId = breadcrumbs[0].id;
+                    const updatedSubBanks = await fetchSubBanks(rootBankId);
+                    console.log('Updated sub-banks from root bank refresh:', updatedSubBanks);
+                    setCurrentBanks(updatedSubBanks);
+                }
+            } else if (currentBankId) {
                 // We need a full refresh of the sub-bank structure to see nested changes
+                console.log('Refreshing sub-banks using current bank ID');
                 const updatedSubBanks = await fetchSubBanks(currentBankId);
+                console.log('Updated sub-banks from current bank refresh:', updatedSubBanks);
                 setCurrentBanks(updatedSubBanks);
             } else {
                 // For root banks, refresh from the data fetched by useFetch
+                console.log('Refreshing with data from useFetch');
                 if (data && data.data) {
                     setCurrentBanks(data.data as unknown as Bank[]);
                 }
@@ -695,6 +868,49 @@ return (
             ))}
         </div>
 
+        {/* Depth Level Indicator */}
+        <div className="flex items-center justify-between mb-4 p-2 rounded-lg bg-zinc-800 border border-zinc-700">
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-300">Folder Depth:</span>
+                <div className="flex items-center gap-1">
+                    {[...Array(maxDepth)].map((_, i) => {
+                        const isActive = i < breadcrumbs.length;
+                        const isAtMax = i === maxDepth - 1 && breadcrumbs.length >= maxDepth;
+                        return (
+                            <div
+                                key={i}
+                                className={`w-3 h-3 rounded-full border-2 ${
+                                    isActive
+                                        ? isAtMax
+                                            ? 'bg-red-500 border-red-600'
+                                            : i === maxDepth - 2 && breadcrumbs.length === maxDepth - 1
+                                            ? 'bg-amber-500 border-amber-600'
+                                            : 'bg-blue-500 border-blue-600'
+                                        : 'bg-zinc-600 border-zinc-700'
+                                }`}
+                                title={`Level ${i + 1}${isActive ? ' (current)' : ''}`}
+                            />
+                        );
+                    })}
+                </div>
+                <span className="text-xs text-gray-400">
+                    {breadcrumbs.length}/{maxDepth}
+                </span>
+            </div>
+            {breadcrumbs.length >= maxDepth - 1 && (
+                <div className={`text-xs px-2 py-1 rounded-full ${
+                    breadcrumbs.length >= maxDepth
+                        ? 'bg-red-900/70 text-red-300'
+                        : 'bg-amber-900/70 text-amber-300'
+                }`}>
+                    {breadcrumbs.length >= maxDepth
+                        ? '⚠️ Maximum depth reached'
+                        : '⚠️ Approaching maximum depth'
+                    }
+                </div>
+            )}
+        </div>
+
         <div className="flex justify-between items-center mb-4">
             <div>
                 {examId && (
@@ -756,9 +972,58 @@ return (
                 {/* Add folder button at the end of the list */}
                 {currentBankId && (
                     <div className="w-[150px]">
-                            <div
-                                className="flex flex-col items-center w-full relative cursor-pointer animate-pulse transition-colors"
-                                onClick={() => {
+                        <div
+                            className={`flex flex-col items-center w-full relative cursor-pointer transition-colors p-4 rounded-lg border-2 border-dashed ${
+                                !canCreateSubBank && currentDepth === maxDepth
+                                    ? 'bg-amber-900/20 border-amber-600/40 hover:bg-amber-900/30 hover:border-amber-600/60'
+                                    : !canCreateSubBank
+                                    ? 'bg-red-900/30 border-red-700/50 hover:bg-red-900/40 hover:border-red-700/70'
+                                    : 'bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:border-zinc-600'
+                            }`}
+                            onClick={() => {
+                                // If at max depth, open exam form directly
+                                if (!canCreateSubBank) {
+                                    try {
+                                        // Determine the bank context (bank or sub-bank ID)
+                                        let bankContext: string;
+                                        let subBankIds: string[] = [];
+
+                                        // We're always in some bank context
+                                        if (breadcrumbs.length > 0) {
+                                            // We're in a sub-bank
+                                            // The first breadcrumb is the root bank ID
+                                            bankContext = breadcrumbs[0].id;
+                                            
+                                            // If we have more breadcrumbs, they form the sub-bank path
+                                            if (breadcrumbs.length > 1) {
+                                                // Get all breadcrumb IDs to form the complete path
+                                                subBankIds = breadcrumbs.map(crumb => crumb.id);
+                                            }
+                                        } else if (currentBankId) {
+                                            // We're at the root level with a selected bank
+                                            bankContext = currentBankId;
+                                            // Since we're directly in this bank, add it to the path
+                                            subBankIds = [currentBankId];
+                                        } else {
+                                            // Fallback - we should always have either breadcrumbs or currentBankId
+                                            console.error('No bank context found!');
+                                            bankContext = '';
+                                        }
+                                        
+                                        // Store the bank context for examination creation
+                                        setExamBankContext({
+                                            bankId: bankContext,
+                                            subBankPath: subBankIds.length > 0 ? subBankIds : undefined
+                                        });
+
+                                        // Open the examination modal directly
+                                        setIsExamModalOpen(true);
+                                    } catch (error) {
+                                        console.error("Error opening examination form:", error);
+                                        errorHandler(error);
+                                    }
+                                } else {
+                                    // Normal flow - open create modal
                                     // Set parent ID based on navigation context
                                     if (breadcrumbs.length > 0) {
                                         // If we're inside a sub-bank, use the last breadcrumb as parent ID
@@ -771,31 +1036,174 @@ return (
 
                                     // Open the create modal
                                     setIsCreateModalOpen(true);
-                                }}
-                            >
-                                <BankAdd width={100}/>
-                                <div className="flex flex-col items-center pt-3">
-                                    <p className="text-sm font-medium truncate w-full text-center">Add New</p>
+                                }
+                            }}
+                        >
+                            <div className={`mb-2 ${
+                                !canCreateSubBank && currentDepth === maxDepth
+                                    ? 'text-amber-500' 
+                                    : !canCreateSubBank 
+                                    ? 'text-red-600' 
+                                    : 'text-gray-600'
+                            }`}>
+                                {!canCreateSubBank ? (
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                        <polyline points="14,2 14,8 20,8"/>
+                                        <line x1="16" y1="13" x2="8" y2="13"/>
+                                        <line x1="16" y1="17" x2="8" y2="17"/>
+                                        <polyline points="10,9 9,9 8,9"/>
+                                    </svg>
+                                ) : (
+                                    <BankAdd width={80}/>
+                                )}
+                            </div>
+                            
+                            <div className="flex flex-col items-center text-center">
+                                <p className={`text-sm font-medium truncate w-fit ${
+                                    !canCreateSubBank && currentDepth === maxDepth
+                                        ? 'text-amber-300'
+                                        : !canCreateSubBank 
+                                        ? 'text-red-400' 
+                                        : 'text-gray-300'
+                                }`}>
+                                    {!canCreateSubBank ? 'Create Exam' : 'Add New'}
+                                </p>
+                                <div className="mt-1">
+                                    {!canCreateSubBank && currentDepth === maxDepth ? (
+                                        <p className="text-xs text-amber-400 font-medium">
+                                            📝 Max folder depth - Exams only
+                                        </p>
+                                    ) : !canCreateSubBank ? (
+                                        <p className="text-xs text-red-400 font-medium">
+                                            🚫 Max depth reached
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs text-gray-400">
+                                            Folder or exam
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
-                    )}
+                    </div>
+                )}
+            </div>
+        ) : (
+            <div className="flex flex-col items-center justify-center p-12">
+                <div className="text-gray-300 text-center">
+                    <p className="text-lg font-medium mb-2">No folders or exams found</p>
+                    <p className="text-sm text-gray-400">Create your first folder or exam to get started</p>
                 </div>
-            ) : (
-                <div className="flex flex-col w-[150px]">
-                    {currentBankId && (
-                        <div
-                            className="flex w-fit flex-col items-center cursor-pointer animate-pulse transition-colors"
-                            onClick={() => setIsCreateModalOpen(true)}
-                        >
-                            <BankAdd width={100}/>
-                            <div className="pt-2">
-                                <p>Add New</p>
+                {currentBankId && (
+                    <div
+                        className={`mt-6 flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg transition-colors cursor-pointer min-h-[200px] ${
+                            !canCreateSubBank && currentDepth === maxDepth
+                                ? 'bg-amber-900/20 border-amber-600/40 hover:bg-amber-900/30 hover:border-amber-600/60'
+                                : !canCreateSubBank
+                                ? 'bg-red-900/30 border-red-700/50 hover:bg-red-900/40 hover:border-red-700/70'
+                                : 'bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:border-zinc-600'
+                        }`}
+                        onClick={async () => {
+                            // First, validate if sub-bank creation is allowed at current depth
+                            const subBankPath = breadcrumbs.map(crumb => crumb.name);
+                            const canCreate = await validateSubBankCreation(currentBankId || '', subBankPath);
+                            
+                            if (!canCreate) {
+                                // Maximum depth reached - open exam modal directly
+                                try {
+                                    // Determine the correct bank context for examination creation
+                                    let bankContext = '';
+                                    let subBankIds: string[] = [];
+                                    
+                                    if (breadcrumbs.length > 0) {
+                                        // We're inside a sub-bank structure
+                                        bankContext = breadcrumbs[0].id; // Root bank ID
+                                        // Use breadcrumbs to build the full path
+                                        if (breadcrumbs.length > 1) {
+                                            // Get all breadcrumb IDs to form the complete path
+                                            subBankIds = breadcrumbs.map(crumb => crumb.id);
+                                        }
+                                    } else if (currentBankId) {
+                                        // We're at the root level with a selected bank
+                                        bankContext = currentBankId;
+                                        // Since we're directly in this bank, add it to the path
+                                        subBankIds = [currentBankId];
+                                    } else {
+                                        // Fallback - we should always have either breadcrumbs or currentBankId
+                                        console.error('No bank context found!');
+                                        bankContext = '';
+                                    }
+                                    
+                                    // Store the bank context for examination creation
+                                    setExamBankContext({
+                                        bankId: bankContext,
+                                        subBankPath: subBankIds.length > 0 ? subBankIds : undefined
+                                    });
+
+                                    // Open the examination modal directly
+                                    setIsExamModalOpen(true);
+                                } catch (error) {
+                                    console.error("Error opening examination form:", error);
+                                    errorHandler(error);
+                                }
+                            } else {
+                                // Normal flow - open create modal
+                                setIsCreateModalOpen(true);
+                            }
+                        }}
+                    >
+                        <div className={`mb-2 ${
+                            !canCreateSubBank && currentDepth === maxDepth
+                                ? 'text-amber-500'
+                                : !canCreateSubBank 
+                                ? 'text-red-600' 
+                                : breadcrumbs.length >= maxDepth - 1 
+                                ? 'text-amber-600' 
+                                : 'text-gray-600'
+                        }`}>
+                            {!canCreateSubBank ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14,2 14,8 20,8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                    <polyline points="10,9 9,9 8,9"/>
+                                </svg>
+                            ) : (
+                                <BankAdd width={100}/>
+                            )}
+                        </div>
+                        <div className="pt-2">
+                            <p className={`text-center font-medium ${
+                                !canCreateSubBank && currentDepth === maxDepth
+                                    ? 'text-amber-300'
+                                    : !canCreateSubBank 
+                                    ? 'text-red-400' 
+                                    : 'text-gray-200'
+                            }`}>
+                                {!canCreateSubBank ? 'Create Exam' : 'Add New'}
+                            </p>
+                            <div className="mt-1 text-center">
+                                {!canCreateSubBank && currentDepth === maxDepth ? (
+                                    <p className="text-xs text-amber-400 font-medium">
+                                        📝 Max folder depth - Create exams here
+                                    </p>
+                                ) : !canCreateSubBank ? (
+                                    <p className="text-xs text-red-400 font-medium">
+                                        🚫 Max folder depth reached
+                                    </p>
+                                ) : (
+                                    <p className="text-xs text-gray-400">
+                                        Create folder or exam
+                                    </p>
+                                )}
                             </div>
                         </div>
-                    )}
-                </div>
-            )}
+                    </div>
+                )}
+            </div>
+        )}
 
             {/* Create Bank/Sub-Bank Modal */}
             <Modal
@@ -807,38 +1215,39 @@ return (
             >
                 <ModalContent>
                     <ModalHeader className="flex flex-col gap-1">
-                        {currentBankId ? "Create in this folder" : "Create new item"}
+                        {!canCreateSubBank ? "Create Exam (Max folder depth reached)" : 
+                         currentBankId ? "Create in this folder" : "Create new item"}
                     </ModalHeader>
                     <ModalBody>
                         <div className="flex flex-col gap-4">
-                            <Button
-                                color="secondary"
-                                size="lg"
-                                className="h-12"
-                                startContent={
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>
-                                    </svg>
-                                }
-                                onPress={async () => {
-                                    try {
-                                        setIsCreatingBank(true);
-
-                                        // Use our improved handleCreateBank function with a default name
-                                        await handleCreateBank("New Bank");
-
-                                        // Close the modal after successful creation
-                                        setIsCreateModalOpen(false);
-                                    } catch (error) {
-                                        console.error("Error creating bank:", error);
-                                        errorHandler(error);
-                                    } finally {
-                                        setIsCreatingBank(false);
+                            {canCreateSubBank && (
+                                <Button
+                                    color="secondary"
+                                    size="lg"
+                                    className="h-12"
+                                    startContent={
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>
+                                        </svg>
                                     }
-                                }}
-                            >
-                                Create New Bank
-                            </Button>
+                                    onPress={() => {
+                                        setIsCreatingBank(true);
+                                        handleCreateBank("New Bank");
+                                        setIsCreateModalOpen(false);
+                                    }}
+                                >
+                                    Create New Bank
+                                </Button>
+                            )}
+                            
+                            {!canCreateSubBank && (
+                                <Alert color="warning" className="text-sm">
+                                    <div className="flex flex-col gap-1">
+                                        <p className="font-medium">Maximum folder depth reached ({currentDepth}/{maxDepth})</p>
+                                        <p className="text-xs">You can still create exams at this level, but no more sub-folders.</p>
+                                    </div>
+                                </Alert>
+                            )}
 
                             <Button
                                 color="secondary"
@@ -937,6 +1346,32 @@ return (
 
                                 const newExamId = examRes.data.data._id;
                                 console.log('Examination created with ID:', newExamId);
+                                
+                                // Now add the exam to the correct sub-bank using the simple API
+                                try {
+                                    if (examBankContext.subBankPath && examBankContext.subBankPath.length > 0) {
+                                        // We're in a sub-bank, use the simple API to add exam
+                                        const rootBankId = breadcrumbs[0].id; // First breadcrumb is always the root bank
+                                        const currentSubBankId = breadcrumbs[breadcrumbs.length - 1].id; // Last breadcrumb is current sub-bank
+                                        
+                                        console.log('Adding exam to sub-bank:', {
+                                            rootBankId,
+                                            currentSubBankId,
+                                            examId: newExamId
+                                        });
+                                        
+                                        await clientAPI.post(`bank/bank-${rootBankId}/add-exam/${rootBankId}/${currentSubBankId}/${newExamId}`);
+                                        
+                                        console.log('Exam successfully added to sub-bank');
+                                    } else {
+                                        // We're in a root bank, add exam to root bank
+                                        console.log('Adding exam to root bank:', examBankContext.bankId);
+                                        await clientAPI.post(`bank/bank-${examBankContext.bankId}/exam/${newExamId}`);
+                                    }
+                                } catch (bankError) {
+                                    console.error('Error adding exam to bank:', bankError);
+                                    toast.error('Exam created but failed to add to bank. Please try refreshing.');
+                                }
                                 
                                 console.log('Exam created successfully with bank association:', {
                                     examId: newExamId,

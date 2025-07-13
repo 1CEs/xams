@@ -5,9 +5,70 @@ import mongoose from "mongoose";
 
 export class BankService {
     private bankRepository: BankRepository;
+    private readonly MAX_SUB_BANK_DEPTH = 3; // Maximum allowed depth for sub-banks
 
     constructor() {
         this.bankRepository = new BankRepository();
+    }
+    
+    /**
+     * Calculate the current depth where user is located
+     * Level 1: Main bank (subBankPath = [])
+     * Level 2: Direct sub-bank of main bank (subBankPath = [subbank1])
+     * Level 3: Sub-bank of a sub-bank (subBankPath = [subbank1, subbank2]) - maximum allowed
+     */
+    private calculateCurrentDepth(subBankPath: string[]): number {
+        return subBankPath.length + 1; // +1 because we're counting the current location depth
+    }
+    
+    /**
+     * Validate if creating a sub-bank at the given path would exceed maximum depth
+     */
+    
+    private validateSubBankDepth(subBankPath: string[]): { isValid: boolean; currentDepth: number; maxDepth: number } {
+        const currentDepth = this.calculateCurrentDepth(subBankPath);
+        // Can create sub-bank only if current depth < max depth
+        // At depth 3, no more sub-banks can be created (would be depth 4)
+        return {
+            isValid: currentDepth < this.MAX_SUB_BANK_DEPTH,
+            currentDepth,
+            maxDepth: this.MAX_SUB_BANK_DEPTH
+        };
+    }
+    
+    /**
+     * Check if sub-bank creation is allowed at the current path
+     * This method is exposed to the frontend to determine UI state
+     */
+    async canCreateSubBank(bankId: string, subBankPath: string[]): Promise<{
+        canCreate: boolean;
+        currentDepth: number;
+        maxDepth: number;
+        reason?: string;
+    }> {
+        // Validate that the bank exists
+        const bank = await this.bankRepository.getBankById(bankId);
+        if (!bank) {
+            return {
+                canCreate: false,
+                currentDepth: 0,
+                maxDepth: this.MAX_SUB_BANK_DEPTH,
+                reason: 'Bank not found'
+            };
+        }
+        
+        // Validate depth
+        const depthValidation = this.validateSubBankDepth(subBankPath);
+        
+        return {
+            canCreate: depthValidation.isValid,
+            currentDepth: depthValidation.currentDepth,
+            maxDepth: depthValidation.maxDepth,
+            reason: depthValidation.isValid ? undefined : 
+                (depthValidation.currentDepth === depthValidation.maxDepth ? 
+                    `Maximum folder depth of ${depthValidation.maxDepth} levels reached. You can still create exams here.` :
+                    `Maximum depth of ${depthValidation.maxDepth} levels would be exceeded`)
+        };
     }
 
     async createBank(bankName: string, examIds?: string[]): Promise<IBank> {
@@ -25,6 +86,10 @@ export class BankService {
     async getBanksByExamId(examId: string): Promise<IBank[]> {
         return await this.bankRepository.getBanksByExamId(examId);
     }
+
+    async getBanksByIds(bankIds: string[]): Promise<IBank[]> {
+        return await this.bankRepository.getBanksByIds(bankIds);
+    }
     
     async addExamToBank(bankId: string, examId: string): Promise<IBank | null> {
         const bank = await this.bankRepository.getBankById(bankId);
@@ -40,23 +105,54 @@ export class BankService {
         return await this.bankRepository.updateBank(bankId, { exam_ids: bank.exam_ids });
     }
     
-    async removeExamFromBank(bankId: string, examId: string): Promise<IBank | null> {
-        const bank = await this.bankRepository.getBankById(bankId);
-        if (!bank || !bank.exam_ids) return null;
-        
-        bank.exam_ids = bank.exam_ids.filter(id => id !== examId);
-        return await this.bankRepository.updateBank(bankId, { exam_ids: bank.exam_ids });
-    }
-
     async updateBank(id: string, bankData: Partial<IBank>): Promise<IBank | null> {
         return await this.bankRepository.updateBank(id, bankData);
     }
 
     async deleteBank(id: string): Promise<IBank | null> {
-        return await this.bankRepository.deleteBank(id);
+        console.log(`Deleting bank ${id} with cascade deletion of all examinations`);
+        
+        // Get the bank first to access its exam IDs and sub-banks
+        const bank = await this.bankRepository.getBankById(id);
+        if (!bank) {
+            console.log(`Bank ${id} not found`);
+            return null;
+        }
+        
+        // Collect all exam IDs from the bank and its nested sub-banks
+        const examIdsToDelete: string[] = [];
+        
+        // Add direct exam IDs from the bank
+        if (bank.exam_ids && bank.exam_ids.length > 0) {
+            examIdsToDelete.push(...bank.exam_ids);
+            console.log(`Found ${bank.exam_ids.length} direct exams in bank`);
+        }
+        
+        // Recursively collect exam IDs from all sub-banks
+        if (bank.sub_banks && bank.sub_banks.length > 0) {
+            for (const subBank of bank.sub_banks) {
+                const subBankExamIds = this.collectAllExamIds(subBank);
+                examIdsToDelete.push(...subBankExamIds);
+            }
+            console.log(`Found ${examIdsToDelete.length - (bank.exam_ids?.length || 0)} exams in sub-banks`);
+        }
+        
+        console.log(`Total exams to delete: ${examIdsToDelete.length}`);
+        
+        // Delete all examinations from the database
+        if (examIdsToDelete.length > 0) {
+            await this.deleteExaminations(examIdsToDelete);
+        }
+        
+        // Finally, delete the bank itself
+        const deletedBank = await this.bankRepository.deleteBank(id);
+        console.log(`Successfully deleted bank ${id} and all its examinations`);
+        
+        return deletedBank;
     }
 
     async createSubBank(bankId: string, name: string, examIds?: string[], parentId?: string): Promise<IBank | null> {
+        // Direct sub-bank creation (level 1) is always allowed
         const subBank: Partial<ISubBank> = {
             name,
             exam_ids: examIds || [],
@@ -69,6 +165,16 @@ export class BankService {
     
     async createNestedSubBank(bankId: string, subBankPath: string[], name: string, examIds?: string[]): Promise<IBank | null> {
         console.log('Creating nested sub-bank with path:', subBankPath, 'name:', name);
+        
+        // Validate depth before proceeding
+        const depthValidation = this.validateSubBankDepth(subBankPath);
+        if (!depthValidation.isValid) {
+            const error = `Cannot create sub-bank: Maximum depth of ${depthValidation.maxDepth} levels exceeded. Current depth would be ${depthValidation.currentDepth}.`;
+            console.error(error);
+            throw new Error(error);
+        }
+        
+        console.log(`Sub-bank depth validation passed: ${depthValidation.currentDepth}/${depthValidation.maxDepth}`);
         
         const bank = await this.bankRepository.getBankById(bankId);
         if (!bank) {
@@ -298,44 +404,86 @@ export class BankService {
         return await this.bankRepository.updateBank(bankId, { sub_banks: bank.sub_banks });
     }
     
+    async removeExamFromBank(bankId: string, examId: string): Promise<IBank | null> {
+        const bank = await this.bankRepository.getBankById(bankId);
+        if (!bank || !bank.exam_ids) return null;
+
+        // Remove the exam ID from the bank's exam_ids array
+        bank.exam_ids = bank.exam_ids.filter(id => id !== examId);
+
+        // Also delete the examination document from the database
+        try {
+            const { ExaminationService } = await import('../../examination/service/exam.service');
+            const examService = new ExaminationService();
+            await examService.deleteExamination(examId);
+            console.log(`Successfully deleted examination ${examId} from database`);
+        } catch (error) {
+            console.error(`Failed to delete examination ${examId}:`, error);
+            // Continue with bank update even if exam deletion fails
+        }
+
+        // Update the bank in the repository
+        return await this.bankRepository.updateBank(bankId, { exam_ids: bank.exam_ids });
+    }
+
     async removeExamFromSubBank(bankId: string, subBankPath: string[], examId: string): Promise<IBank | null> {
         const bank = await this.bankRepository.getBankById(bankId);
         if (!bank) return null;
         
         // Find the target sub-bank using the path
-        let currentBank = bank;
+        let currentSubBanks = bank.sub_banks || [];
         let targetSubBank: ISubBank | undefined;
-        let parentSubBanks = currentBank.sub_banks || [];
-        let lastParentSubBanks: ISubBank[] = parentSubBanks;
-        let lastIndex = -1;
         
-        for (let i = 0; i < subBankPath.length; i++) {
-            const subBankId = subBankPath[i];
-            if (!parentSubBanks) break;
-            
-            const subBankIndex = parentSubBanks.findIndex(sb => sb._id.toString() === subBankId);
-            if (subBankIndex === -1) break;
-            
-            targetSubBank = parentSubBanks[subBankIndex];
-            lastParentSubBanks = parentSubBanks;
-            lastIndex = subBankIndex;
-            parentSubBanks = targetSubBank.sub_banks || [];
+        // If subBankPath is empty, we need to find the sub-bank directly in the bank's sub_banks
+        // The examId parameter should actually be the subBankId in this case
+        if (subBankPath.length === 0) {
+            // When path is empty, we're looking for a direct child sub-bank
+            // The examId in the route actually represents the subBankId
+            console.error('removeExamFromSubBank called with empty path - this should not happen');
+            return null;
         }
         
-        if (!targetSubBank || lastIndex === -1 || !targetSubBank.exam_ids) return null;
+        // Navigate through the path to find the target sub-bank
+        for (let i = 0; i < subBankPath.length; i++) {
+            const subBankId = subBankPath[i];
+            targetSubBank = currentSubBanks.find(sb => sb._id.toString() === subBankId);
+            if (!targetSubBank) {
+                console.error(`Sub-bank not found at path index ${i}, subBankId: ${subBankId}`);
+                return null;
+            }
+            
+            // If this is the last item in the path, this is our target sub-bank
+            if (i === subBankPath.length - 1) {
+                break;
+            }
+            
+            // Otherwise, continue to the next level
+            currentSubBanks = targetSubBank.sub_banks || [];
+        }
+        
+        if (!targetSubBank || !targetSubBank.exam_ids) {
+            console.error('Target sub-bank not found or has no exam_ids');
+            return null;
+        }
+        
+        console.log(`Removing exam ${examId} from sub-bank ${targetSubBank.name}`);
         
         // Remove the exam ID from the sub-bank
         targetSubBank.exam_ids = targetSubBank.exam_ids.filter(id => id !== examId);
         
-        // Update the sub-bank in the hierarchy
-        lastParentSubBanks[lastIndex] = targetSubBank;
+        // Also delete the examination document from the database
+        try {
+            const { ExaminationService } = await import('../../examination/service/exam.service');
+            const examService = new ExaminationService();
+            await examService.deleteExamination(examId);
+            console.log(`Successfully deleted examination ${examId} from database`);
+        } catch (error) {
+            console.error(`Failed to delete examination ${examId}:`, error);
+            // Continue with bank update even if exam deletion fails
+        }
         
-        // Update the bank with the modified sub-bank structure
+        // Update the bank in the repository
         return await this.bankRepository.updateBank(bankId, { sub_banks: bank.sub_banks });
-    }
-
-    async findSubBank(bankId: string, subBankPath: string[]): Promise<ISubBank | null> {
-        return await this.bankRepository.findSubBank(bankId, subBankPath);
     }
 
     /**
@@ -481,7 +629,20 @@ export class BankService {
         const bank = await this.bankRepository.getBankById(bankId);
         if (!bank) return null;
         
-        // Find the parent sub-bank using the path
+        // First, find the sub-bank to delete and collect all exam IDs for cascade deletion
+        const subBankToDelete = await this.findSubBankToDelete(bank, subBankPath, subBankId);
+        if (!subBankToDelete) return null;
+        
+        // Collect all exam IDs from the sub-bank and its nested sub-banks
+        const examIdsToDelete = this.collectAllExamIds(subBankToDelete);
+        
+        // Delete all examinations from the database (cascade deletion)
+        if (examIdsToDelete.length > 0) {
+            console.log(`Cascade deleting ${examIdsToDelete.length} examinations:`, examIdsToDelete);
+            await this.deleteExaminations(examIdsToDelete);
+        }
+        
+        // Now proceed with deleting the sub-bank from the hierarchy
         let parentSubBanks = bank.sub_banks || [];
         
         // If subBankPath is empty, we're deleting a direct child of the bank
@@ -522,4 +683,303 @@ export class BankService {
             return await this.bankRepository.updateBank(bankId, { sub_banks: bank.sub_banks });
         }
     }
+    
+    // Helper method to find the sub-bank to delete
+    private async findSubBankToDelete(bank: IBank, subBankPath: string[], subBankId: string): Promise<ISubBank | null> {
+        let currentLevel = bank.sub_banks || [];
+        
+        // If subBankPath is empty, we're looking for a direct child of the bank
+        if (subBankPath.length === 0) {
+            return currentLevel.find(sb => sb._id.toString() === subBankId) || null;
+        }
+        
+        // Navigate through the path to find the target sub-bank
+        for (let i = 0; i < subBankPath.length; i++) {
+            const pathId = subBankPath[i];
+            const subBankIndex = currentLevel.findIndex(sb => sb._id.toString() === pathId);
+            
+            if (subBankIndex === -1) return null; // Path not found
+            
+            if (i === subBankPath.length - 1) {
+                // We've reached the parent, now find the target sub-bank
+                const parentSubBank = currentLevel[subBankIndex];
+                if (!parentSubBank.sub_banks) return null;
+                return parentSubBank.sub_banks.find(sb => sb._id.toString() === subBankId) || null;
+            } else {
+                // Continue traversing the path
+                if (!currentLevel[subBankIndex].sub_banks) return null;
+                currentLevel = currentLevel[subBankIndex].sub_banks;
+            }
+        }
+        
+        return null;
+    }
+    
+    // Helper method to collect all exam IDs from a sub-bank and its nested sub-banks
+    private collectAllExamIds(subBank: ISubBank): string[] {
+        const examIds: string[] = [];
+        
+        // Add exam IDs from the current sub-bank
+        if (subBank.exam_ids && subBank.exam_ids.length > 0) {
+            examIds.push(...subBank.exam_ids);
+        }
+        
+        // Recursively collect exam IDs from nested sub-banks
+        if (subBank.sub_banks && subBank.sub_banks.length > 0) {
+            for (const nestedSubBank of subBank.sub_banks) {
+                const nestedExamIds = this.collectAllExamIds(nestedSubBank);
+                examIds.push(...nestedExamIds);
+            }
+        }
+        
+        return examIds;
+    }
+    
+    // Helper method to delete examinations from the database
+    private async deleteExaminations(examIds: string[]): Promise<void> {
+        // Import the ExaminationService dynamically to avoid circular dependencies
+        const { ExaminationService } = await import('../../examination/service/exam.service');
+        const examService = new ExaminationService();
+        
+        // Delete each examination
+        for (const examId of examIds) {
+            try {
+                await examService.deleteExamination(examId);
+                console.log(`Successfully deleted examination: ${examId}`);
+            } catch (error) {
+                console.error(`Failed to delete examination ${examId}:`, error);
+                // Continue with other deletions even if one fails
+            }
+        }
+    }
+    
+    // Simple rename method for sub-banks
+    async renameSubBank(parentId: string, subBankId: string, newName: string): Promise<IBank | null> {
+        // Get the parent bank
+        const parentBank = await this.bankRepository.getBankById(parentId);
+        if (!parentBank) return null;
+        
+        // Function to recursively find and rename the sub-bank
+        const findAndRename = (subBanks: ISubBank[]): boolean => {
+            for (let i = 0; i < subBanks.length; i++) {
+                if (subBanks[i]._id.toString() === subBankId) {
+                    // Found the target sub-bank, rename it
+                    subBanks[i].name = newName;
+                    return true;
+                }
+                
+                // If this sub-bank has nested sub-banks, search them too
+                const nestedSubBanks = subBanks[i].sub_banks;
+                if (nestedSubBanks && nestedSubBanks.length > 0) {
+                    if (findAndRename(nestedSubBanks)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+        
+        // Find and rename the sub-bank
+        if (parentBank.sub_banks && findAndRename(parentBank.sub_banks)) {
+            // Update the bank with the renamed sub-bank
+            return await this.bankRepository.updateBank(parentId, { sub_banks: parentBank.sub_banks });
+        }
+        
+        return null;
+    }
+    
+    // Simple add exam to sub-bank method
+    async addExamToSubBankSimple(parentId: string, subBankId: string, examId: string): Promise<IBank | null> {
+        // Get the parent bank
+        const parentBank = await this.bankRepository.getBankById(parentId);
+        if (!parentBank) return null;
+        
+        // Function to recursively find and add exam to the sub-bank
+        const findAndAddExam = (subBanks: ISubBank[]): boolean => {
+            for (let i = 0; i < subBanks.length; i++) {
+                if (subBanks[i]._id.toString() === subBankId) {
+                    // Found the target sub-bank, add exam ID
+                    if (!subBanks[i].exam_ids) {
+                        subBanks[i].exam_ids = [];
+                    }
+                    // Only add if not already present
+                    if (!subBanks[i].exam_ids!.includes(examId)) {
+                        subBanks[i].exam_ids!.push(examId);
+                    }
+                    return true;
+                }
+                
+                // If this sub-bank has nested sub-banks, search them too
+                const nestedSubBanks = subBanks[i].sub_banks;
+                if (nestedSubBanks && nestedSubBanks.length > 0) {
+                    if (findAndAddExam(nestedSubBanks)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+        
+        // Find and add exam to the sub-bank
+        if (parentBank.sub_banks && findAndAddExam(parentBank.sub_banks)) {
+            // Update the bank with the modified sub-bank
+            return await this.bankRepository.updateBank(parentId, { sub_banks: parentBank.sub_banks });
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Validate if sub-bank creation is allowed within a specific sub-bank
+     * This method takes parent bank ID and sub-bank ID to find the exact location
+     */
+    async canCreateSubBankInSubBank(parentBankId: string, subBankId: string): Promise<{
+        canCreate: boolean;
+        currentDepth: number;
+        maxDepth: number;
+        reason?: string;
+    }> {
+        console.log(`Validating sub-bank creation within sub-bank ${subBankId} of parent bank ${parentBankId}`);
+        
+        // Get the parent bank
+        const bank = await this.bankRepository.getBankById(parentBankId);
+        if (!bank) {
+            return {
+                canCreate: false,
+                currentDepth: 0,
+                maxDepth: this.MAX_SUB_BANK_DEPTH,
+                reason: 'Parent bank not found'
+            };
+        }
+        
+        // Find the target sub-bank and calculate its depth
+        const subBankInfo = this.findSubBankWithDepth(bank.sub_banks || [], subBankId, 1);
+        
+        if (!subBankInfo) {
+            return {
+                canCreate: false,
+                currentDepth: 0,
+                maxDepth: this.MAX_SUB_BANK_DEPTH,
+                reason: 'Target sub-bank not found'
+            };
+        }
+        
+        // The current sub-bank depth represents how deep we already are
+        // If we're at depth 3 (max), we cannot create more sub-banks
+        console.log(`Current sub-bank depth: ${subBankInfo.depth}, Max depth: ${this.MAX_SUB_BANK_DEPTH}`);
+        
+        // Check if we're already at maximum depth
+        if (subBankInfo.depth >= this.MAX_SUB_BANK_DEPTH) {
+            return {
+                canCreate: false,
+                currentDepth: subBankInfo.depth,
+                maxDepth: this.MAX_SUB_BANK_DEPTH,
+                reason: `Already at maximum depth of ${this.MAX_SUB_BANK_DEPTH} levels. Cannot create more sub-banks.`
+            };
+        }
+        
+        console.log('Sub-bank creation within sub-bank validation passed');
+        return {
+            canCreate: true,
+            currentDepth: subBankInfo.depth,
+            maxDepth: this.MAX_SUB_BANK_DEPTH,
+            reason: `Sub-bank creation at depth ${subBankInfo.depth + 1} is allowed`
+        };
+    }
+    
+    /**
+     * Create a sub-bank within a specific sub-bank using parent bank ID and target sub-bank ID
+     */
+    async createSubBankInSubBank(parentBankId: string, subBankId: string, name: string, examIds?: string[]): Promise<IBank> {
+        console.log(`Creating sub-bank '${name}' within sub-bank ${subBankId} of parent bank ${parentBankId}`);
+        
+        // Get the parent bank
+        const bank = await this.bankRepository.getBankById(parentBankId);
+        if (!bank) {
+            throw new Error('Parent bank not found');
+        }
+        
+        // Find the target sub-bank where we want to create the new sub-bank
+        const targetSubBank = this.findSubBankById(bank.sub_banks || [], subBankId);
+        if (!targetSubBank) {
+            throw new Error('Target sub-bank not found');
+        }
+        
+        // Validate depth before creation
+        const validation = await this.canCreateSubBankInSubBank(parentBankId, subBankId);
+        if (!validation.canCreate) {
+            throw new Error(validation.reason || 'Sub-bank creation not allowed');
+        }
+        
+        // Create new sub-bank object
+        const newSubBank: ISubBank = {
+            _id: new mongoose.Types.ObjectId() as any,
+            name: name,
+            exam_ids: examIds || [],
+            sub_banks: []
+        };
+        
+        // Add the new sub-bank to the target sub-bank
+        if (!targetSubBank.sub_banks) {
+            targetSubBank.sub_banks = [];
+        }
+        targetSubBank.sub_banks.push(newSubBank);
+        
+        // Update the bank in the database
+        const updatedBank = await this.bankRepository.updateBank(parentBankId, bank);
+        if (!updatedBank) {
+            throw new Error('Failed to update bank');
+        }
+        
+        console.log(`Sub-bank '${name}' created successfully within sub-bank ${subBankId}`);
+        return updatedBank;
+    }
+    
+    /**
+     * Helper method to find a sub-bank by ID recursively
+     */
+    private findSubBankById(subBanks: ISubBank[], targetId: string): ISubBank | null {
+        for (const subBank of subBanks) {
+            if (subBank._id.toString() === targetId) {
+                return subBank;
+            }
+            
+            // Recursively search in nested sub-banks
+            if (subBank.sub_banks && subBank.sub_banks.length > 0) {
+                const found = this.findSubBankById(subBank.sub_banks, targetId);
+                if (found) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Helper method to find a sub-bank by ID and return its depth
+     */
+    private findSubBankWithDepth(subBanks: ISubBank[], targetId: string, currentDepth: number): { subBank: ISubBank; depth: number } | null {
+        for (const subBank of subBanks) {
+            if (subBank._id.toString() === targetId) {
+                return { subBank, depth: currentDepth };
+            }
+            
+            // Recursively search in nested sub-banks
+            if (subBank.sub_banks && subBank.sub_banks.length > 0) {
+                const found = this.findSubBankWithDepth(subBank.sub_banks, targetId, currentDepth + 1);
+                if (found) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get the maximum allowed depth for sub-banks
+     */
+    getMaxSubBankDepth(): number {
+        return this.MAX_SUB_BANK_DEPTH;
+    }
+
 }

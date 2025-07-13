@@ -25,6 +25,7 @@ import {
   IcRoundFolder,
   HealthiconsIExamMultipleChoice
 } from "@/components/icons/icons"
+import ExamSelector from "@/components/overview/exam-selector"
 import { useRouter } from "nextjs-toploader/app"
 import { useSearchParams } from "next/navigation"
 import { clientAPI } from '@/config/axios.config'
@@ -182,6 +183,33 @@ export default function CreateSchedulePage() {
     }
   }
 
+  const handleExamSelectionChange = (updatedExamIds: string[]) => {
+    setExamSettingForm({
+      ...examSettingForm,
+      exam_ids: updatedExamIds
+    });
+    setSelectedExams(updatedExamIds);
+    
+    // Update question count based on the first selected exam
+    if (updatedExamIds.length > 0) {
+      const firstExam = examinations.find(e => e._id === updatedExamIds[0]);
+      const questionCount = firstExam?.questions?.length || 0;
+      setExamSettingForm(prev => ({
+        ...prev,
+        exam_ids: updatedExamIds,
+        question_count: questionCount
+      }));
+      setSelectedExamQuestionCount(questionCount);
+    } else {
+      setExamSettingForm(prev => ({
+        ...prev,
+        exam_ids: updatedExamIds,
+        question_count: 0
+      }));
+      setSelectedExamQuestionCount(0);
+    }
+  }
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
@@ -293,8 +321,16 @@ export default function CreateSchedulePage() {
                   <Modal 
                     isOpen={isExamModalOpen} 
                     onOpenChange={setIsExamModalOpen}
-                    size="3xl"
+                    size="5xl"
                     scrollBehavior="inside"
+                    classNames={{
+                      body: "py-6",
+                      backdrop: "bg-black/50 backdrop-opacity-40",
+                      base: "border-zinc-700 bg-zinc-900",
+                      header: "border-b-1 border-zinc-700",
+                      footer: "border-t-1 border-zinc-700",
+                      closeButton: "hover:bg-white/5 active:bg-white/10",
+                    }}
                   >
                     <ModalContent>
                       {(onClose) => (
@@ -303,83 +339,12 @@ export default function CreateSchedulePage() {
                             Select Examinations
                           </ModalHeader>
                           <ModalBody>
-                            <div className="space-y-4">
-                              {examFolders.map((folder) => (
-                                <div key={folder.name} className="border border-[#505050] rounded-lg overflow-hidden">
-                                  <div className="bg-default-100 p-3 flex items-center gap-2">
-                                    <IcRoundFolder className="text-secondary text-xl" />
-                                    <span className="font-medium">{folder.name}</span>
-                                    <span className="text-xs text-default-500 ml-2">({folder.exams.length})</span>
-                                  </div>
-                                  <div className="p-2">
-                                    {folder.exams.map((exam) => (
-                                      <div key={exam._id} className="p-2 hover:bg-default-100 rounded-md">
-                                        <Checkbox
-                                          isSelected={examSettingForm.exam_ids.includes(exam._id)}
-                                          onValueChange={(isSelected) => {
-                                            if (isSelected) {
-                                              // Add to selected exams
-                                              const updatedExamIds = [...examSettingForm.exam_ids, exam._id];
-                                              setExamSettingForm({
-                                                ...examSettingForm,
-                                                exam_ids: updatedExamIds
-                                              });
-                                              setSelectedExams(updatedExamIds);
-                                              
-                                              // Update question count based on the first selected exam
-                                              if (updatedExamIds.length === 1) {
-                                                const questionCount = exam.questions?.length || 0;
-                                                setExamSettingForm(prev => ({
-                                                  ...prev,
-                                                  question_count: questionCount
-                                                }));
-                                                setSelectedExamQuestionCount(questionCount);
-                                              }
-                                            } else {
-                                              // Remove from selected exams
-                                              const updatedExamIds = examSettingForm.exam_ids.filter(id => id !== exam._id);
-                                              setExamSettingForm({
-                                                ...examSettingForm,
-                                                exam_ids: updatedExamIds
-                                              });
-                                              setSelectedExams(updatedExamIds);
-                                              
-                                              // Update question count if we removed the exam that determined the count
-                                              if (updatedExamIds.length > 0) {
-                                                const firstExam = examinations.find(e => e._id === updatedExamIds[0]);
-                                                const questionCount = firstExam?.questions?.length || 0;
-                                                setExamSettingForm(prev => ({
-                                                  ...prev,
-                                                  question_count: questionCount
-                                                }));
-                                                setSelectedExamQuestionCount(questionCount);
-                                              } else {
-                                                setExamSettingForm(prev => ({
-                                                  ...prev,
-                                                  question_count: 0
-                                                }));
-                                                setSelectedExamQuestionCount(0);
-                                              }
-                                            }
-                                          }}
-                                        >
-                                          <div className="flex flex-col">
-                                            <span className="font-medium">{exam.title}</span>
-                                            <span className="text-xs text-default-500">{exam.questions?.length || 0} questions</span>
-                                          </div>
-                                        </Checkbox>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                              
-                              {examFolders.length === 0 && (
-                                <div className="text-center py-8 text-default-500">
-                                  No examinations available
-                                </div>
-                              )}
-                            </div>
+                            <ExamSelector
+                              selectedExamIds={examSettingForm.exam_ids}
+                              onExamSelectionChange={handleExamSelectionChange}
+                              instructorId={user?._id || ''}
+                              className="min-h-[400px] max-h-[600px] overflow-y-auto"
+                            />
                           </ModalBody>
                           <ModalFooter>
                             <Button color="danger" variant="light" onPress={onClose}>

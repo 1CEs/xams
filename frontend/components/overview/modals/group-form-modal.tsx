@@ -93,6 +93,7 @@ const GroupFormModal = ({ courseId }: Props) => {
             
             <div className="flex items-center justify-between">
               <Switch 
+                color='secondary'
                 isSelected={isGeneratingCode}
                 onValueChange={setIsGeneratingCode}
               >

@@ -199,14 +199,7 @@ export class ExaminationController implements IExaminationController {
         return this._response<typeof updated>('Update Examination Successfully', 200, this._sanitizeExamData(updated, user))
     }
 
-    async deleteExamination(id: string, user?: IInstructor) {
-        // First, remove the exam ID from all banks and sub-banks
-        await this._bankService.removeExamFromAllBanks(id);
-        
-        // Then delete the exam
-        const deleted = await this._service.deleteExamination(id);
-        return this._response<typeof deleted>('Delete Examination Successfully', 200, this._sanitizeExamData(deleted, user));
-    }
+
 
     // Question-Only methods
     async addExaminationQuestion(id: string, payload: Omit<IQuestion, '_id'>, user?: IInstructor) {
@@ -254,6 +247,25 @@ export class ExaminationController implements IExaminationController {
         } catch (error: any) {
             console.error('Error verifying exam password:', error);
             return this._response(`Error verifying password: ${error.message || 'Unknown error'}`, 500, null);
+        }
+    }
+
+    async deleteExamination(id: string, user?: IInstructor) {
+        try {
+            console.log(`Deleting examination ${id} for user ${user?._id || 'unknown'}`);
+            
+            // First, remove the exam from all banks and sub-banks
+            await this._bankService.removeExamFromAllBanks(id);
+            console.log(`Removed exam ${id} from all banks and sub-banks`);
+            
+            // Then delete the examination from the database
+            const deletedExam = await this._service.deleteExamination(id);
+            console.log(`Deleted examination ${id} from database`);
+            
+            return this._response('Examination deleted successfully', 200, deletedExam);
+        } catch (error: any) {
+            console.error('Error deleting examination:', error);
+            return this._response(`Error deleting examination: ${error.message || 'Unknown error'}`, 500, null);
         }
     }
 }
