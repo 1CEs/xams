@@ -65,8 +65,8 @@ export class BankController implements IBankController {
         return this._response<typeof bank>('Bank updated successfully', 200, bank);
     }
 
-    async deleteBank(id: string) {
-        const bank = await this._service.deleteBank(id);
+    async deleteBank(id: string, instructorId: string) {
+        const bank = await this._service.deleteBank(id, instructorId);
         return this._response<typeof bank>('Bank deleted successfully', 200, bank);
     }
 

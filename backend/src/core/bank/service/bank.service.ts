@@ -2,6 +2,8 @@ import { BankRepository } from "../repository/bank.repository";
 import { IBank } from "../model/interface/ibank";
 import { ISubBank } from "../model/interface/isub-bank";
 import mongoose from "mongoose";
+import { UserService } from "../../user/service/user.service";
+import { UserRepoFactory } from "../../user/repository/user.factory";
 
 export class BankService {
     private bankRepository: BankRepository;
@@ -109,11 +111,19 @@ export class BankService {
         return await this.bankRepository.updateBank(id, bankData);
     }
 
-    async deleteBank(id: string): Promise<IBank | null> {
+    async deleteBank(id: string, instructorId: string): Promise<IBank | null> {
         console.log(`Deleting bank ${id} with cascade deletion of all examinations`);
         
         // Get the bank first to access its exam IDs and sub-banks
         const bank = await this.bankRepository.getBankById(id);
+        const userRepo = new UserRepoFactory().createRepository('instructor');
+        const user = await userRepo.findById(instructorId);
+
+        if (!user) {
+            console.log(`User ${instructorId} not found`);
+            return null;
+        }
+        
         if (!bank) {
             console.log(`Bank ${id} not found`);
             return null;
@@ -146,6 +156,7 @@ export class BankService {
         
         // Finally, delete the bank itself
         const deletedBank = await this.bankRepository.deleteBank(id);
+        const deletedBankFromUser = await user.updateOne({ user_id: instructorId }, { $pull: { bank: id } }).exec();
         console.log(`Successfully deleted bank ${id} and all its examinations`);
         
         return deletedBank;

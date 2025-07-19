@@ -577,8 +577,8 @@ const BankList = ({ examId }: Props) => {
                 });
                 console.log('Root bank created:', response.data);
             }
-            // If we have a current bank ID but no parent ID, create a direct sub-bank under the current bank
-            else if (newBankParentId && currentBankId) {
+            // If we have a current bank ID, create a sub-bank under it
+            else if (currentBankId) {
                 // If we have breadcrumbs, we're in a nested context
                 if (breadcrumbs.length > 0) {
                     console.log('Creating sub-bank in nested context using breadcrumbs');

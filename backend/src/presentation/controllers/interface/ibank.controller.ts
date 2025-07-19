@@ -13,7 +13,7 @@ export interface IBankController {
     getBankById: (id: string) => Promise<ControllerResponse<IBank | null>>;
     getBanksByExamId: (examId: string) => Promise<ControllerResponse<IBank[] | null>>;
     updateBank: (id: string, payload: Partial<IBank>) => Promise<ControllerResponse<IBank | null>>;
-    deleteBank: (id: string) => Promise<ControllerResponse<IBank | null>>;
+    deleteBank: (id: string, instructorId: string) => Promise<ControllerResponse<IBank | null>>;
     
     // SubBank methods
     createSubBank: (bankId: string, name: string, examIds?: string | string[], parentId?: string) => Promise<ControllerResponse<IBank | null>>;

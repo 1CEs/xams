@@ -62,8 +62,8 @@ export const BankRoute = new Elysia({ prefix: '/bank' })
                     await controller.updateBank(params.id, body)), {
                     body: UpdateBankSchema
                 })
-                .delete('', catchAsync(async ({ params, controller }: BankContext & { params: { id: string } }) => 
-                    await controller.deleteBank(params.id)))
+                .delete('', catchAsync(async ({ params, controller, user }: BankContext & { params: { id: string }, user: any }) => 
+                    await controller.deleteBank(params.id, user._id)))
                 
                 // SubBank creation routes
                 // For creating direct sub-bank under main bank (top level)
