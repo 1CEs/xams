@@ -17,7 +17,12 @@ import {
   Checkbox,
   Badge,
   Chip,
-  ScrollShadow
+  ScrollShadow,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter
 } from "@nextui-org/react"
 import { 
   UisSchedule,
@@ -91,10 +96,12 @@ export default function CreateSchedulePage() {
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [selectedExamQuestionCount, setSelectedExamQuestionCount] = useState<number>(0)
   const [selectedQuestions, setSelectedQuestions] = useState<SelectedQuestion[]>([])
-  const [currentStep, setCurrentStep] = useState<'exam' | 'questions'>('exam')
+  const [currentStep, setCurrentStep] = useState<'exam' | 'questions' | 'schedule'>('exam')
+  const [examQuestions, setExamQuestions] = useState<{[examId: string]: Question[]}>({})  
   
   // Modal state
   const [isExamModalOpen, setIsExamModalOpen] = useState<boolean>(false)
+  const [isQuestionModalOpen, setIsQuestionModalOpen] = useState<boolean>(false)
   const [selectedExams, setSelectedExams] = useState<string[]>([])
   
   // Helper function to format Date objects for datetime-local input
@@ -144,6 +151,31 @@ export default function CreateSchedulePage() {
     setSelectedQuestions(prev => 
       prev.filter(q => !(q._id === questionId && q.examId === examId))
     )
+  }
+
+  // Fetch questions for selected exams
+  const fetchExamQuestions = async (examIds: string[]) => {
+    try {
+      const questionsData: {[examId: string]: Question[]} = {}
+      
+      for (const examId of examIds) {
+        if (!examQuestions[examId]) {
+          const response = await clientAPI.get(`/exam/${examId}`)
+          if (response.data?.data?.questions) {
+            questionsData[examId] = response.data.data.questions
+          }
+        } else {
+          questionsData[examId] = examQuestions[examId]
+        }
+      }
+      
+      setExamQuestions(prev => ({ ...prev, ...questionsData }))
+      return questionsData
+    } catch (error) {
+      console.error('Error fetching exam questions:', error)
+      toast.error('Failed to fetch exam questions')
+      return {}
+    }
   }
   
   const [examSettingForm, setExamSettingForm] = useState({
@@ -248,23 +280,40 @@ export default function CreateSchedulePage() {
     }
   }
 
-  const handleExamSelectionChange = (updatedExamIds: string[]) => {
+  const handleExamSelectionChange = async (updatedExamIds: string[]) => {
     setExamSettingForm({
       ...examSettingForm,
       exam_ids: updatedExamIds
     });
     setSelectedExams(updatedExamIds);
     
-    // Update question count based on the first selected exam
+    // Clear previous selections when changing exams
+    setSelectedQuestions([]);
+    
     if (updatedExamIds.length > 0) {
-      const firstExam = examinations.find(e => e._id === updatedExamIds[0]);
-      const questionCount = firstExam?.questions?.length || 0;
+      // Close exam modal and open question selection modal
+      setIsExamModalOpen(false);
+      
+      // Fetch questions for selected exams
+      await fetchExamQuestions(updatedExamIds);
+      
+      // Move to question selection step
+      setCurrentStep('questions');
+      setIsQuestionModalOpen(true);
+      
+      // Update question count based on total questions from all selected exams
+      let totalQuestions = 0;
+      updatedExamIds.forEach(examId => {
+        const exam = examinations.find(e => e._id === examId);
+        totalQuestions += exam?.questions?.length || 0;
+      });
+      
       setExamSettingForm(prev => ({
         ...prev,
         exam_ids: updatedExamIds,
-        question_count: questionCount
+        question_count: totalQuestions
       }));
-      setSelectedExamQuestionCount(questionCount);
+      setSelectedExamQuestionCount(totalQuestions);
     } else {
       setExamSettingForm(prev => ({
         ...prev,
@@ -272,6 +321,7 @@ export default function CreateSchedulePage() {
         question_count: 0
       }));
       setSelectedExamQuestionCount(0);
+      setCurrentStep('exam');
     }
   }
 
@@ -287,9 +337,9 @@ export default function CreateSchedulePage() {
       return
     }
     
-    // Validate question count
-    if (examSettingForm.question_count < 1 || examSettingForm.question_count > selectedExamQuestionCount) {
-      setError(`Please enter a valid number of questions (1-${selectedExamQuestionCount})`)
+    // Validate selected questions
+    if (selectedQuestions.length === 0) {
+      setError('Please select at least one question from your examinations')
       setSubmitting(false)
       return
     }
@@ -302,11 +352,16 @@ export default function CreateSchedulePage() {
         close_time: examSettingForm.close_time.toISOString()
       }
 
-      // For now, we'll use the first exam ID if multiple are selected
-      // In the future, you might want to handle multiple exams differently
+      // Include selected questions in the API call
       const postData = {
         ...formattedForm,
-        exam_id: formattedForm.exam_ids[0] // API still expects a single exam_id
+        exam_id: formattedForm.exam_ids[0], // API still expects a single exam_id for now
+        selected_questions: selectedQuestions.map(q => ({
+          question_id: q._id,
+          exam_id: q.examId,
+          score: q.score
+        })),
+        question_count: selectedQuestions.length
       }
 
       const res = await clientAPI.post(
@@ -406,6 +461,42 @@ export default function CreateSchedulePage() {
                       </Select>
                     </div>
                   </div>
+                  
+                  {/* Question Selection Summary */}
+                  {selectedQuestions.length > 0 && (
+                    <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <MaterialSymbolsListAlt className="w-5 h-5 text-primary" />
+                          <h3 className="text-lg font-semibold">Selected Questions</h3>
+                          <Badge color="primary" variant="flat">
+                            {selectedQuestions.length} questions
+                          </Badge>
+                          <Badge color="secondary" variant="flat">
+                            {selectedQuestions.reduce((total, q) => total + q.score, 0)} points
+                          </Badge>
+                        </div>
+                        
+                        <Button
+                          size="sm"
+                          color="primary"
+                          variant="bordered"
+                          startContent={<MingcuteAddFill className="w-4 h-4" />}
+                          onPress={() => setIsQuestionModalOpen(true)}
+                          isDisabled={submitting}
+                        >
+                          Modify Selection
+                        </Button>
+                      </div>
+                      
+                      <div className="text-sm text-default-600">
+                        Questions selected from: {selectedExams.map(examId => {
+                          const exam = examinations.find(e => e._id === examId);
+                          return exam?.title;
+                        }).filter(Boolean).join(', ')}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Schedule Settings */}
                   <div className="bg-default-50 p-4 rounded-lg">
@@ -640,6 +731,171 @@ export default function CreateSchedulePage() {
         allowMultiSelect={true}
         instructorId={user?._id || ''}
       />
+
+      {/* Question Selection Modal */}
+      <Modal 
+        isOpen={isQuestionModalOpen} 
+        onClose={() => {
+          setIsQuestionModalOpen(false);
+          setCurrentStep('schedule');
+        }}
+        size="5xl"
+        scrollBehavior="inside"
+        classNames={{
+          base: "max-h-[90vh]",
+          body: "p-0",
+        }}
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1 px-6 py-4">
+            <h2 className="text-xl font-bold">Select Questions</h2>
+            <p className="text-sm text-default-500">
+              Choose individual questions from your selected examinations
+            </p>
+          </ModalHeader>
+          <ModalBody className="px-6">
+            <div className="space-y-6">
+              {selectedExams.map(examId => {
+                const exam = examinations.find(e => e._id === examId);
+                const questions = examQuestions[examId] || [];
+                
+                if (!exam) return null;
+                
+                return (
+                  <div key={examId} className="border border-default-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <HealthiconsIExamMultipleChoice className="w-5 h-5 text-primary" />
+                      <h3 className="text-lg font-semibold">{exam.title}</h3>
+                      <Badge color="secondary" variant="flat">
+                        {questions.length} questions
+                      </Badge>
+                    </div>
+                    
+                    {questions.length === 0 ? (
+                      <div className="text-center py-8 text-default-500">
+                        <Spinner size="sm" className="mb-2" />
+                        <p className="text-sm">Loading questions...</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3">
+                        {questions.map((question, index) => {
+                          const isSelected = selectedQuestions.some(
+                            sq => sq._id === question._id && sq.examId === examId
+                          );
+                          
+                          return (
+                            <Card 
+                              key={question._id} 
+                              className={`border transition-all cursor-pointer hover:shadow-md ${
+                                isSelected 
+                                  ? 'border-primary bg-primary/5' 
+                                  : 'border-default-200 hover:border-default-300'
+                              }`}
+                              isPressable
+                              onPress={() => {
+                                if (isSelected) {
+                                  // Remove question
+                                  setSelectedQuestions(prev => 
+                                    prev.filter(q => !(q._id === question._id && q.examId === examId))
+                                  );
+                                } else {
+                                  // Add question
+                                  const selectedQuestion: SelectedQuestion = {
+                                    ...question,
+                                    examId,
+                                    examTitle: exam.title
+                                  };
+                                  setSelectedQuestions(prev => [...prev, selectedQuestion]);
+                                }
+                              }}
+                            >
+                              <CardBody className="p-3">
+                                <div className="flex items-start gap-3">
+                                  <Checkbox 
+                                    isSelected={isSelected}
+                                    onChange={() => {}} // Handled by card press
+                                    className="mt-1"
+                                  />
+                                  
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      {getQuestionTypeIcon(question.type)}
+                                      <Chip size="sm" variant="flat" color="secondary">
+                                        {getQuestionTypeLabel(question.type)}
+                                      </Chip>
+                                      <Chip size="sm" variant="flat" color="primary">
+                                        {question.score} pts
+                                      </Chip>
+                                    </div>
+                                    
+                                    <p className="text-sm font-medium mb-1">
+                                      Q{index + 1}: {question.question}
+                                    </p>
+                                    
+                                    {question.type === 'multiple-choice' && question.choices && (
+                                      <div className="mt-2 space-y-1">
+                                        {question.choices.slice(0, 2).map((choice, choiceIndex) => (
+                                          <p key={choiceIndex} className="text-xs text-default-500 pl-4">
+                                            • {choice.content}
+                                          </p>
+                                        ))}
+                                        {question.choices.length > 2 && (
+                                          <p className="text-xs text-default-400 pl-4">
+                                            ... and {question.choices.length - 2} more options
+                                          </p>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardBody>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </ModalBody>
+          <ModalFooter className="px-6 py-4">
+            <div className="flex justify-between items-center w-full">
+              <div className="flex items-center gap-4">
+                <Badge color="primary" variant="flat">
+                  {selectedQuestions.length} questions selected
+                </Badge>
+                <Badge color="secondary" variant="flat">
+                  {selectedQuestions.reduce((total, q) => total + q.score, 0)} total points
+                </Badge>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  variant="light" 
+                  onPress={() => {
+                    setIsQuestionModalOpen(false);
+                    setIsExamModalOpen(true);
+                    setCurrentStep('exam');
+                  }}
+                >
+                  Back to Exams
+                </Button>
+                <Button 
+                  color="primary"
+                  onPress={() => {
+                    setIsQuestionModalOpen(false);
+                    setCurrentStep('schedule');
+                  }}
+                  isDisabled={selectedQuestions.length === 0}
+                >
+                  Continue to Schedule
+                </Button>
+              </div>
+            </div>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
