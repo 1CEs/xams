@@ -10,14 +10,34 @@ import { today, getLocalTimeZone } from '@internationalized/date'
 import { Calendar } from "@nextui-org/calendar"
 import { useUserStore } from "@/stores/user.store"
 import { useSearchParams } from "next/navigation"
+import { useState, useEffect } from "react"
+import { clientAPI } from "@/config/axios.config"
 
 export default function StudentCoursePage() {
     const params = useSearchParams()
     const courseId = params.get('id')
     const { data, error, isLoading } = useFetch<ServerResponse<CourseResponse>>(`/course/${courseId}`)
     const { user: student } = useUserStore()
-    const { data: instructor } = useFetch<ServerResponse<UserResponse>>(`/user/${data?.data.instructor_id}`)
+    const [instructor, setInstructor] = useState<UserResponse | null>(null)
+    const [instructorLoading, setInstructorLoading] = useState(false)
     const currentUserId = student?._id || ''
+
+    // Fetch instructor data when course data becomes available
+    useEffect(() => {
+        if (data?.data?.instructor_id) {
+            setInstructorLoading(true)
+            clientAPI.get<ServerResponse<UserResponse>>(`/user/${data.data.instructor_id}`)
+                .then((response: any) => {
+                    setInstructor(response.data.data)
+                })
+                .catch((error: any) => {
+                    console.error('Error fetching instructor:', error)
+                })
+                .finally(() => {
+                    setInstructorLoading(false)
+                })
+        }
+    }, [data?.data?.instructor_id])
     
     // Find groups where the current student is enrolled
     const studentGroups = (data?.data.groups || []).filter((group: IGroup) => 
@@ -130,7 +150,15 @@ export default function StudentCoursePage() {
                     <div className="space-y-2 text-sm">
                         <div>
                             <p className="text-foreground/60">Instructor</p>
-                            <p>{instructor?.data.info.first_name} {instructor?.data.info.last_name}</p>
+                            <p>
+                                {instructorLoading ? (
+                                    'Loading...'
+                                ) : instructor ? (
+                                    `${instructor.info.first_name} ${instructor.info.last_name}`
+                                ) : (
+                                    'Not available'
+                                )}
+                            </p>
                         </div>
                     </div>
                 </div>
