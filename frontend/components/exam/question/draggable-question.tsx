@@ -36,7 +36,7 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
         transition,
         zIndex: isDragging ? 1000 : undefined,
     }
-
+    console.log(question)
     const extractedQuestion = extractHtml(question.question)
     const extractedChoices = question.choices?.map((choice: { content: string; isCorrect: boolean; }) => extractHtml(choice.content)) || []
 

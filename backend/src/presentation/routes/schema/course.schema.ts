@@ -33,6 +33,7 @@ export const AddGroupSchema = t.Object({
 
 export const ExamSettingSchema = t.Object({
     exam_id: t.String({ description: 'Examination ID is required' }),
+    schedule_name: t.String({ description: 'Schedule name is required' }),
     open_time: t.String({ description: 'Open time is required' }),
     close_time: t.String({ description: 'Close time is required' }),
     ip_range: t.Optional(t.String()),
@@ -41,5 +42,6 @@ export const ExamSettingSchema = t.Object({
     allowed_review: t.Boolean({ description: 'Allowed review is required' }),
     show_answer: t.Boolean({ description: 'Show answer is required' }),
     randomize_question: t.Boolean({ description: 'Randomize question is required' }),
-    randomize_choice: t.Boolean({ description: 'Randomize choice is required' })
+    randomize_choice: t.Boolean({ description: 'Randomize choice is required' }),
+    question_count: t.Number({ description: 'Number of questions to include is required' })
 })

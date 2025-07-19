@@ -2,6 +2,7 @@ import { ICourse } from "../../../core/course/model/interface/icourse"
 import { IGroup } from "../../../core/course/model/interface/igroup"
 import { ISetting } from "../../../core/course/model/interface/setting"
 import { IInstructor } from "../../../core/user/model/interface/iintructor"
+import { IExaminationSchedule } from "../../../core/examination/model/interface/iexamination-schedule"
 
 export interface ICourseController {
     // Course-Only methods
@@ -9,6 +10,7 @@ export interface ICourseController {
     getCourses: () => Promise<ControllerResponse<ICourse[] | null>>
     getCourseById: (id: string) => Promise<ControllerResponse<ICourse | null>>
     getCourseByInstructorId: (instructor_id: string) => Promise<ControllerResponse<ICourse[] | null>>
+    getCourseByStudentId: (student_id: string) => Promise<ControllerResponse<ICourse[] | null>>
     updateCourse: (id: string, payload: Partial<ICourse>) => Promise<ControllerResponse<ICourse | null>>
     deleteCourse: (id: string) => Promise<ControllerResponse<ICourse | null>>
     verifyPassword: (course_id: string, group_id: string, setting_id: string, password: string) => Promise<ControllerResponse<Boolean | null>>
@@ -20,5 +22,5 @@ export interface ICourseController {
     // Setting-Only methods
     addGroupExamSetting: (courseId: string, groupName: string, examSetting: ISetting) => Promise<ControllerResponse<ICourse | null>>
     deleteGroupExamSetting: (courseId: string, groupName: string, examSettingIndex: number) => Promise<ControllerResponse<ICourse | null>>
-    getSetting: (course_id: string, group_id: string, setting_id: string) => Promise<ControllerResponse<ISetting | null | undefined>>
+    getSetting: (course_id: string, group_id: string, setting_id: string) => Promise<ControllerResponse<IExaminationSchedule | null | undefined>>
 }

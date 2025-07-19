@@ -22,7 +22,9 @@ const Form = (props: Props) => {
     const { user, setUser } = useUserStore()
     const router = useRouter()
     const cookies = useCookies()
+
     const onFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
+        console.log('asdasd')
         e.preventDefault()
         setError(null)
         setLoading(true)
@@ -44,15 +46,15 @@ const Form = (props: Props) => {
                 delete signUpPayload.first_name
                 delete signUpPayload.last_name
                 delete signUpPayload.birth
-
                 const res = await clientAPI.post('auth/sign-up', signUpPayload)
-                console.log(res.data)
                 const userData = res.data.data as UserResponse
                 setUser(userData)
                 
                 // Set cookie with the user data from the API response
                 const oneDay = 24 * 60 * 60 * 1000
                 cookies.set('user', JSON.stringify(userData), { expires: Date.now() + oneDay})
+                console.log("dadasdxx")
+
             } else {
                 const signInFormEntries = Object.fromEntries(formData.entries())
                 const res = await clientAPI.post('auth/sign-in', signInFormEntries)
@@ -66,9 +68,16 @@ const Form = (props: Props) => {
             router.push('/overview')
         } catch (error) {
             if (isAxiosError(error)) {
-                toast.error(error.response?.data.message)
+                const splitWords = error.response?.data.split(" ")
+                if (splitWords[0] === 'E11000') {
+                    toast.error('Username or Email is already exists')
+                } else {
+                    toast.error(error.response?.statusText)
+                }
+                
         
                 const { err, errors } = error.response?.data || {};
+                
                 if (err) {
                     setError(err.message);
                 } else if (errors?.length) {

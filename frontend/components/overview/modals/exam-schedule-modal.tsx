@@ -32,6 +32,7 @@ interface Examination {
   title: string
   description: string
   instructor_id: string
+  questions?: any[]  // To track the number of questions in the exam
 }
 
 const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
@@ -41,6 +42,7 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
   const [error, setError] = useState<string | null>(null)
   const [selectedGroup, setSelectedGroup] = useState<string>(initialGroupName || (groups.length > 0 ? groups[0].group_name : ''))
   const [submitting, setSubmitting] = useState<boolean>(false)
+  const [selectedExamQuestionCount, setSelectedExamQuestionCount] = useState<number>(0)
   
   const { user } = useUserStore()
   
@@ -58,6 +60,7 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
   
   const [examSettingForm, setExamSettingForm] = useState({
     exam_id: '',
+    schedule_name: '',  // Custom name for the schedule
     open_time: new Date(),
     close_time: new Date(Date.now() + 24 * 60 * 60 * 1000), // Default to 24 hours later
     ip_range: '',
@@ -66,7 +69,8 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
     allowed_review: true,
     show_answer: false,
     randomize_question: true,
-    randomize_choice: true
+    randomize_choice: true,
+    question_count: 0  // Number of questions to randomly select
   })
   
   // Fetch available examinations
@@ -102,6 +106,13 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
     // Validate exam_id is selected
     if (!examSettingForm.exam_id) {
       setError('Please select an examination')
+      setSubmitting(false)
+      return
+    }
+    
+    // Validate question count
+    if (examSettingForm.question_count < 1 || examSettingForm.question_count > selectedExamQuestionCount) {
+      setError(`Please enter a valid number of questions (1-${selectedExamQuestionCount})`)
       setSubmitting(false)
       return
     }
@@ -179,11 +190,33 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
                   isRequired
                   isLoading={loading}
                   selectedKeys={examSettingForm.exam_id ? [examSettingForm.exam_id] : []}
-                  onChange={(e) => {
+                  onChange={async (e) => {
+                    const examId = e.target.value;
                     setExamSettingForm(prev => ({ 
                       ...prev, 
-                      exam_id: e.target.value 
-                    }))
+                      exam_id: examId,
+                      question_count: 0 // Reset question count when exam changes
+                    }));
+                    
+                    // Fetch the exam details to get the question count
+                    try {
+                      const examResponse = await clientAPI.get(`/exam/${examId}`);
+                      if (examResponse.data && examResponse.data.data) {
+                        const examData = examResponse.data.data;
+                        const questionCount = examData.questions?.length || 0;
+                        setSelectedExamQuestionCount(questionCount);
+                        
+                        // Set default question count to all questions and default schedule name
+                        setExamSettingForm(prev => ({
+                          ...prev,
+                          question_count: questionCount,
+                          schedule_name: examData.title || '' // Default schedule name to exam title
+                        }));
+                      }
+                    } catch (err) {
+                      console.error('Error fetching exam details:', err);
+                      errorHandler(err);
+                    }
                   }}
                   className="mb-4"
                 >
@@ -193,6 +226,17 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
                     </SelectItem>
                   ))}
                 </Select>
+                
+                <Input
+                  label="Schedule Name"
+                  placeholder="Enter a name for this examination schedule"
+                  value={examSettingForm.schedule_name}
+                  onValueChange={(schedule_name) => 
+                    setExamSettingForm(prev => ({ ...prev, schedule_name }))}
+                  className="mb-4"
+                  isRequired
+                  description="This name will be displayed to students"
+                />
                 
                 <Divider className="my-2" />
                 <p className="text-sm font-medium">Examination Period</p>
@@ -259,6 +303,54 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
                         allowed_attempts: parseInt(value) || 1 
                       }))}
                     isRequired
+                  />
+                </div>
+                
+                <Divider className="my-2" />
+                <p className="text-sm font-medium">Question Selection</p>
+                
+                <div className="flex flex-col gap-2 mb-4">
+                  <Input
+                    type="number"
+                    label="Number of Questions"
+                    placeholder="Number of questions to include"
+                    description={
+                      examSettingForm.question_count > 0 && examSettingForm.question_count < selectedExamQuestionCount
+                        ? `${examSettingForm.question_count} questions will be randomly selected from ${selectedExamQuestionCount} total questions.`
+                        : examSettingForm.question_count === selectedExamQuestionCount
+                        ? `All ${selectedExamQuestionCount} questions will be included.`
+                        : `The exam has ${selectedExamQuestionCount} questions in total. You can select any number between 1 and ${selectedExamQuestionCount}.`
+                    }
+                    min={1}
+                    max={selectedExamQuestionCount}
+                    value={examSettingForm.question_count.toString()}
+                    onValueChange={(value) => {
+                      const count = parseInt(value) || 0;
+                      // Allow any positive number up to the total questions
+                      if (count >= 1 && count <= selectedExamQuestionCount) {
+                        setExamSettingForm(prev => ({ 
+                          ...prev, 
+                          question_count: count 
+                        }));
+                      } else if (value === '' || count === 0) {
+                        // Allow empty input for user to type
+                        setExamSettingForm(prev => ({ 
+                          ...prev, 
+                          question_count: 0 
+                        }));
+                      }
+                    }}
+                    onChange={(e) => {
+                      // Handle direct input changes to allow typing
+                      const value = e.target.value;
+                      if (value === '') {
+                        setExamSettingForm(prev => ({ 
+                          ...prev, 
+                          question_count: 0 
+                        }));
+                      }
+                    }}
+                    isDisabled={selectedExamQuestionCount === 0}
                   />
                 </div>
                 

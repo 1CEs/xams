@@ -27,17 +27,17 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
             throw new Error("Email, username, and password are required fields.")
         }
 
-        const [userFromEmail, userFromUsername] = await Promise.all([
-            this.getUserByEmail(payload.email),
-            this.getUserByUsername(payload.username)
-        ])
+        // const [userFromEmail, userFromUsername] = await Promise.all([
+        //     this.getUserByEmail(payload.email),
+        //     this.getUserByUsername(payload.username)
+        // ])
 
-        if (userFromEmail || userFromUsername) {
-            throw new Error(
-                `User with ${userFromEmail ? 'email' : 'username'} already exists.`
-            )
-        }
-
+        // console.log(userFromEmail, userFromUsername)
+        // if (userFromEmail || userFromUsername) {
+        //     return {
+        //         message: `User with ${userFromEmail ? 'email' : 'username'} already exists.`
+        //     }
+        // }
         const hashedPassword = await Bun.password.hash(payload.password, {
             algorithm: 'bcrypt',
             cost: 4,
@@ -62,19 +62,14 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
     }
 
     async getUserByEmail(email: string) {
-        if (this._repository instanceof UserRepository) {
-            const result = await this._repository.findByEmail(email)
-            return result as T | null
-        }
-        return null
+        const result = await (this._repository as UserRepository).findByEmail(email)
+        return result as T | null
     }
 
     async getUserByUsername(username: string) {
-        if (this._repository instanceof UserRepository) {
-            const result = await this._repository.findByUsername(username)
-            return result as T | null
-        }
-        return null
+        const result = await (this._repository as UserRepository).findByUsername(username)
+        console.log(result)
+        return result as T | null
     }
 
     async updateUser(_id: string, payload: Partial<T>) {
@@ -90,7 +85,9 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
     async forgotPassword(email: string, jwt: JWTInstance) {
         const user = await this.getUserByEmail(email)
         if (!user) {
-            throw new Error("User not found")
+            return {
+                message: "User not found"
+            }
         }
 
         // Generate reset token (valid for 1 hour)

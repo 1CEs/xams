@@ -1,3 +1,4 @@
+import { linearGradient } from 'framer-motion/client';
 import React from 'react';
 import type { SVGProps } from 'react';
 
@@ -187,4 +188,173 @@ export function UisSchedule(props: SVGProps<SVGSVGElement>) {
 
 export function MdiRobot(props: SVGProps<SVGSVGElement>) {
 	return (<svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" {...props}><path fill="currentColor" d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5"></path></svg>);
+}
+
+export function MaterialSymbolsFolderOutlineRounded(props: SVGProps<SVGSVGElement>) {
+	return (<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}><path fill="currentColor" d="M4 20q-.825 0-1.412-.587T2 18V6q0-.825.588-1.412T4 4h6l2 2h8q.825 0 1.413.588T22 8v10q0 .825-.587 1.413T20 20zm0-2h16V8h-8.825l-2-2H4zm0 0V6zm0 0z"></path></svg>);
+}
+
+export function MingcuteDownFill(props: SVGProps<SVGSVGElement>) {
+	return (<svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" {...props}><g fill="none" fillRule="evenodd"><path d="M24 0v24H0V0zM12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.019-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"></path><path fill="currentColor" d="M13.06 16.06a1.5 1.5 0 0 1-2.12 0l-5.658-5.656a1.5 1.5 0 1 1 2.122-2.121L12 12.879l4.596-4.596a1.5 1.5 0 0 1 2.122 2.12l-5.657 5.658Z"></path></g></svg>);
+}
+
+export function MingcuteRightFill(props: SVGProps<SVGSVGElement>) {
+	return (<svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" {...props}><g fill="none" fillRule="evenodd"><path d="M24 0v24H0V0zM12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.019-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"></path><path fill="currentColor" d="M16.06 10.94a1.5 1.5 0 0 1 0 2.12l-5.656 5.658a1.5 1.5 0 1 1-2.121-2.122L12.879 12L8.283 7.404a1.5 1.5 0 0 1 2.12-2.122l5.658 5.657Z"></path></g></svg>);
+}
+
+export function BankFill(props: SVGProps<SVGSVGElement>) {
+	return (
+		<svg {...props} viewBox="0 0 500 375" fill="none" xmlns="http://www.w3.org/2000/svg">
+			<path d="M0 75H480C491.046 75 500 83.9543 500 95V355C500 366.046 491.046 375 480 375H20C8.95432 375 0 366.046 0 355V75Z" fill="#30C67C" />
+			<path d="M280 0C287.066 0 293.276 2.74834 296.834 6.89746C296.838 6.90299 296.844 6.90742 296.849 6.91309L296.855 6.92285C297.197 7.32323 297.514 7.73697 297.805 8.16211L348.148 73.8877C348.173 73.9193 348.193 73.9519 348.21 73.9844L349 75H0V15C0 6.71573 8.95431 7.73109e-07 20 0H280Z" fill="#30C67C" />
+			<g filter="url(#filter0_d_52_714)">
+				<rect x="20" y="59" width="460" height="290" rx="20" fill="white" />
+			</g>
+			<g filter="url(#filter1_d_52_714)">
+				<rect x="20" y="79" width="460" height="270" rx="20" fill="white" />
+			</g>
+			<g filter="url(#filter2_d_52_714)">
+				<rect x="20" y="89" width="460" height="260" rx="20" fill="white" />
+			</g>
+			<g filter="url(#filter3_d_52_714)">
+				<rect x="20" y="99" width="460" height="250" rx="20" fill="white" />
+			</g>
+			<path d="M480 375C491.046 375 500 366.046 500 355V105C500 93.9543 491.046 85 480 85H349L327.633 104V103.981L299.871 128.643C296.221 132.554 291.02 135 285.248 135H20C8.95431 135 0 126.046 0 115V355C0 366.046 8.95431 375 20 375H480Z" fill="#82F4B1" />
+			<path d="M150 320C150 308.954 158.954 300 170 300H330C341.046 300 350 308.954 350 320V375H150V320Z" fill="url(#paint0_linear_52_714)" />
+			<defs>
+				<filter id="filter0_d_52_714" x="10" y="46" width="480" height="310" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+					<feFlood flood-opacity="0" result="BackgroundImageFix" />
+					<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+					<feOffset dy="-3" />
+					<feGaussianBlur stdDeviation="5" />
+					<feComposite in2="hardAlpha" operator="out" />
+					<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.2 0" />
+					<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_52_714" />
+					<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_52_714" result="shape" />
+				</filter>
+				<filter id="filter1_d_52_714" x="10" y="66" width="480" height="290" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+					<feFlood flood-opacity="0" result="BackgroundImageFix" />
+					<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+					<feOffset dy="-3" />
+					<feGaussianBlur stdDeviation="5" />
+					<feComposite in2="hardAlpha" operator="out" />
+					<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.2 0" />
+					<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_52_714" />
+					<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_52_714" result="shape" />
+				</filter>
+				<filter id="filter2_d_52_714" x="10" y="76" width="480" height="280" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+					<feFlood flood-opacity="0" result="BackgroundImageFix" />
+					<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+					<feOffset dy="-3" />
+					<feGaussianBlur stdDeviation="5" />
+					<feComposite in2="hardAlpha" operator="out" />
+					<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.2 0" />
+					<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_52_714" />
+					<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_52_714" result="shape" />
+				</filter>
+				<filter id="filter3_d_52_714" x="10" y="86" width="480" height="270" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+					<feFlood flood-opacity="0" result="BackgroundImageFix" />
+					<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+					<feOffset dy="-3" />
+					<feGaussianBlur stdDeviation="5" />
+					<feComposite in2="hardAlpha" operator="out" />
+					<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.2 0" />
+					<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_52_714" />
+					<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_52_714" result="shape" />
+				</filter>
+				<linearGradient id="paint0_linear_52_714" x1="250" y1="300" x2="250" y2="375" gradientUnits="userSpaceOnUse">
+					<stop stop-color="#30C67C" />
+					<stop offset="1" stop-color="#82F4B1" />
+				</linearGradient>
+			</defs>
+		</svg>
+
+	)
+}
+
+export function BankEmpty(props: SVGProps<SVGSVGElement>) {
+	return (
+		<svg {...props} viewBox="0 0 500 375" fill="none" xmlns="http://www.w3.org/2000/svg">
+			<path d="M0 75H480C491.046 75 500 83.9543 500 95V355C500 366.046 491.046 375 480 375H20C8.95432 375 0 366.046 0 355V75Z" fill="#30C67C" />
+			<path d="M280 0C287.066 0 293.276 2.74834 296.834 6.89746C296.838 6.90299 296.844 6.90742 296.849 6.91309L296.855 6.92285C297.197 7.32323 297.514 7.73697 297.805 8.16211L348.148 73.8877C348.173 73.9193 348.193 73.9519 348.21 73.9844L349 75H0V15C0 6.71573 8.95431 7.73109e-07 20 0H280Z" fill="#30C67C" />
+			<path d="M480 375C491.046 375 500 366.046 500 355V105C500 93.9543 491.046 85 480 85H349L327.633 104V103.981L299.871 128.643C296.221 132.554 291.02 135 285.248 135H20C8.95431 135 0 126.046 0 115V355C0 366.046 8.95431 375 20 375H480Z" fill="#82F4B1" />
+			<path d="M150 320C150 308.954 158.954 300 170 300H330C341.046 300 350 308.954 350 320V375H150V320Z" fill="url(#paint0_linear_52_739)" />
+			<defs>
+				<linearGradient id="paint0_linear_52_739" x1="250" y1="300" x2="250" y2="375" gradientUnits="userSpaceOnUse">
+					<stop stop-color="#30C67C" />
+					<stop offset="1" stop-color="#82F4B1" />
+				</linearGradient>
+			</defs>
+		</svg>
+	)
+}
+
+export function BankAdd(props: SVGProps<SVGSVGElement>) {
+	return (
+		<svg {...props} viewBox="0 0 500 375" fill="none" xmlns="http://www.w3.org/2000/svg">
+			<path d="M0 75H480C491.046 75 500 83.9543 500 95V355C500 366.046 491.046 375 480 375H20C8.95432 375 0 366.046 0 355V75Z" fill="#30C67C" />
+			<path d="M280 0C287.066 0 293.276 2.74834 296.834 6.89746C296.838 6.90299 296.844 6.90742 296.849 6.91309L296.855 6.92285C297.197 7.32323 297.514 7.73697 297.805 8.16211L348.148 73.8877C348.173 73.9193 348.193 73.9519 348.21 73.9844L349 75H0V15C0 6.71573 8.95431 7.73109e-07 20 0H280Z" fill="#30C67C" />
+			<path d="M480 375C491.046 375 500 366.046 500 355V105C500 93.9543 491.046 85 480 85H349L327.633 104V103.981L299.871 128.643C296.221 132.554 291.02 135 285.248 135H20C8.95431 135 0 126.046 0 115V355C0 366.046 8.95431 375 20 375H480Z" fill="#82F4B1" />
+			<path d="M150 320C150 308.954 158.954 300 170 300H330C341.046 300 350 308.954 350 320V375H150V320Z" fill="url(#paint0_linear_52_560)" />
+			<path d="M0 75H480C491.046 75 500 83.9543 500 95V355C500 366.046 491.046 375 480 375H20C8.95432 375 0 366.046 0 355V75Z" fill="#161616" fill-opacity="0.35" />
+			<path d="M280 0C287.066 0 293.276 2.74834 296.834 6.89746C296.838 6.90299 296.844 6.90742 296.849 6.91309L296.855 6.92285C297.197 7.32323 297.514 7.73697 297.805 8.16211L348.148 73.8877C348.173 73.9193 348.193 73.9519 348.21 73.9844L349 75H0V15C0 6.71573 8.95431 7.73109e-07 20 0H280Z" fill="#161616" fill-opacity="0.35" />
+			<g filter="url(#filter0_d_52_560)">
+				<circle cx="250" cy="214" r="50" fill="url(#paint1_linear_52_560)" />
+			</g>
+			<g filter="url(#filter1_d_52_560)">
+				<path d="M250 184C252.761 184 255 186.239 255 189V209H275C277.761 209 280 211.239 280 214C280 216.761 277.761 219 275 219H255V239C255 241.761 252.761 244 250 244C247.239 244 245 241.761 245 239V219H225C222.239 219 220 216.761 220 214C220 211.239 222.239 209 225 209H245V189C245 186.239 247.239 184 250 184Z" fill="white" />
+			</g>
+			<defs>
+				<filter id="filter0_d_52_560" x="194" y="158" width="120" height="120" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+					<feFlood flood-opacity="0" result="BackgroundImageFix" />
+					<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+					<feOffset dx="4" dy="4" />
+					<feGaussianBlur stdDeviation="5" />
+					<feComposite in2="hardAlpha" operator="out" />
+					<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+					<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_52_560" />
+					<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_52_560" result="shape" />
+				</filter>
+				<filter id="filter1_d_52_560" x="210" y="174" width="80" height="80" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+					<feFlood flood-opacity="0" result="BackgroundImageFix" />
+					<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+					<feOffset />
+					<feGaussianBlur stdDeviation="5" />
+					<feComposite in2="hardAlpha" operator="out" />
+					<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+					<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_52_560" />
+					<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_52_560" result="shape" />
+				</filter>
+				<linearGradient id="paint0_linear_52_560" x1="250" y1="300" x2="250" y2="375" gradientUnits="userSpaceOnUse">
+					<stop stop-color="#30C67C" />
+					<stop offset="1" stop-color="#82F4B1" />
+				</linearGradient>
+				<linearGradient id="paint1_linear_52_560" x1="211.54" y1="189.124" x2="288.46" y2="238.876" gradientUnits="userSpaceOnUse">
+					<stop stop-color="#82F4B1" />
+					<stop offset="1" stop-color="#30C67C" />
+				</linearGradient>
+			</defs>
+		</svg>
+
+	);
+}
+
+export function ExamFile(props: SVGProps<SVGSVGElement>) {
+	return (
+		<svg {...props} viewBox="0 0 350 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+			<path d="M0 20C0 8.9543 8.95431 0 20 0H279.95C291.023 0 300 8.97669 300 20.05V100H0V20Z" fill="white" />
+			<path d="M295 11.2476C295 9.81363 296.9 9.30682 297.614 10.5502L347.795 97.9026C348.331 98.836 347.658 100 346.581 100H296.4C295.627 100 295 99.3732 295 98.6V11.2476Z" fill="white" />
+			<path d="M0 87H329.95C341.023 87 350 95.9767 350 107.05V480C350 491.046 341.046 500 330 500H20C8.9543 500 0 491.046 0 480V87Z" fill="white" />
+			<rect x="50" y="131" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="166" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="201" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="236" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="271" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="306" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="341" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="376" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="411" width="250" height="10" rx="5" fill="#D9D9D9" />
+			<rect x="50" y="446" width="250" height="10" rx="5" fill="#D9D9D9" />
+		</svg>
+	);
 }

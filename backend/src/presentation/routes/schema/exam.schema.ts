@@ -4,6 +4,9 @@ export const AddExaminationSchema = t.Object({
     title: t.String({ description: 'Title is required' }),
     description: t.String({ description: 'Description is required' }),
     category: t.Optional(t.Array(t.String())),
+    // Bank context parameters
+    bankId: t.Optional(t.String({ description: 'ID of the bank to associate this exam with' })),
+    subBankPath: t.Optional(t.Array(t.String(), { description: 'Path of sub-bank IDs to locate the target sub-bank' })),
 })
 
 export const QuestionFormSchema = t.Object({
@@ -33,10 +36,17 @@ export const NestedQuestionSchema = t.Object({
     questions: t.Array(QuestionFormSchema)
 })
 
+export const NestedQuestionFromExistingSchema = t.Object({
+    nestedQuestionData: t.Object({
+        question: t.String({ description: 'Nested question title is required' }),
+        score: t.Number({ description: 'Score is required' })
+    }),
+    questionIds: t.Array(t.String(), { description: 'Question IDs are required' })
+})
+
 export const updateExaminationSchema = t.Object({
     title: t.Optional(t.String()),
     description: t.Optional(t.String()),
     questions: t.Optional(t.Array(QuestionFormSchema)),
     category: t.Array(t.String({ description: 'Category is required' })),
 })
-

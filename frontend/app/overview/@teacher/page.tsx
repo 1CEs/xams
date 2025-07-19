@@ -2,11 +2,10 @@
 import { IconoirSort, MdiSearch } from "@/components/icons/icons";
 import CourseList from "@/components/overview/course-list";
 import CreateAction from "@/components/overview/create-action";
-import ExamFormModal from "@/components/overview/modals/exam-form-modal";
 import ExamList from "@/components/overview/exam-list";
-import { Button, Card, CardBody, Select, SelectItem, Tab, Tabs } from "@nextui-org/react";
+import { Card, CardBody, Select, SelectItem, Tab, Tabs } from "@nextui-org/react";
 import { Input } from "@nextui-org/react";
-import CategoryList from "@/components/overview/category-list";
+import BankList from "@/components/overview/bank-list";
 
 export default function InstructorOverview() {
     return (
@@ -35,8 +34,8 @@ export default function InstructorOverview() {
                     <Tab key='examination' title='Examination'>
                         <ExamList />
                     </Tab>
-                    <Tab key='category' title='Category'>
-                        <CategoryList />
+                    <Tab key='bank' title='Bank'>
+                        <BankList />
                     </Tab>
                 </Tabs>
                 

@@ -19,9 +19,9 @@ const CategoriesSchema = new Schema<ICategory>({
 
 const InstructorSchema = new Schema<IInstructorDocument>({
     categories: [CategoriesSchema],
-    exam_bank: {
+    bank: {
         type: [Schema.Types.ObjectId],
-        ref: 'examinations'
+        ref: 'banks'
     },
     courses: {
         type: [Schema.Types.ObjectId],

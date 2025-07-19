@@ -16,10 +16,23 @@ export class InstructorRepository
         return result?.categories
     }
     
+    async getBank (instructor_id: string) {
+        const result = await this._model.findById(instructor_id).populate('bank').exec()
+        return result?.bank
+    }
+    
     async updateExamination(instructor_id: string, examination_id: string) {
         const result = await this._model.updateOne(
             { _id: instructor_id }, 
             { $push: { exam_bank: examination_id } }
+        ).exec()
+        return result
+    }
+    
+    async updateBank(instructor_id: string, bank_id: string) {
+        const result = await this._model.updateOne(
+            { _id: instructor_id }, 
+            { $push: { bank: bank_id } }
         ).exec()
         return result
     }

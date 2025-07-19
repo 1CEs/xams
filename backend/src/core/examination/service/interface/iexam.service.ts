@@ -1,5 +1,6 @@
 import { Answer, ExamResult } from "../../../../types/exam";
 import { IExamination } from "../../model/interface/iexamination";
+import { IExaminationSchedule } from "../../model/interface/iexamination-schedule";
 import { IQuestion } from "../../model/interface/iquestion";
 
 export interface IExaminationService {
@@ -16,5 +17,6 @@ export interface IExaminationService {
     updateQuestion: (id: string, question_id: string, payload: Partial<IQuestion>) => Promise<IExamination | null>
     deleteQuestion: (id: string, question_id: string) => Promise<IExamination | null>
     addNestedQuestion: (id: string, payload: { question: string; type: string; score: number; questions: IQuestion[] }) => Promise<IExamination | null>
-    resultSubmit: (examId: string, answers: Answer[]) => Promise<ExamResult>
+    addNestedQuestionFromExisting: (examId: string, nestedQuestionData: { question: string; score: number }, questionIds: string[]) => Promise<IExamination | null>
+    resultSubmit: (examId: string, answers: Answer[], examSchedule?: IExaminationSchedule) => Promise<ExamResult>
 }

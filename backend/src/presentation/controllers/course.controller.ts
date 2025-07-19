@@ -3,6 +3,8 @@ import { IGroup } from "../../core/course/model/interface/igroup";
 import { ISetting } from "../../core/course/model/interface/setting";
 import { CourseService } from "../../core/course/service/course.service";
 import { ICourseService } from "../../core/course/service/interface/icourse.service";
+import { ExaminationScheduleService } from "../../core/examination/service/exam-schedule.service";
+import { IExaminationScheduleService } from "../../core/examination/service/interface/iexam-schedule.service";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
 import { InstructorService } from "../../core/user/service/instructor.service";
 import { StudentService } from "../../core/user/service/student.service";
@@ -12,9 +14,11 @@ import { ICourseController } from "./interface/icourse.controller";
 
 export class CourseController implements ICourseController {
     private _service: ICourseService
+    private _examScheduleService: IExaminationScheduleService
 
     constructor() {
         this._service = new CourseService()
+        this._examScheduleService = new ExaminationScheduleService()
     }
 
     private _response<T>(message: string, code: number, data: T) {
@@ -54,6 +58,11 @@ export class CourseController implements ICourseController {
             return this._response<typeof filteredCourses>('Done', 200, filteredCourses)
         }
         
+        return this._response<typeof courses>('Done', 200, courses)
+    }
+
+    async getCourseByStudentId (student_id: string) {
+        const courses = await this._service.getCourseByStudentId(student_id)
         return this._response<typeof courses>('Done', 200, courses)
     }
 
@@ -154,6 +163,23 @@ export class CourseController implements ICourseController {
             return this._response('Group not found', 404, null)
         }
 
+        // Get the group to be deleted to clean up its examination schedules
+        const groupToDelete = course.groups[groupIndex]
+        
+        // Delete all examination schedules associated with this group
+        if (groupToDelete.exam_setting && groupToDelete.exam_setting.length > 0) {
+            for (const examSetting of groupToDelete.exam_setting) {
+                try {
+                    if (examSetting.schedule_id) {
+                        await this._examScheduleService.deleteExaminationSchedule(examSetting.schedule_id)
+                    }
+                } catch (error: any) {
+                    console.error('Error deleting examination schedule:', error)
+                    // Continue with group deletion even if some schedules fail to delete
+                }
+            }
+        }
+
         // Remove the group from the array
         course.groups.splice(groupIndex, 1)
         
@@ -164,7 +190,7 @@ export class CourseController implements ICourseController {
     }
 
     // Setting methods
-    async addGroupExamSetting(courseId: string, groupName: string, examSetting: ISetting) {
+    async addGroupExamSetting(courseId: string, groupName: string, examSettingData: any) {
         const course = await this._service.getCourseById(courseId)
         
         if (!course) {
@@ -191,13 +217,46 @@ export class CourseController implements ICourseController {
             course.groups[groupIndex].exam_setting = []
         }
 
-        // Always add a new exam setting, allowing multiple schedules for the same exam
-        course.groups[groupIndex].exam_setting.push(examSetting)
-        
-        // Update the course with the modified groups array
-        const updated = await this._service.updateCourse(courseId, { groups: course.groups })
-        
-        return this._response('Exam setting added successfully', 200, updated)
+        try {
+            // Create an examination schedule to snapshot the questions
+            const examSchedule = await this._examScheduleService.createExaminationSchedule(
+                examSettingData.exam_id,
+                course.instructor_id,
+                examSettingData.question_count,
+                examSettingData.schedule_name,
+                {
+                    open_time: examSettingData.open_time,
+                    close_time: examSettingData.close_time,
+                    ip_range: examSettingData.ip_range,
+                    exam_code: examSettingData.exam_code,
+                    allowed_attempts: examSettingData.allowed_attempts,
+                    allowed_review: examSettingData.allowed_review,
+                    show_answer: examSettingData.show_answer,
+                    randomize_question: examSettingData.randomize_question,
+                    randomize_choice: examSettingData.randomize_choice
+                }
+            );
+
+            if (!examSchedule) {
+                return this._response('Failed to create examination schedule', 500, null);
+            }
+
+            // Create a simplified setting that only stores the schedule_id
+            const setting: ISetting = {
+                schedule_id: examSchedule._id?.toString() || ''
+            };
+
+            // Add the simplified setting to the group
+            course.groups[groupIndex].exam_setting.push(setting);
+            
+            // Update the course with the modified groups array
+            const updated = await this._service.updateCourse(courseId, { groups: course.groups });
+            
+            return this._response('Exam setting added successfully', 200, updated);
+        } catch (error: any) {
+            console.error('Error creating examination schedule:', error);
+            return this._response(`Failed to create examination schedule: ${error.message || 'Unknown error'}`, 500, null);
+        }
     }
 
     async deleteGroupExamSetting(courseId: string, groupName: string, examSettingIndex: number) {
@@ -230,6 +289,20 @@ export class CourseController implements ICourseController {
         // Check if the exam setting index is valid
         if (examSettingIndex < 0 || examSettingIndex >= course.groups[groupIndex].exam_setting.length) {
             return this._response('Invalid exam setting index', 404, null)
+        }
+
+        // Get the exam setting to be deleted to retrieve the schedule_id
+        const examSettingToDelete = course.groups[groupIndex].exam_setting[examSettingIndex]
+        
+        try {
+            // Delete the examination schedule from the database if it has a schedule_id
+            if (examSettingToDelete.schedule_id) {
+                await this._examScheduleService.deleteExaminationSchedule(examSettingToDelete.schedule_id)
+            }
+        } catch (error: any) {
+            console.error('Error deleting examination schedule:', error)
+            // Continue with deleting the exam setting even if schedule deletion fails
+            // This prevents orphaned exam settings in case the schedule was already deleted
         }
 
         // Remove the exam setting from the array

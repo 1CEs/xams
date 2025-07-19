@@ -146,24 +146,25 @@ const NestedQuestionForm = ({ examinationId }: NestedQuestionFormProps) => {
             }}
             onSubmit={async (values, { setFieldValue }) => {
                 try {
-                    // Prepare the nested question data
-                    const nestedQuestionData = {
-                        question: values.question,
-                        type: "nested",
-                        score: values.score,
-                        questions: nestedQuestions.map(q => ({
-                            question: q.question,
-                            type: q.type,
-                            score: q.score,
-                            choices: q.choices,
-                            isTrue: q.isTrue,
-                            expectedAnswer: q.expectedAnswer,
-                            maxWords: q.maxWords
-                        }))
+                    // Get the question IDs from nested questions
+                    const questionIds = nestedQuestions.map(q => q._id).filter(id => id) as string[]
+                    
+                    if (questionIds.length === 0) {
+                        toast.error("Please add at least one question to create a nested question")
+                        return
                     }
 
-                    // Call the API to save the nested question
-                    const res = await clientAPI.post(`exam/nested-question/${examinationId}`, nestedQuestionData)
+                    // Prepare the nested question data for the new API endpoint
+                    const nestedQuestionData = {
+                        nestedQuestionData: {
+                            question: values.question,
+                            score: values.score
+                        },
+                        questionIds: questionIds
+                    }
+
+                    // Call the new API endpoint that automatically removes original questions
+                    const res = await clientAPI.post(`exam/nested-question-from-existing/${examinationId}`, nestedQuestionData)
                     toast.success(res.data.message)
 
                     // Reset the form and nested questions

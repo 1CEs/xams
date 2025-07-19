@@ -5,6 +5,8 @@ import { SignInPayload, SignUpPayload } from "../../types/user"
 import { emailRegex } from "../../utils/regex"
 import { IAuthController } from "./interface/iauth.controller"
 import { SetTokenParameters } from "../../types/auth"
+import { IStudent } from "../../core/user/model/interface/istudent"
+import { IInstructor } from "../../core/user/model/interface/iintructor"
 
 type JWTInstance = {
     sign: (payload: any) => Promise<string>
@@ -26,14 +28,14 @@ export class AuthController implements IAuthController {
     }
 
     async signup(payload: SignUpPayload) {
-        console.log(payload)
+        console.log("in")
         const instance = this._factory.createService(payload.body!.role)
         const user = await instance.register(payload.body!)
-
+        if (!user) throw new Error('User not found')
         delete payload.body
-        await this.setToken(String(user?._id), { ...payload })
+        await this.setToken(String((user as unknown as IUser | IStudent | IInstructor)._id), { ...payload })
 
-        return this._response<typeof user>('Sign-up Successfully', 201, user)
+        return this._response('Sign-up Successfully', 201, user)
     }
 
     async signin(payload: SignInPayload) {
@@ -71,14 +73,22 @@ export class AuthController implements IAuthController {
     }
 
     async setToken(id: string, { jwt, accessToken, refreshToken }: SetTokenParameters) {
+        // For JWT, exp should be in seconds since epoch, not duration in seconds
+        const accessTokenExp = Number(process.env.ACCESS_TOKEN_EXP! || 84600); // Default 24 hours in seconds
+        const refreshTokenExp = Number(process.env.REFRESH_TOKEN_EXP! || 604800); // Default 7 days in seconds
+        
+        const currentTimestamp = Math.floor(Date.now() / 1000); // Current time in seconds
+        
         const accToken = await jwt.sign({
             sub: id,
-            exp: Number(process.env.ACCESS_TOKEN_EXP! || 84600)
+            iat: currentTimestamp,
+            exp: currentTimestamp + accessTokenExp
         })
+        
         accessToken.set({
             value: accToken,
             httpOnly: true,
-            maxAge: Number(process.env.ACCESS_TOKEN_EXP! || 84600),
+            maxAge: accessTokenExp,
             path: '/',
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax'
@@ -86,12 +96,14 @@ export class AuthController implements IAuthController {
 
         const refToken = await jwt.sign({
             sub: id,
-            exp: Number(process.env.REFRESH_TOKEN_EXP! || 604800)
+            iat: currentTimestamp,
+            exp: currentTimestamp + refreshTokenExp
         })
+        
         refreshToken.set({
             value: refToken,
             httpOnly: true,
-            maxAge: Number(process.env.REFRESH_TOKEN_EXP! || 604800),
+            maxAge: refreshTokenExp,
             path: '/',
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax'

@@ -5,14 +5,21 @@ import { ICourseRepository } from "./interface/icourse.repository";
 import { CourseModel } from "../model/course.model";
 import { IGroup } from "../model/interface/igroup";
 import { ISetting } from "../model/interface/setting";
+import { ExaminationScheduleModel } from "../../examination/model/examination-schedule.model";
 
 export class CourseRepository extends BaseRepository<ICourse & Document> implements ICourseRepository {
     constructor() {
         super(CourseModel)
     }
 
+    async getCourseByStudentId (student_id: string) {
+        const courses = await this._model.find({"groups.students": student_id}).exec()
+        return courses
+    }
+
     async getCourseByInstructorId (instructor_id: string) {
-        const courses = await this._model.find({ instructor_id }).exec()
+        console.log(instructor_id)
+        const courses = await this._model.find({instructor_id}).exec()
         return courses
     }
 
@@ -21,16 +28,28 @@ export class CourseRepository extends BaseRepository<ICourse & Document> impleme
         if (!course) {
             return null
         }
-        let result = false
-        course.groups?.forEach((group: IGroup) => {
-            group.exam_setting.forEach((setting: ISetting) => {
-                if (setting._id == setting_id && setting.exam_code == password && group._id == group_id) {
-                    result = true
-                }
-            })
-        })
-        console.log(result)
-
+        
+        // Find the setting in the course
+        const group = course.groups?.find((group: IGroup) => group._id == group_id)
+        if (!group) {
+            return null
+        }
+        
+        const setting = group.exam_setting.find((setting: ISetting) => setting._id == setting_id)
+        if (!setting) {
+            return null
+        }
+        
+        // Get the exam schedule using the schedule_id
+        const examSchedule = await ExaminationScheduleModel.findById(setting.schedule_id).exec()
+        if (!examSchedule) {
+            return null
+        }
+        
+        // Check if the password matches the exam_code in the schedule
+        const result = examSchedule.exam_code === password
+        console.log('Password verification result:', result)
+        
         return result
     }
 
@@ -39,11 +58,19 @@ export class CourseRepository extends BaseRepository<ICourse & Document> impleme
         if (!course) {
             return null
         }
+        
         const group = course.groups?.find((group: IGroup) => group._id == group_id)
         if (!group) {
             return null
         }
+        
         const setting = group.exam_setting.find((setting: ISetting) => setting._id == setting_id)
-        return setting
+        if (!setting) {
+            return null
+        }
+        
+        // Get the exam schedule using the schedule_id and return it
+        const examSchedule = await ExaminationScheduleModel.findById(setting.schedule_id).exec()
+        return examSchedule
     }
 }

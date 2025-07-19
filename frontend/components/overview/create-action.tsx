@@ -2,17 +2,17 @@ import { Dropdown, DropdownTrigger, Button, DropdownMenu, DropdownItem, useDiscl
 import React, { useState } from 'react'
 import { FluentClass24Filled, HealthiconsIExamMultipleChoice, MaterialSymbolsAssignment } from '../icons/icons'
 import ExamFormModal from './modals/exam-form-modal'
-import CategoryFormModal from './modals/category-form-modal'
 import CourseFormModal from './modals/course-form-modal'
+import BankFormModal from './modals/bank-form-modal'
 
 type Props = {}
 
 const CreateAction = (props: Props) => {
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const modalRenderer = {
-        category: <CategoryFormModal />,
         exam: <ExamFormModal />,
-        course: <CourseFormModal />
+        course: <CourseFormModal />,
+        bank: <BankFormModal />
 
     }
     const [modalSelector, setModalSelector] = useState<keyof typeof modalRenderer>('exam')
@@ -51,12 +51,12 @@ const CreateAction = (props: Props) => {
                         New Examination
                     </DropdownItem>
                     <DropdownItem
-                        key="category"
-                        description="Create a new category"
                         startContent={<MaterialSymbolsAssignment fontSize={24} />}
-                        onPress={() => onModalOpen('category')}
+                        key="bank"
+                        description="Create a new question bank"
+                        onPress={() => onModalOpen('bank')}
                     >
-                        Category
+                        New Bank
                     </DropdownItem>
                 </DropdownMenu>
             </Dropdown>

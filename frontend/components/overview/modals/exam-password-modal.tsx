@@ -5,57 +5,71 @@ import { clientAPI } from "@/config/axios.config"
 import { errorHandler } from "@/utils/error"
 import { toast } from "react-toastify"
 
+interface ExamSchedule {
+  _id: string
+  original_exam_id: string
+  instructor_id: string
+  title: string
+  description?: string
+  category?: string[]
+  questions: any[]
+  created_at: Date
+  open_time: Date
+  close_time: Date
+  ip_range?: string
+  exam_code?: string
+  allowed_attempts: number
+  allowed_review: boolean
+  show_answer: boolean
+  randomize_question: boolean
+  randomize_choice: boolean
+  question_count: number
+}
+
 interface ExamPasswordModalProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  courseId: string
-  examId: string
-  groupId: string
-  examCode: string
-  settingId: string
+  scheduleId: string
 }
 
 export default function ExamPasswordModal({ 
   isOpen, 
   onOpenChange, 
-  courseId, 
-  examId, 
-  groupId, 
-  settingId,
-  examCode 
+  scheduleId
 }: ExamPasswordModalProps) {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [examSettings, setExamSettings] = useState<ISetting | null>(null)
+  const [examSchedule, setExamSchedule] = useState<ExamSchedule | null>(null)
   const router = useRouter()
 
-  // Fetch exam settings when modal opens
+  // Fetch exam schedule when modal opens
   useEffect(() => {
-    if (isOpen) {
-      fetchExamSettings()
+    if (isOpen && scheduleId) {
+      fetchExamSchedule()
     }
-  }, [isOpen])
+  }, [isOpen, scheduleId])
 
-  const fetchExamSettings = async () => {
+  const fetchExamSchedule = async () => {
     try {
-      const response = await clientAPI.get(`/course?course_id=${courseId}&group_id=${groupId}&setting_id=${settingId}`)
-      if (response.data.code === 200) {
-        setExamSettings(response.data.data)
+      const scheduleResponse = await clientAPI.get(`/exam-schedule/${scheduleId}`)
+      if (scheduleResponse.data.code === 200) {
+        const schedule = scheduleResponse.data.data
+        setExamSchedule(schedule)
       }
     } catch (err) {
-      console.error("Failed to fetch exam settings:", err)
+      console.error("Failed to fetch exam schedule:", err)
     }
   }
 
   const checkExamConditions = () => {
-    if (!examSettings) {
+    if (!examSchedule) {
       toast.error("Could not verify exam settings")
       return false
     }
 
     const now = new Date()
-    const openTime = new Date(examSettings.open_time)
-    const closeTime = new Date(examSettings.close_time)
+    const openTime = new Date(examSchedule.open_time)
+    const closeTime = new Date(examSchedule.close_time)
 
     // Check if exam is within time window
     if (now < openTime) {
@@ -69,7 +83,7 @@ export default function ExamPasswordModal({
     }
 
     // Check if user has remaining attempts
-    if (examSettings.allowed_attempts <= 0) {
+    if (examSchedule.allowed_attempts <= 0) {
       toast.error("You have no remaining attempts for this exam")
       return false
     }
@@ -94,13 +108,13 @@ export default function ExamPasswordModal({
         return
       }
 
-      // Verify password with the backend
-      const response = await clientAPI.post(`/course/verify?course_id=${courseId}&group_id=${groupId}&setting_id=${settingId}&password=${password}`)
+      // Verify password with the backend using schedule ID
+      const response = await clientAPI.post(`/exam-schedule/${scheduleId}/verify`, { password })
       console.log(response.data)
       if (response.data.code == 200) {
         toast.success("Password verified successfully")
-        // Navigate to the exam page
-        router.push(`/exam?course_id=${courseId}&group_id=${groupId}&setting_id=${settingId}&code=${password}`)
+        // Navigate to the exam page with schedule ID
+        router.push(`/exam?schedule_id=${scheduleId}`)
       } else {
         toast.error("Incorrect password")
       }
@@ -120,11 +134,11 @@ export default function ExamPasswordModal({
           <p className="text-sm text-gray-500">
             This exam requires a password to access. Please enter the password provided by your instructor.
           </p>
-          {examSettings && (
+          {examSchedule && (
             <div className="mb-4 text-sm">
-              <p><strong>Exam Schedule:</strong> {new Date(examSettings.open_time).toLocaleString()} - {new Date(examSettings.close_time).toLocaleString()}</p>
-              <p><strong>Allowed Attempts:</strong> {examSettings.allowed_attempts}</p>
-              {examSettings.ip_range && <p><strong>IP Range:</strong> {examSettings.ip_range}</p>}
+              <p><strong>Exam Schedule:</strong> {new Date(examSchedule.open_time).toLocaleString()} - {new Date(examSchedule.close_time).toLocaleString()}</p>
+              <p><strong>Allowed Attempts:</strong> {examSchedule.allowed_attempts}</p>
+              {examSchedule.ip_range && <p><strong>IP Range:</strong> {examSchedule.ip_range}</p>}
             </div>
           )}
           <Input
@@ -151,4 +165,4 @@ export default function ExamPasswordModal({
       </ModalContent>
     </Modal>
   )
-} 
+}

@@ -22,6 +22,7 @@ export const UserRoute = new Elysia({ prefix: '/user' })
             .get('', catchAsync(async ({ controller }: UserContext) => await controller.getUsers()))
             .get('/:id', catchAsync(async ({ params, controller }: UserContext & { params: { id: string } }) => await controller.getUser(params.id)))
             .get('/category/:id', catchAsync(async ({ params, controller }: UserContext & { params: { id: string } }) => await controller.getCategory(params.id)))
+            .get('/bank/:id', catchAsync(async ({ params, controller }: UserContext & { params: { id: string } }) => await controller.getBank(params.id)))
             .patch('/:id', catchAsync(async ({ params, body, controller }: UserContext & { params: { id: string }, body: UpdateUserBody }) => await controller.updateUser(params.id, body)), {
                 body: updateUserSchema
             })

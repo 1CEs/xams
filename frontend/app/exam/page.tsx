@@ -58,13 +58,10 @@ interface ExamResult {
 
 const ExaminationPage = () => {
   const params = useSearchParams()
-  const course_id = params.get('course_id')
-  const group_id = params.get('group_id')
-  const setting_id = params.get('setting_id')
-  const code = params.get('code')
+  const schedule_id = params.get('schedule_id')
   
   const [exam, setExam] = useState<ExamResponse | null>(null)
-  const [setting, setSetting] = useState<ISetting | null>(null)
+  const [setting, setSetting] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
   const [answers, setAnswers] = useState<Answer[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -127,9 +124,9 @@ const ExaminationPage = () => {
         exam.questions.forEach(question => {
           if (question.isRandomChoices) {
             localStorage.removeItem(`exam_${exam._id}_randomized_choices_${question._id}`)
-            // Also check for code-based storage
-            if (code) {
-              localStorage.removeItem(`exam_${code}_randomized_choices_${question._id}`)
+            // Also check for schedule-based storage
+            if (schedule_id) {
+              localStorage.removeItem(`exam_${schedule_id}_randomized_choices_${question._id}`)
             }
           }
           // Also clear for nested questions
@@ -137,9 +134,9 @@ const ExaminationPage = () => {
             question.questions.forEach(subQuestion => {
               if (subQuestion.isRandomChoices) {
                 localStorage.removeItem(`exam_${exam._id}_randomized_choices_${subQuestion._id}`)
-                // Also check for code-based storage
-                if (code) {
-                  localStorage.removeItem(`exam_${code}_randomized_choices_${subQuestion._id}`)
+                // Also check for schedule-based storage
+                if (schedule_id) {
+                  localStorage.removeItem(`exam_${schedule_id}_randomized_choices_${subQuestion._id}`)
                 }
               }
             })
@@ -147,7 +144,7 @@ const ExaminationPage = () => {
         })
       }
     }
-  }, [exam, code])
+  }, [exam, schedule_id])
 
   // Memoize computed values
   const totalPages = useMemo(() => 
@@ -174,17 +171,28 @@ const ExaminationPage = () => {
     const fetchExam = async () => {
       try {
         let examData: ExamResponse | null = null
-        const setting = await clientAPI.get(`/course/setting?course_id=${course_id}&group_id=${group_id}&setting_id=${setting_id}`)
-        if (setting.data.code === 200) {
-          setSetting(setting.data.data)
-          const exam = await clientAPI.get(`/exam/${setting.data.data.exam_id}`)
-          if (exam.data.code === 200) {
-            examData = exam.data.data
+        const scheduleResponse = await clientAPI.get(`/exam-schedule/${schedule_id}`)
+        if (scheduleResponse.data.code === 200) {
+          const scheduleData = scheduleResponse.data.data
+          setSetting(scheduleData)
+          
+          // Check if current time is within exam period
+          const now = new Date()
+          const openTime = new Date(scheduleData.open_time)
+          const closeTime = new Date(scheduleData.close_time)
+          
+          if (now < openTime || now > closeTime) {
+            // Exam is not available, redirect to overview page
+            router.push(`/overview`)
+            return
           }
+          
+          // The scheduleData is now the exam schedule directly
+          examData = scheduleData
         }
 
         // Load saved answers from localStorage
-        const savedAnswers = localStorage.getItem(`exam_answers_${code}`)
+        const savedAnswers = localStorage.getItem(`exam_answers_${schedule_id}`)
 
         // Initialize answers for all questions including sub-questions
         let initialAnswers: Answer[] = []
@@ -211,7 +219,9 @@ const ExaminationPage = () => {
           })
         }
 
-        initializeAnswers(exam?.questions || [])
+        if (examData) {
+          initializeAnswers(examData.questions || [])
+        }
 
         // If there are saved answers, merge them with the initial answers
         if (savedAnswers) {
@@ -223,17 +233,17 @@ const ExaminationPage = () => {
         }
 
         // Ensure randomized choices are properly synchronized with saved answers
-        if (examData && code) {
+        if (examData && schedule_id) {
           const ensureRandomizedChoices = (questions: Question[]) => {
             questions.forEach(q => {
               if (q.isRandomChoices && q.choices) {
                 // Check if randomized choices exist in localStorage
-                const storedRandomizedChoices = localStorage.getItem(`exam_${code}_randomized_choices_${q._id}`);
+                const storedRandomizedChoices = localStorage.getItem(`exam_${schedule_id}_randomized_choices_${q._id}`);
                 
                 // If not, create and store them
                 if (!storedRandomizedChoices) {
                   const shuffledChoices = [...q.choices].sort(() => Math.random() - 0.5);
-                  localStorage.setItem(`exam_${code}_randomized_choices_${q._id}`, JSON.stringify(shuffledChoices));
+                  localStorage.setItem(`exam_${schedule_id}_randomized_choices_${q._id}`, JSON.stringify(shuffledChoices));
                 }
               }
               
@@ -257,10 +267,10 @@ const ExaminationPage = () => {
       }
     }
 
-    if (code && !examLoaded) {
+    if (schedule_id && !examLoaded) {
       fetchExam()
     }
-  }, [code, examLoaded])
+  }, [schedule_id, examLoaded, router])
 
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true)
@@ -465,7 +475,7 @@ const ExaminationPage = () => {
                 answers={answers}
                 setAnswers={setAnswers}
                 examId={exam._id}
-                code={code || undefined}
+                code={schedule_id || undefined}
               />
             )
           })}

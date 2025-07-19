@@ -1,5 +1,6 @@
-import { Answer } from "../../../types/exam";
+import { Answer, ExamResult } from "../../../types/exam";
 import { IExamination } from "../model/interface/iexamination";
+import { IExaminationSchedule } from "../model/interface/iexamination-schedule";
 import { IQuestion } from "../model/interface/iquestion";
 import { ExaminationRepository } from "../repository/exam.repository";
 import { IExaminationRepository } from "../repository/interface/iexam.repository";
@@ -57,14 +58,27 @@ export class ExaminationService implements IExaminationService {
         return result
     }
 
-    // Nested Question methods
     async addNestedQuestion(id: string, payload: { question: string; type: string; score: number; questions: IQuestion[] }) {
         const result = await this._repository.addNestedQuestion(id, payload)
         return result
     }
 
-    async resultSubmit(examId: string, answers: Answer[]) {
-        const result = await this._repository.resultSubmit(examId, answers)
+    async addNestedQuestionFromExisting(examId: string, nestedQuestionData: { question: string; score: number }, questionIds: string[]) {
+        const result = await this._repository.addNestedQuestionFromExisting(examId, nestedQuestionData, questionIds)
         return result
+    }
+
+    async resultSubmit(examId: string, answers: Answer[], examSchedule?: IExaminationSchedule) {
+        // If an examination schedule is provided, use it for grading instead of fetching the exam
+        if (examSchedule) {
+            // We're passing the examination schedule directly to the repository
+            // This allows us to use the snapshot of questions from when the schedule was created
+            const result = await this._repository.resultSubmitWithSchedule(examId, answers, examSchedule);
+            return result;
+        } else {
+            // Use the original exam if no schedule is provided (backward compatibility)
+            const result = await this._repository.resultSubmit(examId, answers);
+            return result;
+        }
     }
 }

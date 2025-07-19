@@ -15,7 +15,7 @@ import GroupFormModal from "@/components/overview/modals/group-form-modal"
 import ExamScheduleModal from "@/components/overview/modals/exam-schedule-modal"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { today, getLocalTimeZone } from '@internationalized/date'
 import { LearnersTable } from "@/components/course/learner-table"
 import { useRouter } from "nextjs-toploader/app"
@@ -23,10 +23,32 @@ import CourseUpdateModal from "@/components/overview/modals/course-update-modal"
 import ExamScheduleCard from "@/components/overview/exam-schedule-card"
 
 export default function CoursePage() {
+
     const params = useSearchParams()
     const _id = params.get('id')
     const { data, error, isLoading } = useFetch<ServerResponse<CourseResponse>>(`/course/${_id}`)
-    const { data: instructor } = useFetch<ServerResponse<UserResponse>>(`/user/${data?.data.instructor_id}`)
+    console.log(data?.data)
+    
+    // Fetch instructor data when course data becomes available
+    const [instructor, setInstructor] = useState<ServerResponse<UserResponse> | null>(null)
+    const [instructorLoading, setInstructorLoading] = useState(false)
+    
+    useEffect(() => {
+        if (data?.data?.instructor_id) {
+            setInstructorLoading(true)
+            clientAPI.get<ServerResponse<UserResponse>>(`/user/${data.data.instructor_id}`)
+                .then(response => {
+                    setInstructor(response.data)
+                })
+                .catch(error => {
+                    console.error('Error fetching instructor:', error)
+                    setInstructor(null)
+                })
+                .finally(() => {
+                    setInstructorLoading(false)
+                })
+        }
+    }, [data?.data?.instructor_id])
     const { isOpen, onOpen, onOpenChange } = useDisclosure()
     const { trigger, setTrigger } = useTrigger()
     const router = useRouter()
@@ -200,7 +222,10 @@ export default function CoursePage() {
                                                             courseId={_id as string}
                                                             key={idx}
                                                             groupId={group._id}
-                                                            setting={setting}
+                                                            setting={{
+                                                                _id: setting._id,
+                                                                schedule_id: setting.schedule_id
+                                                            }}
                                                             index={idx}
                                                             groupName={group.group_name}
                                                             onDelete={openDeleteExamConfirmation}
@@ -337,8 +362,7 @@ export default function CoursePage() {
                                     return
                                 }
 
-                                // Open the modal directly, group selection is handled in the modal
-                                onScheduleModalOpen()
+                                router.push(`/overview/create/schedule?courseId=${_id}`)
                             }}
                         >
                             <UisSchedule />

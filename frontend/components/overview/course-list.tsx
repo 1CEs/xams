@@ -12,7 +12,7 @@ type Props = {};
 const CourseList = (props: Props) => {
   const { user } = useUserStore();
   const { data, error, isLoading } = useFetch<ServerResponse<CourseResponse[]>>(
-    `course?instructor_id=${user?._id}`
+    `course/instructor/${user?._id}`
   );
 
   if (isLoading) {
