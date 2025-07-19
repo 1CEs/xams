@@ -24,6 +24,25 @@ import {
   ModalBody,
   ModalFooter
 } from "@nextui-org/react"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import {
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { 
   UisSchedule,
   HealthiconsIExamMultipleChoice,
@@ -47,7 +66,7 @@ import { toast } from 'react-toastify'
 interface Question {
   _id: string
   question: string
-  type: 'multiple-choice' | 'true-false' | 'short-answer' | 'nested'
+  type: 'mc' | 'tf' | 'sa' | 'nested'
   score: number
   choices?: {
     content: string
@@ -79,6 +98,94 @@ interface SelectedQuestion extends Question {
   examTitle: string
 }
 
+// Sortable Question Item Component
+interface SortableQuestionItemProps {
+  question: SelectedQuestion
+  index: number
+  onRemove: (questionId: string, examId: string) => void
+  getQuestionTypeIcon: (type: string) => JSX.Element
+  getQuestionTypeLabel: (type: string) => string
+}
+
+function SortableQuestionItem({ 
+  question, 
+  index, 
+  onRemove, 
+  getQuestionTypeIcon, 
+  getQuestionTypeLabel 
+}: SortableQuestionItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `${question.examId}-${question._id}` })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <Card 
+      ref={setNodeRef} 
+      style={style}
+      className={`border border-default-200 ${isDragging ? 'shadow-lg' : ''}`}
+    >
+      <CardBody className="p-3">
+        <div className="flex items-start gap-2">
+          {/* Drag Handle */}
+          <div 
+            {...attributes} 
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-default-100 transition-colors"
+          >
+            <div className="w-2 h-4 flex flex-col justify-center gap-0.5">
+              <div className="w-full h-0.5 bg-default-400 rounded"></div>
+              <div className="w-full h-0.5 bg-default-400 rounded"></div>
+              <div className="w-full h-0.5 bg-default-400 rounded"></div>
+            </div>
+          </div>
+          
+          <div className="flex-1">
+            <div className="flex items-center gap-1 mb-1">
+              {getQuestionTypeIcon(question.type)}
+              <Chip size="sm" variant="flat" color="secondary">
+                {question.score} pts
+              </Chip>
+            </div>
+            
+            <p className="text-xs font-medium text-primary mb-1">
+              {question.examTitle}
+            </p>
+            
+            <p className="text-sm font-medium line-clamp-2">
+              Q{index + 1}: {question.question}
+            </p>
+            
+            <p className="text-xs text-default-500 mt-1">
+              {getQuestionTypeLabel(question.type)}
+            </p>
+          </div>
+          
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            color="danger"
+            onPress={() => onRemove(question._id, question.examId)}
+          >
+            <MdiBin className="w-4 h-4" />
+          </Button>
+        </div>
+      </CardBody>
+    </Card>
+  )
+}
+
 export default function CreateSchedulePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -92,17 +199,45 @@ export default function CreateSchedulePage() {
   const [groups, setGroups] = useState<{ group_name: string; _id?: string }[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedGroup, setSelectedGroup] = useState<string>('')
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([])
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [selectedExamQuestionCount, setSelectedExamQuestionCount] = useState<number>(0)
   const [selectedQuestions, setSelectedQuestions] = useState<SelectedQuestion[]>([])
   const [currentStep, setCurrentStep] = useState<'exam' | 'questions' | 'schedule'>('exam')
   const [examQuestions, setExamQuestions] = useState<{[examId: string]: Question[]}>({})  
+  const [selectionMode, setSelectionMode] = useState<'manual' | 'random' | 'hybrid' | null>(null)
+  const [selectionHistory, setSelectionHistory] = useState<Array<{mode: 'manual' | 'random', count?: number, timestamp: number}>>([])  
+  
+  // Per-examination selection methods
+  const [examSelectionMethods, setExamSelectionMethods] = useState<{[examId: string]: 'manual' | 'random'}>({}) 
+  const [examRandomCounts, setExamRandomCounts] = useState<{[examId: string]: number}>({})
   
   // Modal state
   const [isExamModalOpen, setIsExamModalOpen] = useState<boolean>(false)
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState<boolean>(false)
   const [selectedExams, setSelectedExams] = useState<string[]>([])
+  
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+  
+  // Handle drag end for question reordering
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    
+    if (over && active.id !== over.id) {
+      setSelectedQuestions((items) => {
+        const oldIndex = items.findIndex((item) => `${item.examId}-${item._id}` === active.id)
+        const newIndex = items.findIndex((item) => `${item.examId}-${item._id}` === over.id)
+        
+        return arrayMove(items, oldIndex, newIndex)
+      })
+    }
+  }
   
   // Helper function to format Date objects for datetime-local input
   const formatDateForInput = (date: Date): string => {
@@ -119,11 +254,11 @@ export default function CreateSchedulePage() {
   // Helper functions for question types
   const getQuestionTypeIcon = (type: string) => {
     switch (type) {
-      case 'multiple-choice':
+      case 'mc':
         return <HealthiconsIExamMultipleChoice className="w-4 h-4" />
-      case 'true-false':
+      case 'tf':
         return <PajamasFalsePositive className="w-4 h-4" />
-      case 'short-answer':
+      case 'sa':
         return <CarbonTextLongParagraph className="w-4 h-4" />
       case 'nested':
         return <IconParkTwotoneNestedArrows className="w-4 h-4" />
@@ -134,11 +269,11 @@ export default function CreateSchedulePage() {
 
   const getQuestionTypeLabel = (type: string) => {
     switch (type) {
-      case 'multiple-choice':
+      case 'mc':
         return 'Multiple Choice'
-      case 'true-false':
+      case 'tf':
         return 'True/False'
-      case 'short-answer':
+      case 'sa':
         return 'Short Answer'
       case 'nested':
         return 'Nested Questions'
@@ -151,6 +286,35 @@ export default function CreateSchedulePage() {
     setSelectedQuestions(prev => 
       prev.filter(q => !(q._id === questionId && q.examId === examId))
     )
+  }
+
+  // Track manual question selection/deselection
+  const handleManualQuestionToggle = (question: Question, examId: string, examTitle: string, isSelected: boolean) => {
+    if (isSelected) {
+      // Remove question
+      setSelectedQuestions(prev => 
+        prev.filter(q => !(q._id === question._id && q.examId === examId))
+      );
+    } else {
+      // Add question
+      const selectedQuestion: SelectedQuestion = {
+        ...question,
+        examId,
+        examTitle
+      };
+      setSelectedQuestions(prev => [...prev, selectedQuestion]);
+      
+      // Update selection mode to hybrid if we're adding to existing random selections
+      if (selectionMode === 'random') {
+        setSelectionMode('hybrid');
+      }
+      
+      // Add to selection history
+      setSelectionHistory(prev => [...prev, {
+        mode: 'manual',
+        timestamp: Date.now()
+      }]);
+    }
   }
 
   // Fetch questions for selected exams
@@ -244,16 +408,16 @@ export default function CreateSchedulePage() {
           if (groups) {
             setGroups(groups)
             if (groups.length > 0) {
-              // If groupId is provided in URL, use that, otherwise use first group
+              // If groupId is provided in URL, use that, otherwise select all groups
               if (groupId) {
                 const foundGroup = groups.find((g: any) => g._id === groupId)
                 if (foundGroup) {
-                  setSelectedGroup(foundGroup.group_name)
+                  setSelectedGroups([foundGroup.group_name])
                 } else {
-                  setSelectedGroup(groups[0].group_name)
+                  setSelectedGroups(groups.map((g: any) => g.group_name))
                 }
               } else {
-                setSelectedGroup(groups[0].group_name)
+                setSelectedGroups(groups.map((g: any) => g.group_name))
               }
             }
           }
@@ -280,24 +444,55 @@ export default function CreateSchedulePage() {
     }
   }
 
-  const handleExamSelectionChange = async (updatedExamIds: string[]) => {
+  const handleExamSelectionChange = async (updatedExamIds: string[], isAdditive: boolean = false) => {
     setExamSettingForm({
       ...examSettingForm,
       exam_ids: updatedExamIds
     });
     setSelectedExams(updatedExamIds);
     
-    // Clear previous selections when changing exams
-    setSelectedQuestions([]);
+    // Only clear previous selections if not in additive mode
+    if (!isAdditive) {
+      setSelectedQuestions([]);
+      // Initialize selection methods for new exams (default to manual)
+      const newMethods: {[examId: string]: 'manual' | 'random'} = {};
+      const newCounts: {[examId: string]: number} = {};
+      updatedExamIds.forEach(examId => {
+        newMethods[examId] = 'manual';
+        newCounts[examId] = 5; // default random count
+      });
+      setExamSelectionMethods(newMethods);
+      setExamRandomCounts(newCounts);
+    }
     
     if (updatedExamIds.length > 0) {
-      // Close exam modal and open question selection modal
+      // Close exam modal
       setIsExamModalOpen(false);
       
-      // Fetch questions for selected exams
-      await fetchExamQuestions(updatedExamIds);
+      // Fetch questions for newly selected exams
+      const newExamIds = isAdditive 
+        ? updatedExamIds.filter(id => !Object.keys(examQuestions).includes(id))
+        : updatedExamIds;
       
-      // Move to question selection step
+      if (newExamIds.length > 0) {
+        await fetchExamQuestions(newExamIds);
+      }
+      
+      // Initialize selection methods for new exams in additive mode
+      if (isAdditive) {
+        const newMethods = {...examSelectionMethods};
+        const newCounts = {...examRandomCounts};
+        newExamIds.forEach(examId => {
+          if (!newMethods[examId]) {
+            newMethods[examId] = 'manual';
+            newCounts[examId] = 5;
+          }
+        });
+        setExamSelectionMethods(newMethods);
+        setExamRandomCounts(newCounts);
+      }
+      
+      // Go directly to question selection
       setCurrentStep('questions');
       setIsQuestionModalOpen(true);
       
@@ -325,6 +520,59 @@ export default function CreateSchedulePage() {
     }
   }
 
+  // Handle adding more exams to existing selection
+  const handleAddMoreExams = () => {
+    setIsQuestionModalOpen(false);
+    setIsExamModalOpen(true);
+    // Don't change currentStep, keep it as 'questions' to maintain context
+  }
+
+
+
+  // Generate random questions for a specific exam
+  const handleRandomSelectionForExam = (examId: string, count: number) => {
+    const exam = examinations.find(e => e._id === examId);
+    const questions = examQuestions[examId] || [];
+    
+    if (!exam || questions.length === 0) return;
+    
+    // Remove existing selections for this exam
+    setSelectedQuestions(prev => prev.filter(q => q.examId !== examId));
+    
+    // Shuffle and select random questions
+    const shuffled = questions.sort(() => Math.random() - 0.5);
+    const randomSelected = shuffled.slice(0, Math.min(count, questions.length));
+    
+    // Convert to SelectedQuestion format
+    const newSelectedQuestions: SelectedQuestion[] = randomSelected.map(question => ({
+      ...question,
+      examId,
+      examTitle: exam.title
+    }));
+    
+    // Add to existing selections
+    setSelectedQuestions(prev => [...prev, ...newSelectedQuestions]);
+    
+    // Update selection mode to hybrid if we have mixed methods
+    const hasManualSelections = Object.values(examSelectionMethods).some(method => method === 'manual');
+    const hasRandomSelections = Object.values(examSelectionMethods).some(method => method === 'random');
+    
+    if (hasManualSelections && hasRandomSelections) {
+      setSelectionMode('hybrid');
+    } else if (Object.values(examSelectionMethods).every(method => method === 'random')) {
+      setSelectionMode('random');
+    } else {
+      setSelectionMode('manual');
+    }
+    
+    // Add to selection history
+    setSelectionHistory(prev => [...prev, {
+      mode: 'random',
+      count: newSelectedQuestions.length,
+      timestamp: Date.now()
+    }]);
+  }
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
@@ -344,6 +592,13 @@ export default function CreateSchedulePage() {
       return
     }
     
+    // Validate selected groups
+    if (selectedGroups.length === 0) {
+      setError('Please select at least one group')
+      setSubmitting(false)
+      return
+    }
+    
     try {
       // Format dates to ISO strings for API
       const formattedForm = {
@@ -355,21 +610,50 @@ export default function CreateSchedulePage() {
       // Include selected questions in the API call
       const postData = {
         ...formattedForm,
-        exam_id: formattedForm.exam_ids[0], // API still expects a single exam_id for now
+        exam_id: formattedForm.exam_ids[0], // Primary exam for backward compatibility
+        exam_ids: formattedForm.exam_ids, // All selected exam IDs
         selected_questions: selectedQuestions.map(q => ({
           question_id: q._id,
           exam_id: q.examId,
+          exam_title: q.examTitle,
+          question_type: q.type,
           score: q.score
         })),
-        question_count: selectedQuestions.length
+        question_count: selectedQuestions.length,
+        total_score: selectedQuestions.reduce((total, q) => total + q.score, 0),
+        exam_sources: selectedExams.map(examId => {
+          const exam = examinations.find(e => e._id === examId);
+          const questionsFromExam = selectedQuestions.filter(q => q.examId === examId);
+          return {
+            exam_id: examId,
+            exam_title: exam?.title || 'Unknown',
+            question_count: questionsFromExam.length,
+            total_score: questionsFromExam.reduce((total, q) => total + q.score, 0)
+          };
+        })
       }
 
-      const res = await clientAPI.post(
-        `/course/${courseId}/group/${encodeURIComponent(selectedGroup)}/exam-setting`, 
-        postData
-      )
+      // Create schedules for all selected groups
+      const promises = selectedGroups.map(async (groupName) => {
+        return clientAPI.post(
+          `/course/${courseId}/group/${encodeURIComponent(groupName)}/exam-setting`, 
+          {
+            ...postData,
+            schedule_name: selectedGroups.length > 1 
+              ? `${postData.schedule_name} - ${groupName}`
+              : postData.schedule_name
+          }
+        )
+      })
       
-      toast.success('Examination schedule created successfully')
+      await Promise.all(promises)
+      
+      if (selectedGroups.length === 1) {
+        toast.success('Examination schedule created successfully')
+      } else {
+        toast.success(`Examination schedules created successfully for ${selectedGroups.length} groups`)
+      }
+      
       setTrigger(!trigger)
       
       // Navigate back to the schedules page
@@ -388,15 +672,10 @@ export default function CreateSchedulePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className="container mx-auto px-4 py-0 max-w-7xl">
       {/* Header with breadcrumbs */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <Breadcrumbs size="sm" className="mb-2">
-            <BreadcrumbItem href="/overview">Overview</BreadcrumbItem>
-            <BreadcrumbItem href="/overview/create/schedule">Schedules</BreadcrumbItem>
-            <BreadcrumbItem>Create Schedule</BreadcrumbItem>
-          </Breadcrumbs>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <UisSchedule className="text-secondary" />
             Create Exam Schedule
@@ -434,31 +713,89 @@ export default function CreateSchedulePage() {
                         isDisabled={submitting || examinations.length === 0}
                       >
                         <div className="flex flex-col items-start">
-                          <span className="text-sm text-default-500">Select Examination</span>
+                          <span className="text-sm text-default-500">
+                            {selectedQuestions.length > 0 ? 'Add More Examinations' : 'Select Examination'}
+                          </span>
                           <span>{getSelectedExamsTitle()}</span>
                         </div>
                       </Button>
                     </div>
                     
                     <div>
-                      <Select
-                        label="Select Group"
-                        placeholder="Select a group"
-                        isRequired
-                        isDisabled={submitting || groups.length === 0}
-                        selectedKeys={selectedGroup ? [selectedGroup] : []}
-                        onChange={(e) => setSelectedGroup(e.target.value)}
-                      >
-                        {groups.length > 0 ? (
-                          groups.map((group) => (
-                            <SelectItem key={group.group_name} value={group.group_name}>
-                              {group.group_name}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium text-foreground">
+                            Select Groups
+                            <span className="text-danger ml-1">*</span>
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="light"
+                              color="primary"
+                              onPress={() => {
+                                if (selectedGroups.length === groups.length) {
+                                  setSelectedGroups([])
+                                } else {
+                                  setSelectedGroups(groups.map(g => g.group_name))
+                                }
+                              }}
+                              isDisabled={submitting || groups.length === 0}
+                            >
+                              {selectedGroups.length === groups.length ? 'Deselect All' : 'Select All'}
+                            </Button>
+                            <Badge color="primary" variant="flat">
+                              {selectedGroups.length}/{groups.length}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <Select
+                          placeholder={selectedGroups.length === 0 ? "Select groups" : `${selectedGroups.length} group${selectedGroups.length > 1 ? 's' : ''} selected`}
+                          isRequired
+                          isDisabled={submitting || groups.length === 0}
+                          selectedKeys={selectedGroups}
+                          selectionMode="multiple"
+                          onSelectionChange={(keys) => {
+                            const selectedArray = Array.from(keys) as string[]
+                            setSelectedGroups(selectedArray)
+                          }}
+                          classNames={{
+                            trigger: "min-h-12",
+                            value: "text-small"
+                          }}
+                        >
+                          {groups.length > 0 ? (
+                            groups.map((group) => (
+                              <SelectItem key={group.group_name} value={group.group_name}>
+                                {group.group_name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem key="no-groups" value="" isDisabled>
+                              No groups available
                             </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem key="no-groups" value="">No groups available</SelectItem>
+                          )}
+                        </Select>
+                        
+                        {selectedGroups.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {selectedGroups.map((groupName) => (
+                              <Chip
+                                key={groupName}
+                                size="sm"
+                                variant="flat"
+                                color="primary"
+                                onClose={() => {
+                                  setSelectedGroups(prev => prev.filter(g => g !== groupName))
+                                }}
+                              >
+                                {groupName}
+                              </Chip>
+                            ))}
+                          </div>
                         )}
-                      </Select>
+                      </div>
                     </div>
                   </div>
                   
@@ -477,23 +814,65 @@ export default function CreateSchedulePage() {
                           </Badge>
                         </div>
                         
-                        <Button
-                          size="sm"
-                          color="primary"
-                          variant="bordered"
-                          startContent={<MingcuteAddFill className="w-4 h-4" />}
-                          onPress={() => setIsQuestionModalOpen(true)}
-                          isDisabled={submitting}
-                        >
-                          Modify Selection
-                        </Button>
+                        <div className="flex gap-2">
+                          {selectionMode === 'manual' ? (
+                            <>
+                              <Button
+                                size="sm"
+                                color="secondary"
+                                variant="bordered"
+                                startContent={<MingcuteAddFill className="w-4 h-4" />}
+                                onPress={() => setIsQuestionModalOpen(true)}
+                                isDisabled={submitting}
+                              >
+                                Modify Selection
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                color="secondary"
+                                variant="bordered"
+                                onPress={() => {}}
+                                isDisabled={submitting}
+                              >
+                                Change Count
+                              </Button>
+                              
+                            </>
+                          )}
+                        </div>
                       </div>
                       
-                      <div className="text-sm text-default-600">
-                        Questions selected from: {selectedExams.map(examId => {
-                          const exam = examinations.find(e => e._id === examId);
-                          return exam?.title;
-                        }).filter(Boolean).join(', ')}
+                      <div className="space-y-2">
+                        <div className="text-sm text-default-600">
+                          Questions from {selectedExams.length} examination{selectedExams.length > 1 ? 's' : ''}:
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedExams.map(examId => {
+                            const exam = examinations.find(e => e._id === examId);
+                            const questionsFromExam = selectedQuestions.filter(q => q.examId === examId);
+                            
+                            if (!exam) return null;
+                            
+                            return (
+                              <Chip 
+                                key={examId}
+                                size="sm" 
+                                variant="flat" 
+                                color="primary"
+                                className="text-xs"
+                              >
+                                {exam.title} ({questionsFromExam.length} questions)
+                              </Chip>
+                            );
+                          })}
+                        </div>
+                        
+                        <div className="flex gap-4 text-xs text-default-500">
+                          <span>Add more questions by clicking "Modify Selection" or "Add More Exams"</span>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -572,6 +951,7 @@ export default function CreateSchedulePage() {
                     
                     <div className="flex flex-col gap-4">
                       <Switch
+                        color="secondary"
                         isSelected={examSettingForm.allowed_review}
                         onValueChange={(value) => setExamSettingForm({...examSettingForm, allowed_review: value})}
                         isDisabled={submitting}
@@ -580,6 +960,7 @@ export default function CreateSchedulePage() {
                       </Switch>
                       
                       <Switch
+                        color="secondary"
                         isSelected={examSettingForm.show_answer}
                         onValueChange={(value) => setExamSettingForm({...examSettingForm, show_answer: value})}
                         isDisabled={submitting}
@@ -588,6 +969,7 @@ export default function CreateSchedulePage() {
                       </Switch>
                       
                       <Switch
+                        color="secondary"
                         isSelected={examSettingForm.randomize_question}
                         onValueChange={(value) => setExamSettingForm({...examSettingForm, randomize_question: value})}
                         isDisabled={submitting}
@@ -596,6 +978,7 @@ export default function CreateSchedulePage() {
                       </Switch>
                       
                       <Switch
+                        color="secondary"
                         isSelected={examSettingForm.randomize_choice}
                         onValueChange={(value) => setExamSettingForm({...examSettingForm, randomize_choice: value})}
                         isDisabled={submitting}
@@ -619,7 +1002,7 @@ export default function CreateSchedulePage() {
                       type="submit"
                       color="secondary"
                       isLoading={submitting}
-                      isDisabled={submitting || selectedQuestions.length === 0 || !selectedGroup}
+                      isDisabled={submitting || selectedQuestions.length === 0 || selectedGroups.length === 0}
                     >
                       Create Schedule
                     </Button>
@@ -634,12 +1017,19 @@ export default function CreateSchedulePage() {
         <div className="lg:col-span-1">
           <Card className="border-none shadow-lg sticky top-6">
             <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <IconParkOutlineCheckCorrect className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-semibold">Selected Questions</h3>
-                <Badge color="primary" variant="flat">
-                  {selectedQuestions.length}
-                </Badge>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <IconParkOutlineCheckCorrect className="w-5 h-5 text-primary" />
+                  <h3 className="text-lg font-semibold">Selected Questions</h3>
+                  <Badge color="primary" variant="flat">
+                    {selectedQuestions.length}
+                  </Badge>
+                </div>
+                {selectedQuestions.length > 1 && (
+                  <div className="text-xs text-default-500">
+                    Drag to reorder
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardBody>
@@ -655,46 +1045,29 @@ export default function CreateSchedulePage() {
                 </div>
               ) : (
                 <ScrollShadow className="max-h-[500px]">
-                  <div className="space-y-3">
-                    {selectedQuestions.map((question, index) => (
-                      <Card key={`${question.examId}-${question._id}`} className="border border-default-200">
-                        <CardBody className="p-3">
-                          <div className="flex items-start gap-2">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-1 mb-1">
-                                {getQuestionTypeIcon(question.type)}
-                                <Chip size="sm" variant="flat" color="secondary">
-                                  {question.score} pts
-                                </Chip>
-                              </div>
-                              
-                              <p className="text-xs font-medium text-primary mb-1">
-                                {question.examTitle}
-                              </p>
-                              
-                              <p className="text-sm font-medium line-clamp-2">
-                                Q{index + 1}: {question.question}
-                              </p>
-                              
-                              <p className="text-xs text-default-500 mt-1">
-                                {getQuestionTypeLabel(question.type)}
-                              </p>
-                            </div>
-                            
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="light"
-                              color="danger"
-                              onPress={() => removeSelectedQuestion(question._id, question.examId)}
-                            >
-                              <MdiBin className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </CardBody>
-                      </Card>
-                    ))}
-                  </div>
+                  <DndContext 
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext 
+                      items={selectedQuestions.map(q => `${q.examId}-${q._id}`)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-3">
+                        {selectedQuestions.map((question, index) => (
+                          <SortableQuestionItem
+                            key={`${question.examId}-${question._id}`}
+                            question={question}
+                            index={index}
+                            onRemove={removeSelectedQuestion}
+                            getQuestionTypeIcon={getQuestionTypeIcon}
+                            getQuestionTypeLabel={getQuestionTypeLabel}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
                 </ScrollShadow>
               )}
               
@@ -712,6 +1085,73 @@ export default function CreateSchedulePage() {
                       {selectedQuestions.length}
                     </Badge>
                   </div>
+                  
+                  {/* Selection Mode Indicator */}
+                  {selectionMode && (
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-sm font-medium">Selection Mode:</span>
+                      <Chip 
+                        size="sm" 
+                        variant="flat" 
+                        color={selectionMode === 'manual' ? 'primary' : selectionMode === 'random' ? 'secondary' : 'warning'}
+                      >
+                        {selectionMode === 'manual' ? 'Manual' : selectionMode === 'random' ? 'Random' : 'Hybrid'}
+                      </Chip>
+                    </div>
+                  )}
+                  
+                  {/* Selection History */}
+                  {selectionHistory.length > 0 && selectionMode === 'hybrid' && (
+                    <div className="mt-2">
+                      <span className="text-xs text-default-500">Selection History:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectionHistory.map((entry, index) => (
+                          <Chip 
+                            key={index}
+                            size="sm" 
+                            variant="dot" 
+                            color={entry.mode === 'manual' ? 'primary' : 'secondary'}
+                          >
+                            {entry.mode === 'manual' ? 'Manual' : `Random (${entry.count})`}
+                          </Chip>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Action Buttons */}
+              {selectedQuestions.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <Button 
+                    size="sm" 
+                    variant="bordered" 
+                    color="secondary" 
+                    fullWidth
+                    onPress={() => {
+                      setIsQuestionModalOpen(true);
+                      setCurrentStep('questions');
+                    }}
+                  >
+                    Modify Selection
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="bordered" 
+                    color="danger" 
+                    fullWidth
+                    onPress={() => {
+                      setSelectedQuestions([]);
+                      setSelectionMode(null);
+                      setSelectionHistory([]);
+                      setExamSelectionMethods({});
+                      setExamRandomCounts({});
+                      setCurrentStep('exam');
+                    }}
+                  >
+                    Clear All & Restart
+                  </Button>
                 </div>
               )}
             </CardBody>
@@ -726,7 +1166,9 @@ export default function CreateSchedulePage() {
         selectedExamIds={selectedExams}
         onExamSelectionChange={(examIds) => {
           setSelectedExams(examIds);
-          handleExamSelectionChange(examIds);
+          // Check if we're in additive mode (already have questions selected)
+          const isAdditive = currentStep === 'questions' && selectedQuestions.length > 0;
+          handleExamSelectionChange(examIds, isAdditive);
         }}
         allowMultiSelect={true}
         instructorId={user?._id || ''}
@@ -748,9 +1190,14 @@ export default function CreateSchedulePage() {
       >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1 px-6 py-4">
-            <h2 className="text-xl font-bold">Select Questions</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold">Configure Question Selection</h2>
+              <Badge color="secondary" variant="flat">
+                {selectedExams.length} exam{selectedExams.length > 1 ? 's' : ''}
+              </Badge>
+            </div>
             <p className="text-sm text-default-500">
-              Choose individual questions from your selected examinations
+              Choose how to select questions for each examination. You can mix manual and random selection methods.
             </p>
           </ModalHeader>
           <ModalBody className="px-6">
@@ -758,17 +1205,27 @@ export default function CreateSchedulePage() {
               {selectedExams.map(examId => {
                 const exam = examinations.find(e => e._id === examId);
                 const questions = examQuestions[examId] || [];
+                const selectionMethod = examSelectionMethods[examId] || 'manual';
+                const randomCount = examRandomCounts[examId] || 5;
+                const selectedFromExam = selectedQuestions.filter(q => q.examId === examId);
                 
                 if (!exam) return null;
                 
                 return (
                   <div key={examId} className="border border-default-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <HealthiconsIExamMultipleChoice className="w-5 h-5 text-primary" />
-                      <h3 className="text-lg font-semibold">{exam.title}</h3>
-                      <Badge color="secondary" variant="flat">
-                        {questions.length} questions
-                      </Badge>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <HealthiconsIExamMultipleChoice className="w-5 h-5 text-primary" />
+                        <h3 className="text-lg font-semibold">{exam.title}</h3>
+                        <Badge color="secondary" variant="flat">
+                          {questions.length} total questions
+                        </Badge>
+                        {selectedFromExam.length > 0 && (
+                          <Badge color="primary" variant="flat">
+                            {selectedFromExam.length} selected
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     
                     {questions.length === 0 ? (
@@ -777,81 +1234,159 @@ export default function CreateSchedulePage() {
                         <p className="text-sm">Loading questions...</p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 gap-3">
-                        {questions.map((question, index) => {
-                          const isSelected = selectedQuestions.some(
-                            sq => sq._id === question._id && sq.examId === examId
-                          );
+                      <div className="space-y-4">
+                        {/* Selection Method Toggle */}
+                        <div className="flex gap-4">
+                          <Card 
+                            className={`flex-1 border-2 cursor-pointer transition-all ${
+                              selectionMethod === 'manual' 
+                                ? 'border-primary bg-primary/5' 
+                                : 'border-default-200 hover:border-default-300'
+                            }`}
+                            isPressable
+                            onPress={() => {
+                              setExamSelectionMethods(prev => ({...prev, [examId]: 'manual'}));
+                              // Clear any random selections for this exam
+                              setSelectedQuestions(prev => prev.filter(q => q.examId !== examId));
+                            }}
+                          >
+                            <CardBody className="p-3 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <MaterialSymbolsListAlt className="w-4 h-4 text-primary" />
+                                <span className="font-medium">Manual Selection</span>
+                              </div>
+                              <p className="text-xs text-default-500 mt-1">
+                                Choose specific questions
+                              </p>
+                            </CardBody>
+                          </Card>
                           
-                          return (
-                            <Card 
-                              key={question._id} 
-                              className={`border transition-all cursor-pointer hover:shadow-md ${
-                                isSelected 
-                                  ? 'border-primary bg-primary/5' 
-                                  : 'border-default-200 hover:border-default-300'
-                              }`}
-                              isPressable
-                              onPress={() => {
-                                if (isSelected) {
-                                  // Remove question
-                                  setSelectedQuestions(prev => 
-                                    prev.filter(q => !(q._id === question._id && q.examId === examId))
-                                  );
-                                } else {
-                                  // Add question
-                                  const selectedQuestion: SelectedQuestion = {
-                                    ...question,
-                                    examId,
-                                    examTitle: exam.title
-                                  };
-                                  setSelectedQuestions(prev => [...prev, selectedQuestion]);
-                                }
+                          <Card 
+                            className={`flex-1 border-2 cursor-pointer transition-all ${
+                              selectionMethod === 'random' 
+                                ? 'border-secondary bg-secondary/5' 
+                                : 'border-default-200 hover:border-default-300'
+                            }`}
+                            isPressable
+                            onPress={() => {
+                              setExamSelectionMethods(prev => ({...prev, [examId]: 'random'}));
+                              // Generate random selection immediately
+                              handleRandomSelectionForExam(examId, randomCount);
+                            }}
+                          >
+                            <CardBody className="p-3 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <MingcuteAddFill className="w-4 h-4 text-secondary" />
+                                <span className="font-medium">Random Selection</span>
+                              </div>
+                              <p className="text-xs text-default-500 mt-1">
+                                Auto-select questions
+                              </p>
+                            </CardBody>
+                          </Card>
+                        </div>
+                        
+                        {/* Random Count Input */}
+                        {selectionMethod === 'random' && (
+                          <div className="flex items-center gap-3">
+                            <Input
+                              type="number"
+                              label="Number of Questions"
+                              placeholder="5"
+                              value={randomCount.toString()}
+                              onChange={(e) => {
+                                const newCount = parseInt(e.target.value) || 1;
+                                setExamRandomCounts(prev => ({...prev, [examId]: newCount}));
+                                // Regenerate random selection with new count
+                                handleRandomSelectionForExam(examId, newCount);
                               }}
+                              min={1}
+                              max={questions.length}
+                              size="sm"
+                              className="w-48"
+                            />
+                            <Button
+                              size="sm"
+                              color="secondary"
+                              variant="bordered"
+                              onPress={() => handleRandomSelectionForExam(examId, randomCount)}
                             >
-                              <CardBody className="p-3">
-                                <div className="flex items-start gap-3">
-                                  <Checkbox 
-                                    isSelected={isSelected}
-                                    onChange={() => {}} // Handled by card press
-                                    className="mt-1"
-                                  />
-                                  
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      {getQuestionTypeIcon(question.type)}
-                                      <Chip size="sm" variant="flat" color="secondary">
-                                        {getQuestionTypeLabel(question.type)}
-                                      </Chip>
-                                      <Chip size="sm" variant="flat" color="primary">
-                                        {question.score} pts
-                                      </Chip>
-                                    </div>
-                                    
-                                    <p className="text-sm font-medium mb-1">
-                                      Q{index + 1}: {question.question}
-                                    </p>
-                                    
-                                    {question.type === 'multiple-choice' && question.choices && (
-                                      <div className="mt-2 space-y-1">
-                                        {question.choices.slice(0, 2).map((choice, choiceIndex) => (
-                                          <p key={choiceIndex} className="text-xs text-default-500 pl-4">
-                                            • {choice.content}
-                                          </p>
-                                        ))}
-                                        {question.choices.length > 2 && (
-                                          <p className="text-xs text-default-400 pl-4">
-                                            ... and {question.choices.length - 2} more options
-                                          </p>
-                                        )}
+                              Regenerate
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {/* Manual Question Selection */}
+                        {selectionMethod === 'manual' && (
+                          <div className="max-h-60 overflow-y-auto space-y-2">
+                            {questions.map((question, index) => {
+                              const isSelected = selectedQuestions.some(
+                                sq => sq._id === question._id && sq.examId === examId
+                              );
+                              
+                              return (
+                                <Card 
+                                  key={question._id} 
+                                  className={`border transition-all cursor-pointer hover:shadow-sm ${
+                                    isSelected 
+                                      ? 'border-primary bg-primary/5' 
+                                      : 'border-default-200 hover:border-default-300'
+                                  }`}
+                                  isPressable
+                                  onPress={() => {
+                                    handleManualQuestionToggle(question, examId, exam.title, isSelected);
+                                  }}
+                                >
+                                  <CardBody className="p-3">
+                                    <div className="flex items-start gap-3">
+                                      <Checkbox 
+                                        isSelected={isSelected}
+                                        onChange={() => {}} // Handled by card press
+                                        className="mt-1"
+                                        size="sm"
+                                      />
+                                      
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          {getQuestionTypeIcon(question.type)}
+                                          <Chip size="sm" variant="flat" color="secondary">
+                                            {getQuestionTypeLabel(question.type)}
+                                          </Chip>
+                                          <Chip size="sm" variant="flat" color="primary">
+                                            {question.score} pts
+                                          </Chip>
+                                        </div>
+                                        
+                                        <p className="text-sm font-medium">
+                                          Q{index + 1}: {question.question}
+                                        </p>
                                       </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </CardBody>
-                            </Card>
-                          );
-                        })}
+                                    </div>
+                                  </CardBody>
+                                </Card>
+                              );
+                            })}
+                          </div>
+                        )}
+                        
+                        {/* Random Selection Preview */}
+                        {selectionMethod === 'random' && selectedFromExam.length > 0 && (
+                          <div className="bg-secondary/10 p-3 rounded-lg">
+                            <p className="text-sm font-medium mb-2">Random Selection Preview:</p>
+                            <div className="space-y-1">
+                              {selectedFromExam.slice(0, 3).map((question, index) => (
+                                <p key={question._id} className="text-xs text-default-600">
+                                  • {question.question.substring(0, 60)}...
+                                </p>
+                              ))}
+                              {selectedFromExam.length > 3 && (
+                                <p className="text-xs text-default-500">
+                                  ... and {selectedFromExam.length - 3} more questions
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -882,7 +1417,15 @@ export default function CreateSchedulePage() {
                   Back to Exams
                 </Button>
                 <Button 
-                  color="primary"
+                  color="secondary"
+                  variant="bordered"
+                  startContent={<MingcuteAddFill className="w-4 h-4" />}
+                  onPress={handleAddMoreExams}
+                >
+                  Add More Exams
+                </Button>
+                <Button 
+                  color="secondary"
                   onPress={() => {
                     setIsQuestionModalOpen(false);
                     setCurrentStep('schedule');
@@ -896,6 +1439,8 @@ export default function CreateSchedulePage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+
     </div>
   );
 }
