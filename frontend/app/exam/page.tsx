@@ -157,6 +157,45 @@ const ExaminationPage = () => {
     }
   }, [user, schedule_id, router])
 
+  // Validate attempt eligibility for students
+  const validateAttemptEligibility = useCallback(async (allowedAttempts: number) => {
+    if (!user || !schedule_id) {
+      return false
+    }
+
+    // Skip validation for instructors
+    if (user.role === 'instructor') {
+      return true
+    }
+
+    try {
+      console.log('Validating attempt eligibility...')
+      const response = await clientAPI.post('/submission/can-attempt', {
+        schedule_id: schedule_id,
+        student_id: user._id,
+        allowed_attempts: allowedAttempts
+      })
+
+      if (response.data.success && response.data.data.canAttempt) {
+        console.log('Student can attempt the exam')
+        return true
+      } else {
+        toast.error(`You have reached the maximum number of attempts (${allowedAttempts}) for this exam`)
+        setTimeout(() => {
+          router.push('/overview')
+        }, 2000)
+        return false
+      }
+    } catch (error) {
+      console.error('Error validating attempt eligibility:', error)
+      toast.error('Failed to validate exam attempt eligibility')
+      setTimeout(() => {
+        router.push('/overview')
+      }, 2000)
+      return false
+    }
+  }, [user, schedule_id, router])
+
   // Clear localStorage after successful submission
   const clearSavedAnswers = useCallback(() => {
     if (exam?._id) {
@@ -237,6 +276,13 @@ const ExaminationPage = () => {
           if (now < openTime || now > closeTime) {
             // Exam is not available, redirect to overview page
             router.push(`/overview`)
+            return
+          }
+          
+          // Validate attempt eligibility for students
+          const canAttempt = await validateAttemptEligibility(scheduleData.allowed_attempts)
+          if (!canAttempt) {
+            setLoading(false)
             return
           }
           
@@ -323,7 +369,7 @@ const ExaminationPage = () => {
     if (schedule_id && !examLoaded) {
       fetchExam()
     }
-  }, [schedule_id, examLoaded, router, validateStudentAccess])
+  }, [schedule_id, examLoaded, router, validateStudentAccess, validateAttemptEligibility])
 
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true)

@@ -350,11 +350,50 @@ export function ExamFile(props: SVGProps<SVGSVGElement>) {
 			<rect x="50" y="201" width="250" height="10" rx="5" fill="#D9D9D9" />
 			<rect x="50" y="236" width="250" height="10" rx="5" fill="#D9D9D9" />
 			<rect x="50" y="271" width="250" height="10" rx="5" fill="#D9D9D9" />
-			<rect x="50" y="306" width="250" height="10" rx="5" fill="#D9D9D9" />
 			<rect x="50" y="341" width="250" height="10" rx="5" fill="#D9D9D9" />
 			<rect x="50" y="376" width="250" height="10" rx="5" fill="#D9D9D9" />
 			<rect x="50" y="411" width="250" height="10" rx="5" fill="#D9D9D9" />
 			<rect x="50" y="446" width="250" height="10" rx="5" fill="#D9D9D9" />
+		</svg>
+	);
+}
+
+export function ArrowLeft(props: SVGProps<SVGSVGElement>) {
+	return (
+		<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+			<path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8l8 8l1.42-1.41L7.83 13H20z"/>
+		</svg>
+	);
+}
+
+export function FileDocument(props: SVGProps<SVGSVGElement>) {
+	return (
+		<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+			<path fill="currentColor" d="M13 9V3.5L18.5 9M6 2c-1.11 0-2 .89-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+		</svg>
+	);
+}
+
+export function Clock(props: SVGProps<SVGSVGElement>) {
+	return (
+		<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+			<path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10s10-4.5 10-10S17.5 2 12 2m4.2 14.2L11 13V7h1.5v5.2l4.5 2.7z"/>
+		</svg>
+	);
+}
+
+export function CheckCircle(props: SVGProps<SVGSVGElement>) {
+	return (
+		<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+			<path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10s10-4.5 10-10S17.5 2 12 2m-2 15l-5-5l1.41-1.41L10 14.17l7.59-7.59L19 8z"/>
+		</svg>
+	);
+}
+
+export function CloseCircle(props: SVGProps<SVGSVGElement>) {
+	return (
+		<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+			<path fill="currentColor" d="M12 2c5.53 0 10 4.47 10 10s-4.47 10-10 10S2 17.53 2 12S6.47 2 12 2m3.59 5L12 10.59L8.41 7L7 8.41L10.59 12L7 15.59L8.41 17L12 13.41L15.59 17L17 15.59L13.41 12L17 8.41z"/>
 		</svg>
 	);
 }
