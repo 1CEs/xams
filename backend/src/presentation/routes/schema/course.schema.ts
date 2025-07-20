@@ -32,7 +32,7 @@ export const AddGroupSchema = t.Object({
 })
 
 export const ExamSettingSchema = t.Object({
-    exam_id: t.String({ description: 'Examination ID is required' }),
+    exam_ids: t.Array(t.String(), { description: 'Examination IDs are required' }),
     schedule_name: t.String({ description: 'Schedule name is required' }),
     open_time: t.Optional(t.String({ description: 'Open time (optional for immediate access)' })),
     close_time: t.Optional(t.String({ description: 'Close time (optional for unlimited access)' })),

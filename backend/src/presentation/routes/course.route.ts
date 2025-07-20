@@ -78,10 +78,10 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
     .post('/:id/group/:groupName/exam-setting', catchAsync(async ({ params, body, controller }: CourseContext & { params: { id: string, groupName: string }, body: ExamSettingBody }) => {
         // Convert date strings to Date objects and pass all exam setting data
         const examSettingData = {
-            exam_id: body.exam_id,
+            exam_ids: body.exam_ids,
             schedule_name: body.schedule_name,
-            open_time: new Date(body.open_time),
-            close_time: new Date(body.close_time),
+            open_time: body.open_time ? new Date(body.open_time) : undefined,
+            close_time: body.close_time ? new Date(body.close_time) : undefined,
             ip_range: body.ip_range || '',
             exam_code: body.exam_code || '',
             allowed_attempts: body.allowed_attempts,

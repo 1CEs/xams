@@ -419,18 +419,24 @@ export default function CreateSchedulePage() {
           const groupsResponse = await clientAPI.get(`/course/${courseId}`)
           const groups = groupsResponse.data.data.groups
           if (groups) {
+            console.log('Fetched groups:', groups)
             setGroups(groups)
             if (groups.length > 0) {
               // If groupId is provided in URL, use that, otherwise select all groups
               if (groupId) {
                 const foundGroup = groups.find((g: any) => g._id === groupId)
                 if (foundGroup) {
+                  console.log('Found specific group:', foundGroup)
                   setSelectedGroups([foundGroup.group_name])
                 } else {
+                  console.log('Group not found, selecting all groups')
                   setSelectedGroups(groups.map((g: any) => g.group_name))
                 }
               } else {
-                setSelectedGroups(groups.map((g: any) => g.group_name))
+                console.log('No specific groupId, selecting all groups')
+                const allGroupNames = groups.map((g: any) => g.group_name)
+                console.log('Selected group names:', allGroupNames)
+                setSelectedGroups(allGroupNames)
               }
             }
           }
@@ -650,8 +656,7 @@ export default function CreateSchedulePage() {
 
       // Prepare enhanced data for backend compatibility
       const enhancedData = {
-        // Core exam setting data (required by backend schema)
-        exam_id: formattedForm.exam_ids[0], // Primary exam for backward compatibility
+        // Core exam setting data
         schedule_name: formattedForm.schedule_name,
         // Only include scheduling fields if enabled
         ...(enableScheduling && {
@@ -719,11 +724,18 @@ export default function CreateSchedulePage() {
         exam_code_enabled: enableExamCode,
         has_open_time: !!enhancedData.open_time,
         has_close_time: !!enhancedData.close_time,
-        has_exam_code: !!enhancedData.exam_code
+        has_exam_code: !!enhancedData.exam_code,
+        selected_groups: selectedGroups,
+        selected_groups_count: selectedGroups.length
       });
 
-      // Create schedules for all selected groups
-      const promises = selectedGroups.map(async (groupName) => {
+      // Create schedules for all selected groups sequentially to avoid race conditions
+      console.log('Creating schedules for groups:', selectedGroups)
+      const results = []
+      
+      for (let index = 0; index < selectedGroups.length; index++) {
+        const groupName = selectedGroups[index]
+        
         const scheduleData = {
           ...enhancedData,
           schedule_name: selectedGroups.length > 1
@@ -731,13 +743,25 @@ export default function CreateSchedulePage() {
             : enhancedData.schedule_name
         };
 
-        return clientAPI.post(
-          `/course/${courseId}/group/${encodeURIComponent(groupName)}/exam-setting`,
-          scheduleData
-        )
-      })
+        console.log(`Creating schedule ${index + 1}/${selectedGroups.length} for group: ${groupName}`);
+        console.log('Schedule data:', {
+          schedule_name: scheduleData.schedule_name,
+          selected_questions_count: scheduleData.selected_questions?.length || 0,
+          exam_ids: scheduleData.exam_ids
+        });
 
-      const results = await Promise.all(promises)
+        try {
+          const result = await clientAPI.post(
+            `/course/${courseId}/group/${encodeURIComponent(groupName)}/exam-setting`,
+            scheduleData
+          );
+          console.log(`✅ Successfully created schedule for group ${groupName}:`, result.data);
+          results.push(result);
+        } catch (error) {
+          console.error(`❌ Failed to create schedule for group ${groupName}:`, error);
+          throw error;
+        }
+      }
 
       // Log successful creation for debugging
       console.log('Successfully created exam schedules:', results.length);

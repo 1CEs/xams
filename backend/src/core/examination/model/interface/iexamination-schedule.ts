@@ -3,7 +3,7 @@ import { IQuestion } from "./iquestion";
 
 export interface IExaminationSchedule {
     _id?: string;
-    original_exam_id: string;
+    exam_ids: string[];
     instructor_id: string;
     title: string;
     description: string;

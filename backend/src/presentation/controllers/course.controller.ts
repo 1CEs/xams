@@ -220,7 +220,7 @@ export class CourseController implements ICourseController {
         try {
             // Create an examination schedule to snapshot the questions
             const examSchedule = await this._examScheduleService.createExaminationSchedule(
-                examSettingData.exam_id,
+                examSettingData.exam_ids,
                 course.instructor_id,
                 examSettingData.question_count,
                 examSettingData.schedule_name,

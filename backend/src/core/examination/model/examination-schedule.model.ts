@@ -5,8 +5,8 @@ import { QuestionSchema } from "./question.model";
 const { Schema, model } = mongoose
 
 export const ExaminationScheduleSchema = new Schema<ExaminationScheduleDocument>({
-    original_exam_id: {
-        type: String,
+    exam_ids: {
+        type: [String],
         required: true
     },
     instructor_id: {

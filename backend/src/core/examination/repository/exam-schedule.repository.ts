@@ -16,16 +16,35 @@ export class ExaminationScheduleRepository
         return result;
     }
 
-    async createExaminationSchedule(examId: string, instructorId: string, questionCount?: number, scheduleName?: string, examSettings?: any): Promise<any | null> {
-        // First, get the original examination
-        const originalExam = await ExaminationModel.findById(examId).exec();
+    async createExaminationSchedule(examIds: string[], instructorId: string, questionCount?: number, scheduleName?: string, examSettings?: any): Promise<any | null> {
+        // Get all original examinations
+        const originalExams = await ExaminationModel.find({ _id: { $in: examIds } }).exec();
         
-        if (!originalExam) {
-            throw new Error(`Examination with ID ${examId} not found`);
+        if (!originalExams || originalExams.length === 0) {
+            throw new Error(`No examinations found with provided IDs`);
         }
 
-        // Get all questions from the original exam
-        const allQuestions = originalExam.questions || [];
+        if (originalExams.length !== examIds.length) {
+            const foundIds = originalExams.map(exam => exam._id.toString());
+            const missingIds = examIds.filter(id => !foundIds.includes(id));
+            throw new Error(`Examinations not found with IDs: ${missingIds.join(', ')}`);
+        }
+
+        // Aggregate all questions from all exams
+        const allQuestions: any[] = [];
+        const examTitles: string[] = [];
+        const examCategories: string[] = [];
+        
+        originalExams.forEach(exam => {
+            if (exam.questions && exam.questions.length > 0) {
+                allQuestions.push(...exam.questions);
+            }
+            examTitles.push(exam.title);
+            if (exam.category && exam.category.length > 0) {
+                examCategories.push(...exam.category);
+            }
+        });
+
         let selectedQuestions = allQuestions;
 
         // If questionCount is specified and valid, intelligently select questions
@@ -35,11 +54,11 @@ export class ExaminationScheduleRepository
 
         // Create a new examination schedule with the selected questions and exam settings
         const examinationSchedule = new ExaminationScheduleModel({
-            original_exam_id: examId,
+            exam_ids: examIds,
             instructor_id: instructorId,
-            title: scheduleName || originalExam.title, // Use custom name if provided
-            description: originalExam.description,
-            category: originalExam.category,
+            title: scheduleName || examTitles.join(' + '), // Use custom name or combine exam titles
+            description: `Combined examination from: ${examTitles.join(', ')}`,
+            category: [...new Set(examCategories)], // Remove duplicates
             questions: JSON.parse(JSON.stringify(selectedQuestions)), // Deep copy of selected questions
             created_at: new Date(),
             
