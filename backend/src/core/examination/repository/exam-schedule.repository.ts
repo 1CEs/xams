@@ -16,6 +16,11 @@ export class ExaminationScheduleRepository
         return result;
     }
 
+    async getExaminationScheduleById(schedule_id: string): Promise<any | null> {
+        const result = await this._model.findById(schedule_id).exec();
+        return result;
+    }
+
     async createExaminationSchedule(examIds: string[], instructorId: string, questionCount?: number, scheduleName?: string, examSettings?: any): Promise<any | null> {
         // Get all original examinations
         const originalExams = await ExaminationModel.find({ _id: { $in: examIds } }).exec();

@@ -10,6 +10,10 @@ const StudentSchema = new Schema<IStudentDocument>({
     },
     exam_attempts: {
         type: [Schema.Types.ObjectId]
+    },
+    submission_ids: {
+        type: [Schema.Types.ObjectId],
+        default: []
     }
 })
 

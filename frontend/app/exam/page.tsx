@@ -10,6 +10,8 @@ import QuestionNavigation from '@/components/exam/QuestionNavigation'
 import QuestionCard from '@/components/exam/QuestionCard'
 import ExamResultsModal from '@/components/exam/ExamResultsModal'
 import ExamTimer from '@/components/exam/ExamTimer'
+import { useUserStore } from '@/stores/user.store'
+import { toast } from 'react-toastify'
 
 interface Question {
   _id: string
@@ -59,10 +61,13 @@ interface ExamResult {
 const ExaminationPage = () => {
   const params = useSearchParams()
   const schedule_id = params.get('schedule_id')
+  const { user } = useUserStore()
+  const router = useRouter()
   
   const [exam, setExam] = useState<ExamResponse | null>(null)
   const [setting, setSetting] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
+  const [validatingAccess, setValidatingAccess] = useState(true)
   const [answers, setAnswers] = useState<Answer[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -72,7 +77,6 @@ const ExaminationPage = () => {
   const [examResult, setExamResult] = useState<ExamResult | null>(null)
   const [examLoaded, setExamLoaded] = useState(false)
   const questionsPerPage = 5
-  const router = useRouter()
 
   // Calculate initial time based on exam settings
   const initialTime = useMemo(() => {
@@ -113,6 +117,45 @@ const ExaminationPage = () => {
       localStorage.setItem(`exam_page_${exam._id}`, currentPage.toString())
     }
   }, [currentPage, exam?._id])
+
+  // Validate user access to exam (students and instructors)
+  const validateStudentAccess = useCallback(async () => {
+    if (!user || !schedule_id) {
+      toast.error('Missing user information or schedule ID')
+      router.push('/overview')
+      return false
+    }
+
+    try {
+      const response = await clientAPI.get(`/course/validate-exam-access/${user._id}/${schedule_id}`)
+      
+      if (response.data.code === 200 && response.data.data.hasAccess) {
+        const accessData = response.data.data
+        console.log('User has access to exam:', accessData)
+        
+        // Show different messages based on access type
+        if (accessData.accessType === 'instructor') {
+          console.log('Instructor accessing their own exam schedule')
+        } else if (accessData.accessType === 'student') {
+          console.log(`Student accessing exam via group: ${accessData.groupName} in course: ${accessData.courseName}`)
+        }
+        
+        return true
+      } else {
+        const errorMessage = user.role === 'instructor' 
+          ? 'You do not have access to this exam schedule. Only the creator can access it.'
+          : 'You do not have access to this exam. Please contact your instructor.'
+        toast.error(errorMessage)
+        router.push('/overview')
+        return false
+      }
+    } catch (error: any) {
+      console.error('Error validating exam access:', error)
+      toast.error('Failed to validate exam access. Please try again.')
+      router.push('/overview')
+      return false
+    }
+  }, [user, schedule_id, router])
 
   // Clear localStorage after successful submission
   const clearSavedAnswers = useCallback(() => {
@@ -170,6 +213,16 @@ const ExaminationPage = () => {
   useEffect(() => {
     const fetchExam = async () => {
       try {
+        // First validate student access
+        const hasAccess = await validateStudentAccess()
+        if (!hasAccess) {
+          setValidatingAccess(false)
+          setLoading(false)
+          return
+        }
+        
+        setValidatingAccess(false)
+        
         let examData: ExamResponse | null = null
         const scheduleResponse = await clientAPI.get(`/exam-schedule/${schedule_id}`)
         if (scheduleResponse.data.code === 200) {
@@ -270,24 +323,102 @@ const ExaminationPage = () => {
     if (schedule_id && !examLoaded) {
       fetchExam()
     }
-  }, [schedule_id, examLoaded, router])
+  }, [schedule_id, examLoaded, router, validateStudentAccess])
 
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true)
     try {
-      const res = await clientAPI.post(`exam/submit`, { 
-        answers,
-        exam_id: exam?._id,
+      if (!exam || !setting || !user) {
+        throw new Error('Missing required data for submission')
+      }
+
+      // Transform answers to the new submission format
+      const submittedAnswers = answers.map(answer => {
+        const question = exam.questions.find(q => q._id === answer.questionId)
+        if (!question) {
+          throw new Error(`Question not found: ${answer.questionId}`)
+        }
+
+        const submittedAnswer: any = {
+          question_id: answer.questionId,
+          submitted_question: question.question,
+          question_type: question.type,
+          max_score: question.score
+        }
+
+        // Add type-specific answer data
+        switch (question.type) {
+          case 'mc': // Multiple Choice
+            submittedAnswer.submitted_choices = answer.answers
+            break
+          case 'tf': // True/False
+            submittedAnswer.submitted_boolean = answer.answers[0] === 'true'
+            break
+          case 'ses': // Short Essay
+          case 'les': // Long Essay
+            submittedAnswer.submitted_answer = answer.essayAnswer || ''
+            break
+          case 'nested': // Nested questions
+            // For nested questions, we might need to handle sub-questions differently
+            // For now, treat as essay
+            submittedAnswer.submitted_answer = answer.essayAnswer || ''
+            break
+        }
+
+        return submittedAnswer
       })
-      setExamResult(res.data.data)
-      setIsResultsModalOpen(true)
-      clearSavedAnswers()
+
+      // Calculate time taken (if we have start time)
+      const timeTaken = setting.open_time ? 
+        Math.floor((new Date().getTime() - new Date(setting.open_time).getTime()) / 1000) : 
+        undefined
+
+      // Get course and group info from validation response
+      const validationResponse = await clientAPI.get(`/course/validate-exam-access/${user._id}/${schedule_id}`)
+      const { courseId, groupId } = validationResponse.data.data || {}
+
+      const submissionData = {
+        schedule_id: schedule_id!,
+        student_id: user._id,
+        course_id: courseId || '',
+        group_id: groupId || '',
+        submitted_answers: submittedAnswers,
+        time_taken: timeTaken
+      }
+
+      const res = await clientAPI.post(`/submission`, submissionData)
+      
+      if (res.data.success) {
+        // Transform the submission result to match the expected ExamResult format
+        const submission = res.data.data
+        const examResult: ExamResult = {
+          totalScore: submission.max_possible_score || 0,
+          obtainedScore: submission.total_score || 0,
+          correctAnswers: submission.submitted_answers?.filter((a: any) => a.is_correct).length || 0,
+          totalQuestions: submission.submitted_answers?.length || 0,
+          details: submission.submitted_answers?.map((answer: any) => ({
+            questionId: answer.question_id,
+            isCorrect: answer.is_correct || false,
+            userAnswer: answer.submitted_choices || [answer.submitted_answer || String(answer.submitted_boolean)],
+            correctAnswer: [], // Will be populated by backend if needed
+            score: answer.score_obtained || 0
+          })) || []
+        }
+        
+        setExamResult(examResult)
+        setIsResultsModalOpen(true)
+        clearSavedAnswers()
+        toast.success('Exam submitted successfully!')
+      } else {
+        throw new Error(res.data.message || 'Failed to submit exam')
+      }
     } catch (error) {
+      console.error('Submission error:', error)
       errorHandler(error)
     } finally {
       setIsSubmitting(false)
     }
-  }, [answers, exam?._id, clearSavedAnswers])
+  }, [answers, exam, setting, user, schedule_id, clearSavedAnswers])
 
   const handleQuestionNavigation = useCallback((questionIndex: number, questionId: string) => {
     const targetPage = Math.ceil((questionIndex + 1) / questionsPerPage)
@@ -384,10 +515,15 @@ const ExaminationPage = () => {
     return number
   }, [])
 
-  if (loading) {
+  if (loading || validatingAccess) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Spinner size="lg" />
+        <div className="flex flex-col items-center gap-4">
+          <Spinner size="lg" />
+          <p className="text-foreground/70">
+            {validatingAccess ? 'Validating access permissions...' : 'Loading examination...'}
+          </p>
+        </div>
       </div>
     )
   }

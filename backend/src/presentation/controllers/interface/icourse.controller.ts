@@ -23,4 +23,7 @@ export interface ICourseController {
     addGroupExamSetting: (courseId: string, groupName: string, examSetting: ISetting) => Promise<ControllerResponse<ICourse | null>>
     deleteGroupExamSetting: (courseId: string, groupName: string, examSettingIndex: number) => Promise<ControllerResponse<ICourse | null>>
     getSetting: (course_id: string, group_id: string, setting_id: string) => Promise<ControllerResponse<IExaminationSchedule | null | undefined>>
+    
+    // Validation methods
+    validateStudentExamAccess: (userId: string, scheduleId: string) => Promise<ControllerResponse<any>>
 }

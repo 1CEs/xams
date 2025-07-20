@@ -318,4 +318,68 @@ export class CourseController implements ICourseController {
         const setting = await this._service.getSetting(course_id, group_id, setting_id)
         return this._response<typeof setting>('Done', 200, setting)
     }
+
+    // Validation method for exam access (students and instructors)
+    async validateStudentExamAccess(userId: string, scheduleId: string) {
+        try {
+            // First, check if the user is the instructor who owns this exam schedule
+            const examSchedule = await this._examScheduleService.getExaminationScheduleById(scheduleId)
+            
+            if (!examSchedule) {
+                return this._response('Exam schedule not found', 404, { hasAccess: false })
+            }
+
+            // Check if the user is the instructor who created this exam schedule
+            if (examSchedule.instructor_id === userId) {
+                return this._response('Instructor has access to their own exam', 200, { 
+                    hasAccess: true,
+                    accessType: 'instructor',
+                    scheduleId: examSchedule._id,
+                    scheduleTitle: examSchedule.title
+                })
+            }
+
+            // If not the instructor, check if user is a student with group access
+            const studentCourses = await this._service.getCourseByStudentId(userId)
+            
+            if (!studentCourses || studentCourses.length === 0) {
+                return this._response('User is not enrolled in any courses and is not the exam owner', 403, { hasAccess: false })
+            }
+
+            // Check each course and its groups for the schedule_id
+            for (const course of studentCourses) {
+                if (course.groups && course.groups.length > 0) {
+                    for (const group of course.groups) {
+                        // Check if student is in this group
+                        if (group.students && group.students.includes(userId)) {
+                            // Check if this group has the exam schedule
+                            if (group.exam_setting && group.exam_setting.length > 0) {
+                                const hasSchedule = group.exam_setting.some(setting => 
+                                    setting.schedule_id === scheduleId
+                                )
+                                
+                                if (hasSchedule) {
+                                    return this._response('Student has access to this exam', 200, { 
+                                        hasAccess: true,
+                                        accessType: 'student',
+                                        courseId: course._id,
+                                        courseName: course.course_name,
+                                        groupId: group._id,
+                                        groupName: group.group_name
+                                    })
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // If we reach here, user doesn't have access
+            return this._response('User does not have access to this exam', 403, { hasAccess: false })
+            
+        } catch (error: any) {
+            console.error('Error validating exam access:', error)
+            return this._response(`Error validating access: ${error.message || 'Unknown error'}`, 500, { hasAccess: false })
+        }
+    }
 }

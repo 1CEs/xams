@@ -1,6 +1,8 @@
 import { IBaseRepository } from "../../../base/interface/ibase.repository"
-import { IStudent } from "../../model/interface/istudent"
+import { IStudentDocument } from "../../../../types/user"
 
-export interface IStudentRepository extends IBaseRepository<IStudent>{
+export interface IStudentRepository extends IBaseRepository<IStudentDocument>{
     // Implements student logic here.
+    addSubmissionId(studentId: string, submissionId: string): Promise<boolean>;
+    removeSubmissionId(studentId: string, submissionId: string): Promise<boolean>;
 }

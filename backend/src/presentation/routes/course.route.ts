@@ -110,4 +110,8 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
             setting_id: t.String()
         })
     })
+    // Validation routes
+    .get('/validate-exam-access/:userId/:scheduleId', catchAsync(async ({ params, controller }: CourseContext & { params: { userId: string, scheduleId: string } }) => 
+        await controller.validateStudentExamAccess(params.userId, params.scheduleId)
+    ))
 

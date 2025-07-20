@@ -705,7 +705,6 @@ export default function CreateSchedulePage() {
           selection_history: selectionHistory,
           exam_selection_methods: examSelectionMethods,
           exam_random_counts: examRandomCounts,
-          created_at: new Date().toISOString(),
           total_exams_selected: selectedExams.length,
           // Optional features status
           features_enabled: {
