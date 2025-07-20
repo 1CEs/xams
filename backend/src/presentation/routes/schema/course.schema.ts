@@ -34,10 +34,10 @@ export const AddGroupSchema = t.Object({
 export const ExamSettingSchema = t.Object({
     exam_id: t.String({ description: 'Examination ID is required' }),
     schedule_name: t.String({ description: 'Schedule name is required' }),
-    open_time: t.String({ description: 'Open time is required' }),
-    close_time: t.String({ description: 'Close time is required' }),
+    open_time: t.Optional(t.String({ description: 'Open time (optional for immediate access)' })),
+    close_time: t.Optional(t.String({ description: 'Close time (optional for unlimited access)' })),
     ip_range: t.Optional(t.String()),
-    exam_code: t.Optional(t.String()),
+    exam_code: t.Optional(t.String({ description: 'Exam access code (optional for open access)' })),
     allowed_attempts: t.Number({ description: 'Allowed attempts is required' }),
     allowed_review: t.Boolean({ description: 'Allowed review is required' }),
     show_answer: t.Boolean({ description: 'Show answer is required' }),

@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect, FormEvent } from "react"
-import { 
-  Button, 
-  Card, 
+import {
+  Button,
+  Card,
   CardBody,
   CardHeader,
   Divider,
@@ -43,7 +43,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { 
+import {
   UisSchedule,
   HealthiconsIExamMultipleChoice,
   MdiBin,
@@ -53,6 +53,7 @@ import {
   CarbonTextLongParagraph,
   IconParkTwotoneNestedArrows,
   IconParkOutlineCheckCorrect,
+  SolarRefreshLineDuotone,
 } from "@/components/icons/icons"
 import ExamSelectorModal from "@/components/overview/exam-selector"
 import { useRouter } from "nextjs-toploader/app"
@@ -107,12 +108,12 @@ interface SortableQuestionItemProps {
   getQuestionTypeLabel: (type: string) => string
 }
 
-function SortableQuestionItem({ 
-  question, 
-  index, 
-  onRemove, 
-  getQuestionTypeIcon, 
-  getQuestionTypeLabel 
+function SortableQuestionItem({
+  question,
+  index,
+  onRemove,
+  getQuestionTypeIcon,
+  getQuestionTypeLabel
 }: SortableQuestionItemProps) {
   const {
     attributes,
@@ -130,16 +131,16 @@ function SortableQuestionItem({
   }
 
   return (
-    <Card 
-      ref={setNodeRef} 
+    <Card
+      ref={setNodeRef}
       style={style}
       className={`border border-default-200 ${isDragging ? 'shadow-lg' : ''}`}
     >
       <CardBody className="p-3">
         <div className="flex items-start gap-2">
           {/* Drag Handle */}
-          <div 
-            {...attributes} 
+          <div
+            {...attributes}
             {...listeners}
             className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-default-100 transition-colors"
           >
@@ -149,7 +150,7 @@ function SortableQuestionItem({
               <div className="w-full h-0.5 bg-default-400 rounded"></div>
             </div>
           </div>
-          
+
           <div className="flex-1">
             <div className="flex items-center gap-1 mb-1">
               {getQuestionTypeIcon(question.type)}
@@ -157,20 +158,20 @@ function SortableQuestionItem({
                 {question.score} pts
               </Chip>
             </div>
-            
+
             <p className="text-xs font-medium text-primary mb-1">
               {question.examTitle}
             </p>
-            
+
             <p className="text-sm font-medium line-clamp-2">
               Q{index + 1}: {question.question}
             </p>
-            
+
             <p className="text-xs text-default-500 mt-1">
               {getQuestionTypeLabel(question.type)}
             </p>
           </div>
-          
+
           <Button
             isIconOnly
             size="sm"
@@ -191,7 +192,7 @@ export default function CreateSchedulePage() {
   const searchParams = useSearchParams()
   const courseId = searchParams.get('courseId') || ""
   const groupId = searchParams.get('groupId') || ""
-  
+
   const { trigger, setTrigger } = useTrigger()
   const { user } = useUserStore()
   const [examinations, setExaminations] = useState<Examination[]>([])
@@ -204,19 +205,23 @@ export default function CreateSchedulePage() {
   const [selectedExamQuestionCount, setSelectedExamQuestionCount] = useState<number>(0)
   const [selectedQuestions, setSelectedQuestions] = useState<SelectedQuestion[]>([])
   const [currentStep, setCurrentStep] = useState<'exam' | 'questions' | 'schedule'>('exam')
-  const [examQuestions, setExamQuestions] = useState<{[examId: string]: Question[]}>({})  
+  const [examQuestions, setExamQuestions] = useState<{ [examId: string]: Question[] }>({})
   const [selectionMode, setSelectionMode] = useState<'manual' | 'random' | 'hybrid' | null>(null)
-  const [selectionHistory, setSelectionHistory] = useState<Array<{mode: 'manual' | 'random', count?: number, timestamp: number}>>([])  
-  
+  const [selectionHistory, setSelectionHistory] = useState<Array<{ mode: 'manual' | 'random', count?: number, timestamp: number }>>([])
+
   // Per-examination selection methods
-  const [examSelectionMethods, setExamSelectionMethods] = useState<{[examId: string]: 'manual' | 'random'}>({}) 
-  const [examRandomCounts, setExamRandomCounts] = useState<{[examId: string]: number}>({})
-  
+  const [examSelectionMethods, setExamSelectionMethods] = useState<{ [examId: string]: 'manual' | 'random' }>({})
+  const [examRandomCounts, setExamRandomCounts] = useState<{ [examId: string]: number }>({})
+
   // Modal state
   const [isExamModalOpen, setIsExamModalOpen] = useState<boolean>(false)
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState<boolean>(false)
   const [selectedExams, setSelectedExams] = useState<string[]>([])
-  
+
+  // Optional features state
+  const [enableScheduling, setEnableScheduling] = useState<boolean>(false)
+  const [enableExamCode, setEnableExamCode] = useState<boolean>(false)
+
   // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -224,21 +229,21 @@ export default function CreateSchedulePage() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   )
-  
+
   // Handle drag end for question reordering
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
-    
+
     if (over && active.id !== over.id) {
       setSelectedQuestions((items) => {
         const oldIndex = items.findIndex((item) => `${item.examId}-${item._id}` === active.id)
         const newIndex = items.findIndex((item) => `${item.examId}-${item._id}` === over.id)
-        
+
         return arrayMove(items, oldIndex, newIndex)
       })
     }
   }
-  
+
   // Helper function to format Date objects for datetime-local input
   const formatDateForInput = (date: Date): string => {
     // Format: YYYY-MM-DDThh:mm
@@ -247,7 +252,7 @@ export default function CreateSchedulePage() {
     const day = String(date.getDate()).padStart(2, '0');
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
-    
+
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
@@ -283,7 +288,7 @@ export default function CreateSchedulePage() {
   }
 
   const removeSelectedQuestion = (questionId: string, examId: string) => {
-    setSelectedQuestions(prev => 
+    setSelectedQuestions(prev =>
       prev.filter(q => !(q._id === questionId && q.examId === examId))
     )
   }
@@ -292,7 +297,7 @@ export default function CreateSchedulePage() {
   const handleManualQuestionToggle = (question: Question, examId: string, examTitle: string, isSelected: boolean) => {
     if (isSelected) {
       // Remove question
-      setSelectedQuestions(prev => 
+      setSelectedQuestions(prev =>
         prev.filter(q => !(q._id === question._id && q.examId === examId))
       );
     } else {
@@ -303,12 +308,20 @@ export default function CreateSchedulePage() {
         examTitle
       };
       setSelectedQuestions(prev => [...prev, selectedQuestion]);
-      
-      // Update selection mode to hybrid if we're adding to existing random selections
-      if (selectionMode === 'random') {
+
+      // Update selection mode based on current exam selection methods
+      const updatedExamMethods = { ...examSelectionMethods, [examId]: 'manual' as const };
+      const hasManualSelections = Object.values(updatedExamMethods).some(method => method === 'manual');
+      const hasRandomSelections = Object.values(updatedExamMethods).some(method => method === 'random');
+
+      if (hasManualSelections && hasRandomSelections) {
         setSelectionMode('hybrid');
+      } else if (Object.values(updatedExamMethods).every(method => method === 'manual')) {
+        setSelectionMode('manual');
+      } else {
+        setSelectionMode('random');
       }
-      
+
       // Add to selection history
       setSelectionHistory(prev => [...prev, {
         mode: 'manual',
@@ -320,8 +333,8 @@ export default function CreateSchedulePage() {
   // Fetch questions for selected exams
   const fetchExamQuestions = async (examIds: string[]) => {
     try {
-      const questionsData: {[examId: string]: Question[]} = {}
-      
+      const questionsData: { [examId: string]: Question[] } = {}
+
       for (const examId of examIds) {
         if (!examQuestions[examId]) {
           const response = await clientAPI.get(`/exam/${examId}`)
@@ -332,7 +345,7 @@ export default function CreateSchedulePage() {
           questionsData[examId] = examQuestions[examId]
         }
       }
-      
+
       setExamQuestions(prev => ({ ...prev, ...questionsData }))
       return questionsData
     } catch (error) {
@@ -341,12 +354,12 @@ export default function CreateSchedulePage() {
       return {}
     }
   }
-  
+
   const [examSettingForm, setExamSettingForm] = useState({
     exam_ids: [] as string[],  // Multiple exam IDs
     schedule_name: '',  // Custom name for the schedule
     open_time: new Date(),
-    close_time: new Date(Date.now() + 24 * 60 * 60 * 1000), // Default to 24 hours later
+    close_time: new Date(Date.now() + 1 * 60 * 60 * 1000), // Default to 1 hour later
     ip_range: '',
     exam_code: '',
     allowed_attempts: 1,
@@ -356,23 +369,23 @@ export default function CreateSchedulePage() {
     randomize_choice: true,
     question_count: 0  // Number of questions to randomly select
   })
-  
+
   // Fetch available examinations and groups
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
-        
+
         // Fetch examinations
         const examsResponse = await clientAPI.get(`/exam?instructor_id=${user?._id}`)
         if (examsResponse.data && examsResponse.data.data) {
           const exams = examsResponse.data.data as Examination[]
           setExaminations(exams)
-          
+
           // Organize exams into folders
           const folders: Record<string, Examination[]> = {}
           const unfolderedExams: Examination[] = []
-          
+
           exams.forEach(exam => {
             if (exam.folder) {
               if (!folders[exam.folder]) {
@@ -383,13 +396,13 @@ export default function CreateSchedulePage() {
               unfolderedExams.push(exam)
             }
           })
-          
+
           // Convert to array of folders
           const folderArray: ExamFolder[] = Object.keys(folders).map(name => ({
             name,
             exams: folders[name]
           }))
-          
+
           // Add unfolderedExams as a special "No Folder" category if there are any
           if (unfolderedExams.length > 0) {
             folderArray.unshift({
@@ -397,10 +410,10 @@ export default function CreateSchedulePage() {
               exams: unfolderedExams
             })
           }
-          
+
           setExamFolders(folderArray)
         }
-        
+
         // Fetch groups for the course
         if (courseId) {
           const groupsResponse = await clientAPI.get(`/course/${courseId}`)
@@ -432,7 +445,7 @@ export default function CreateSchedulePage() {
 
     fetchData()
   }, [courseId, groupId, user?._id])
-  
+
   const getSelectedExamsTitle = (): string => {
     if (examSettingForm.exam_ids.length === 0) {
       return 'Select exams'
@@ -450,13 +463,13 @@ export default function CreateSchedulePage() {
       exam_ids: updatedExamIds
     });
     setSelectedExams(updatedExamIds);
-    
+
     // Only clear previous selections if not in additive mode
     if (!isAdditive) {
       setSelectedQuestions([]);
       // Initialize selection methods for new exams (default to manual)
-      const newMethods: {[examId: string]: 'manual' | 'random'} = {};
-      const newCounts: {[examId: string]: number} = {};
+      const newMethods: { [examId: string]: 'manual' | 'random' } = {};
+      const newCounts: { [examId: string]: number } = {};
       updatedExamIds.forEach(examId => {
         newMethods[examId] = 'manual';
         newCounts[examId] = 5; // default random count
@@ -464,24 +477,24 @@ export default function CreateSchedulePage() {
       setExamSelectionMethods(newMethods);
       setExamRandomCounts(newCounts);
     }
-    
+
     if (updatedExamIds.length > 0) {
       // Close exam modal
       setIsExamModalOpen(false);
-      
+
       // Fetch questions for newly selected exams
-      const newExamIds = isAdditive 
+      const newExamIds = isAdditive
         ? updatedExamIds.filter(id => !Object.keys(examQuestions).includes(id))
         : updatedExamIds;
-      
+
       if (newExamIds.length > 0) {
         await fetchExamQuestions(newExamIds);
       }
-      
+
       // Initialize selection methods for new exams in additive mode
       if (isAdditive) {
-        const newMethods = {...examSelectionMethods};
-        const newCounts = {...examRandomCounts};
+        const newMethods = { ...examSelectionMethods };
+        const newCounts = { ...examRandomCounts };
         newExamIds.forEach(examId => {
           if (!newMethods[examId]) {
             newMethods[examId] = 'manual';
@@ -491,18 +504,18 @@ export default function CreateSchedulePage() {
         setExamSelectionMethods(newMethods);
         setExamRandomCounts(newCounts);
       }
-      
+
       // Go directly to question selection
       setCurrentStep('questions');
       setIsQuestionModalOpen(true);
-      
+
       // Update question count based on total questions from all selected exams
       let totalQuestions = 0;
       updatedExamIds.forEach(examId => {
         const exam = examinations.find(e => e._id === examId);
         totalQuestions += exam?.questions?.length || 0;
       });
-      
+
       setExamSettingForm(prev => ({
         ...prev,
         exam_ids: updatedExamIds,
@@ -533,38 +546,40 @@ export default function CreateSchedulePage() {
   const handleRandomSelectionForExam = (examId: string, count: number) => {
     const exam = examinations.find(e => e._id === examId);
     const questions = examQuestions[examId] || [];
-    
+
     if (!exam || questions.length === 0) return;
-    
+
     // Remove existing selections for this exam
     setSelectedQuestions(prev => prev.filter(q => q.examId !== examId));
-    
+
     // Shuffle and select random questions
     const shuffled = questions.sort(() => Math.random() - 0.5);
     const randomSelected = shuffled.slice(0, Math.min(count, questions.length));
-    
+
     // Convert to SelectedQuestion format
     const newSelectedQuestions: SelectedQuestion[] = randomSelected.map(question => ({
       ...question,
       examId,
       examTitle: exam.title
     }));
-    
+
     // Add to existing selections
     setSelectedQuestions(prev => [...prev, ...newSelectedQuestions]);
-    
-    // Update selection mode to hybrid if we have mixed methods
-    const hasManualSelections = Object.values(examSelectionMethods).some(method => method === 'manual');
-    const hasRandomSelections = Object.values(examSelectionMethods).some(method => method === 'random');
-    
+
+    // Update selection mode based on current exam selection methods
+    // Include the current exam being set to random in the calculation
+    const updatedExamMethods = { ...examSelectionMethods, [examId]: 'random' as const };
+    const hasManualSelections = Object.values(updatedExamMethods).some(method => method === 'manual');
+    const hasRandomSelections = Object.values(updatedExamMethods).some(method => method === 'random');
+
     if (hasManualSelections && hasRandomSelections) {
       setSelectionMode('hybrid');
-    } else if (Object.values(examSelectionMethods).every(method => method === 'random')) {
+    } else if (Object.values(updatedExamMethods).every(method => method === 'random')) {
       setSelectionMode('random');
     } else {
       setSelectionMode('manual');
     }
-    
+
     // Add to selection history
     setSelectionHistory(prev => [...prev, {
       mode: 'random',
@@ -577,28 +592,54 @@ export default function CreateSchedulePage() {
     e.preventDefault()
     setError(null)
     setSubmitting(true)
-    
+
     // Validate exam_ids is selected
     if (examSettingForm.exam_ids.length === 0) {
       setError('Please select at least one examination')
       setSubmitting(false)
       return
     }
-    
+
     // Validate selected questions
     if (selectedQuestions.length === 0) {
       setError('Please select at least one question from your examinations')
       setSubmitting(false)
       return
     }
-    
+
     // Validate selected groups
     if (selectedGroups.length === 0) {
-      setError('Please select at least one group')
+      setError('Please select at least one group to assign the schedule to')
       setSubmitting(false)
       return
     }
-    
+
+    // Validate scheduling fields if enabled
+    if (enableScheduling) {
+      if (!examSettingForm.open_time) {
+        setError('Please provide an open time for the scheduled exam')
+        setSubmitting(false)
+        return
+      }
+      if (!examSettingForm.close_time) {
+        setError('Please provide a close time for the scheduled exam')
+        setSubmitting(false)
+        return
+      }
+      if (examSettingForm.open_time >= examSettingForm.close_time) {
+        setError('Close time must be after open time')
+        setSubmitting(false)
+        return
+      }
+    }
+
+    // Validate exam code if enabled
+    if (enableExamCode && !examSettingForm.exam_code.trim()) {
+      setError('Please provide an exam access code')
+      setSubmitting(false)
+      return
+    }
+
     try {
       // Format dates to ISO strings for API
       const formattedForm = {
@@ -607,20 +648,41 @@ export default function CreateSchedulePage() {
         close_time: examSettingForm.close_time.toISOString()
       }
 
-      // Include selected questions in the API call
-      const postData = {
-        ...formattedForm,
+      // Prepare enhanced data for backend compatibility
+      const enhancedData = {
+        // Core exam setting data (required by backend schema)
         exam_id: formattedForm.exam_ids[0], // Primary exam for backward compatibility
+        schedule_name: formattedForm.schedule_name,
+        // Only include scheduling fields if enabled
+        ...(enableScheduling && {
+          open_time: formattedForm.open_time,
+          close_time: formattedForm.close_time,
+        }),
+        ip_range: formattedForm.ip_range || '',
+        // Only include exam code if enabled
+        ...(enableExamCode && formattedForm.exam_code && {
+          exam_code: formattedForm.exam_code,
+        }),
+        allowed_attempts: formattedForm.allowed_attempts,
+        allowed_review: formattedForm.allowed_review,
+        show_answer: formattedForm.show_answer,
+        randomize_question: formattedForm.randomize_question,
+        randomize_choice: formattedForm.randomize_choice,
+        question_count: selectedQuestions.length,
+
+        // Enhanced data for multi-exam and question selection support
         exam_ids: formattedForm.exam_ids, // All selected exam IDs
         selected_questions: selectedQuestions.map(q => ({
           question_id: q._id,
           exam_id: q.examId,
           exam_title: q.examTitle,
           question_type: q.type,
-          score: q.score
+          score: q.score,
+          question_text: q.question // Include question text for reference
         })),
-        question_count: selectedQuestions.length,
         total_score: selectedQuestions.reduce((total, q) => total + q.score, 0),
+
+        // Exam sources breakdown for analytics and reporting
         exam_sources: selectedExams.map(examId => {
           const exam = examinations.find(e => e._id === examId);
           const questionsFromExam = selectedQuestions.filter(q => q.examId === examId);
@@ -630,40 +692,78 @@ export default function CreateSchedulePage() {
             question_count: questionsFromExam.length,
             total_score: questionsFromExam.reduce((total, q) => total + q.score, 0)
           };
-        })
+        }),
+
+        // Selection metadata for future reference
+        selection_metadata: {
+          selection_mode: selectionMode,
+          selection_history: selectionHistory,
+          exam_selection_methods: examSelectionMethods,
+          exam_random_counts: examRandomCounts,
+          created_at: new Date().toISOString(),
+          total_exams_selected: selectedExams.length,
+          // Optional features status
+          features_enabled: {
+            scheduling: enableScheduling,
+            exam_code: enableExamCode
+          }
+        }
       }
+
+      console.log('Submitting exam schedule with enhanced data:', {
+        selection_mode: selectionMode,
+        total_questions: selectedQuestions.length,
+        total_exams: selectedExams.length,
+        total_score: enhancedData.total_score,
+        scheduling_enabled: enableScheduling,
+        exam_code_enabled: enableExamCode,
+        has_open_time: !!enhancedData.open_time,
+        has_close_time: !!enhancedData.close_time,
+        has_exam_code: !!enhancedData.exam_code
+      });
 
       // Create schedules for all selected groups
       const promises = selectedGroups.map(async (groupName) => {
+        const scheduleData = {
+          ...enhancedData,
+          schedule_name: selectedGroups.length > 1
+            ? `${enhancedData.schedule_name} - ${groupName}`
+            : enhancedData.schedule_name
+        };
+
         return clientAPI.post(
-          `/course/${courseId}/group/${encodeURIComponent(groupName)}/exam-setting`, 
-          {
-            ...postData,
-            schedule_name: selectedGroups.length > 1 
-              ? `${postData.schedule_name} - ${groupName}`
-              : postData.schedule_name
-          }
+          `/course/${courseId}/group/${encodeURIComponent(groupName)}/exam-setting`,
+          scheduleData
         )
       })
-      
-      await Promise.all(promises)
-      
+
+      const results = await Promise.all(promises)
+
+      // Log successful creation for debugging
+      console.log('Successfully created exam schedules:', results.length);
+
       if (selectedGroups.length === 1) {
         toast.success('Examination schedule created successfully')
       } else {
         toast.success(`Examination schedules created successfully for ${selectedGroups.length} groups`)
       }
-      
+
       setTrigger(!trigger)
-      
+
       // Navigate back to the schedules page
       router.push('/overview/create/schedule')
     } catch (err: any) {
       console.error('Error creating examination schedule:', err)
-      
+
+      // Enhanced error logging
+      if (err.response?.data) {
+        console.error('Backend error details:', err.response.data);
+      }
+
       if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message)
+        setError(`Failed to create schedule: ${err.response.data.message}`)
       } else {
+        setError('Failed to create examination schedule. Please check your selections and try again.')
         errorHandler(err)
       }
     } finally {
@@ -682,7 +782,7 @@ export default function CreateSchedulePage() {
           </h1>
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Side - Main Form */}
         <div className="lg:col-span-2">
@@ -699,10 +799,14 @@ export default function CreateSchedulePage() {
                       {error}
                     </div>
                   )}
-                  
+
                   {/* Exam Selection */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">
+                        Select Exams
+                        <span className="text-danger ml-1">*</span>
+                      </label>
                       <Button
                         color="secondary"
                         variant="bordered"
@@ -710,7 +814,7 @@ export default function CreateSchedulePage() {
                         startContent={<HealthiconsIExamMultipleChoice className="text-xl" />}
                         endContent={examSettingForm.exam_ids.length > 0 && <div className="bg-secondary text-white rounded-full px-2 py-1 text-xs">{examSettingForm.exam_ids.length}</div>}
                         onPress={() => setIsExamModalOpen(true)}
-                        isDisabled={submitting || examinations.length === 0}
+                        isDisabled={submitting || examinations.length === 0 || selectionMode === 'random' || selectionMode === 'hybrid'}
                       >
                         <div className="flex flex-col items-start">
                           <span className="text-sm text-default-500">
@@ -720,7 +824,7 @@ export default function CreateSchedulePage() {
                         </div>
                       </Button>
                     </div>
-                    
+
                     <div>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -749,7 +853,7 @@ export default function CreateSchedulePage() {
                             </Badge>
                           </div>
                         </div>
-                        
+
                         <Select
                           placeholder={selectedGroups.length === 0 ? "Select groups" : `${selectedGroups.length} group${selectedGroups.length > 1 ? 's' : ''} selected`}
                           isRequired
@@ -777,7 +881,7 @@ export default function CreateSchedulePage() {
                             </SelectItem>
                           )}
                         </Select>
-                        
+
                         {selectedGroups.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {selectedGroups.map((groupName) => (
@@ -798,7 +902,7 @@ export default function CreateSchedulePage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Question Selection Summary */}
                   {selectedQuestions.length > 0 && (
                     <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
@@ -806,45 +910,24 @@ export default function CreateSchedulePage() {
                         <div className="flex items-center gap-2">
                           <MaterialSymbolsListAlt className="w-5 h-5 text-primary" />
                           <h3 className="text-lg font-semibold">Selected Questions</h3>
-                          <Badge color="primary" variant="flat">
-                            {selectedQuestions.length} questions
-                          </Badge>
-                          <Badge color="secondary" variant="flat">
-                            {selectedQuestions.reduce((total, q) => total + q.score, 0)} points
-                          </Badge>
                         </div>
-                        
+
                         <div className="flex gap-2">
-                          {selectionMode === 'manual' ? (
-                            <>
-                              <Button
-                                size="sm"
-                                color="secondary"
-                                variant="bordered"
-                                startContent={<MingcuteAddFill className="w-4 h-4" />}
-                                onPress={() => setIsQuestionModalOpen(true)}
-                                isDisabled={submitting}
-                              >
-                                Modify Selection
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                color="secondary"
-                                variant="bordered"
-                                onPress={() => {}}
-                                isDisabled={submitting}
-                              >
-                                Change Count
-                              </Button>
-                              
-                            </>
-                          )}
+                          <>
+                            <Button
+                              size="sm"
+                              color="secondary"
+                              variant="bordered"
+                              startContent={<MingcuteAddFill className="w-4 h-4" />}
+                              onPress={() => setIsQuestionModalOpen(true)}
+                              isDisabled={submitting}
+                            >
+                              Modify Selection
+                            </Button>
+                          </>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <div className="text-sm text-default-600">
                           Questions from {selectedExams.length} examination{selectedExams.length > 1 ? 's' : ''}:
@@ -853,14 +936,14 @@ export default function CreateSchedulePage() {
                           {selectedExams.map(examId => {
                             const exam = examinations.find(e => e._id === examId);
                             const questionsFromExam = selectedQuestions.filter(q => q.examId === examId);
-                            
+
                             if (!exam) return null;
-                            
+
                             return (
-                              <Chip 
+                              <Chip
                                 key={examId}
-                                size="sm" 
-                                variant="flat" 
+                                size="sm"
+                                variant="flat"
                                 color="primary"
                                 className="text-xs"
                               >
@@ -869,66 +952,165 @@ export default function CreateSchedulePage() {
                             );
                           })}
                         </div>
-                        
+
                         <div className="flex gap-4 text-xs text-default-500">
                           <span>Add more questions by clicking "Modify Selection" or "Add More Exams"</span>
                         </div>
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Schedule Settings */}
                   <div className="bg-default-50 p-4 rounded-lg">
                     <h3 className="text-lg font-semibold mb-4">Schedule Information</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
-                        type="text"
-                        label="Schedule Name"
-                        placeholder="Enter a name for this schedule"
-                        value={examSettingForm.schedule_name}
-                        onChange={(e) => setExamSettingForm({...examSettingForm, schedule_name: e.target.value})}
-                        isRequired
-                        isDisabled={submitting}
-                      />
-                      
-                      <Input
-                        type="text"
-                        label="Exam Code"
-                        placeholder="Enter exam access code"
-                        value={examSettingForm.exam_code}
-                        onChange={(e) => setExamSettingForm({...examSettingForm, exam_code: e.target.value})}
-                        isRequired
-                        isDisabled={submitting}
-                      />
-                      
-                      <Input
-                        type="datetime-local"
-                        label="Open Time"
-                        value={formatDateForInput(examSettingForm.open_time)}
-                        onChange={(e) => setExamSettingForm({...examSettingForm, open_time: new Date(e.target.value)})}
-                        isRequired
-                        isDisabled={submitting}
-                      />
-                      
-                      <Input
-                        type="datetime-local"
-                        label="Close Time"
-                        value={formatDateForInput(examSettingForm.close_time)}
-                        onChange={(e) => setExamSettingForm({...examSettingForm, close_time: new Date(e.target.value)})}
-                        isRequired
-                        isDisabled={submitting}
-                      />
-                      
+
+                    <div className="space-y-4">
+                      {/* Basic Information */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input
+                          type="text"
+                          label="Schedule Name"
+                          placeholder="Enter a name for this schedule"
+                          value={examSettingForm.schedule_name}
+                          onChange={(e) => setExamSettingForm({ ...examSettingForm, schedule_name: e.target.value })}
+                          isRequired
+                          isDisabled={submitting}
+                        />
+                      </div>
+
+                      {/* Optional Features Toggles */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-3 bg-default-100 rounded-xl">
+                          <div>
+                            <h4 className="font-medium text-sm">Schedule Timing</h4>
+                            <p className="text-xs text-default-500">Set specific open and close times for the exam</p>
+                          </div>
+                          <Switch
+                            color="secondary"
+                            isSelected={enableScheduling}
+                            onValueChange={setEnableScheduling}
+                            isDisabled={submitting}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-default-100 rounded-xl">
+                          <div>
+                            <h4 className="font-medium text-sm">Exam Access Code</h4>
+                            <p className="text-xs text-default-500">Require a code for students to access the exam</p>
+                          </div>
+                          <Switch
+                            color="secondary"
+                            isSelected={enableExamCode}
+                            onValueChange={setEnableExamCode}
+                            isDisabled={submitting}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Conditional Scheduling Inputs */}
+                      {enableScheduling && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Input
+                            type="datetime-local"
+                            label="Open Time"
+                            description="When students can start taking the exam"
+                            value={formatDateForInput(examSettingForm.open_time)}
+                            onChange={(e) => setExamSettingForm({ ...examSettingForm, open_time: new Date(e.target.value) })}
+                            isRequired={enableScheduling}
+                            isDisabled={submitting}
+                          />
+
+                          <Input
+                            type="datetime-local"
+                            label="Close Time"
+                            description={
+                              examSettingForm.open_time && examSettingForm.close_time && 
+                              examSettingForm.close_time.getTime() > examSettingForm.open_time.getTime()
+                                ? `Time remaining: ${Math.round((examSettingForm.close_time.getTime() - examSettingForm.open_time.getTime()) / (1000 * 60))} minutes`
+                                : "When the exam becomes unavailable"
+                            }
+                            value={formatDateForInput(examSettingForm.close_time)}
+                            onChange={(e) => setExamSettingForm({ ...examSettingForm, close_time: new Date(e.target.value) })}
+                            isRequired={enableScheduling}
+                            isDisabled={submitting}
+                          />
+                        </div>
+                      )}
+
+                      {!enableScheduling && (
+                        <div className="p-3 bg-success-50 border border-success-200 rounded-lg">
+                          <p className="text-sm text-success-700">
+                            📅 <strong>Immediate Access:</strong> Students can access this exam immediately after creation with no time restrictions.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Conditional Exam Code Input */}
+                      {enableExamCode && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="relative">
+                            <Input
+                              type="text"
+                              label="Exam Access Code"
+                              placeholder="Enter exam access code"
+                              description=""
+                              value={examSettingForm.exam_code}
+                              onChange={(e) => setExamSettingForm({ ...examSettingForm, exam_code: e.target.value })}
+                              isRequired={enableExamCode}
+                              isDisabled={submitting}
+                              endContent={
+                                <Button 
+                                  isIconOnly 
+                                  variant="light" 
+                                  className="text-default-400 mr-1" 
+                                  onPress={() => {
+                                    // Generate a random 6-character alphanumeric code
+                                    const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                                    let result = '';
+                                    for (let i = 0; i < 6; i++) {
+                                      result += characters.charAt(Math.floor(Math.random() * characters.length));
+                                    }
+                                    setExamSettingForm({ ...examSettingForm, exam_code: result });
+                                  }}
+                                  isDisabled={submitting}
+                                >
+                                  <SolarRefreshLineDuotone width={18} height={18} />
+                                </Button>
+                              }
+                            />
+                            <div className="text-xs text-default-400 mt-1 ml-1">
+                              Click the refresh button to auto-generate a code
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {!enableExamCode && (
+                        <div className="p-3 bg-success-50 border border-success-200 rounded-lg">
+                          <p className="text-sm text-success-700">
+                            🔓 <strong>Open Access:</strong> Students can access this exam without needing an access code.
+                          </p>
+                        </div>
+                      )}
+
+
+                    </div>
+                  </div>
+
+                  {/* Exam Options */}
+                  <div className="bg-default-50 p-4 pt-0 rounded-lg">
+                    <h3 className="text-lg font-semibold mb-4">Exam Options</h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <Input
                         type="text"
                         label="IP Range (Optional)"
                         placeholder="e.g., 192.168.1.0/24"
                         value={examSettingForm.ip_range}
-                        onChange={(e) => setExamSettingForm({...examSettingForm, ip_range: e.target.value})}
+                        onChange={(e) => setExamSettingForm({ ...examSettingForm, ip_range: e.target.value })}
                         isDisabled={submitting}
                       />
-                      
+
                       <Input
                         type="number"
                         label="Allowed Attempts"
@@ -937,57 +1119,52 @@ export default function CreateSchedulePage() {
                         description="Number of attempts allowed per student"
                         value={examSettingForm.allowed_attempts.toString()}
                         onChange={(e) => setExamSettingForm({
-                          ...examSettingForm, 
+                          ...examSettingForm,
                           allowed_attempts: parseInt(e.target.value) || 1
                         })}
                         isDisabled={submitting}
                       />
                     </div>
-                  </div>
-                  
-                  {/* Exam Options */}
-                  <div className="bg-default-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold mb-4">Exam Options</h3>
-                    
+
                     <div className="flex flex-col gap-4">
                       <Switch
                         color="secondary"
                         isSelected={examSettingForm.allowed_review}
-                        onValueChange={(value) => setExamSettingForm({...examSettingForm, allowed_review: value})}
+                        onValueChange={(value) => setExamSettingForm({ ...examSettingForm, allowed_review: value })}
                         isDisabled={submitting}
                       >
                         Allow students to review their answers after submission
                       </Switch>
-                      
+
                       <Switch
                         color="secondary"
                         isSelected={examSettingForm.show_answer}
-                        onValueChange={(value) => setExamSettingForm({...examSettingForm, show_answer: value})}
+                        onValueChange={(value) => setExamSettingForm({ ...examSettingForm, show_answer: value })}
                         isDisabled={submitting}
                       >
                         Show correct answers after submission
                       </Switch>
-                      
+
                       <Switch
                         color="secondary"
                         isSelected={examSettingForm.randomize_question}
-                        onValueChange={(value) => setExamSettingForm({...examSettingForm, randomize_question: value})}
+                        onValueChange={(value) => setExamSettingForm({ ...examSettingForm, randomize_question: value })}
                         isDisabled={submitting}
                       >
                         Randomize question order
                       </Switch>
-                      
+
                       <Switch
                         color="secondary"
                         isSelected={examSettingForm.randomize_choice}
-                        onValueChange={(value) => setExamSettingForm({...examSettingForm, randomize_choice: value})}
+                        onValueChange={(value) => setExamSettingForm({ ...examSettingForm, randomize_choice: value })}
                         isDisabled={submitting}
                       >
                         Randomize answer choices
                       </Switch>
                     </div>
                   </div>
-                  
+
                   {/* Submit Button */}
                   <div className="flex justify-end gap-2">
                     <Button
@@ -1012,7 +1189,7 @@ export default function CreateSchedulePage() {
             </CardBody>
           </Card>
         </div>
-        
+
         {/* Right Side - Selected Questions Summary */}
         <div className="lg:col-span-1">
           <Card className="border-none shadow-lg sticky top-6">
@@ -1037,7 +1214,7 @@ export default function CreateSchedulePage() {
                 <div className="text-center py-8">
                   <MaterialSymbolsListAlt className="w-12 h-12 text-default-300 mx-auto mb-3" />
                   <p className="text-default-500 text-sm">
-                    {currentStep === 'exam' 
+                    {currentStep === 'exam'
                       ? 'Select exams to view questions'
                       : 'Select questions to add to your schedule'
                     }
@@ -1045,12 +1222,12 @@ export default function CreateSchedulePage() {
                 </div>
               ) : (
                 <ScrollShadow className="max-h-[500px]">
-                  <DndContext 
+                  <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
                   >
-                    <SortableContext 
+                    <SortableContext
                       items={selectedQuestions.map(q => `${q.examId}-${q._id}`)}
                       strategy={verticalListSortingStrategy}
                     >
@@ -1070,46 +1247,46 @@ export default function CreateSchedulePage() {
                   </DndContext>
                 </ScrollShadow>
               )}
-              
+
               {selectedQuestions.length > 0 && (
                 <div className="mt-4 p-3 bg-primary/10 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Total Score:</span>
-                    <Badge color="primary" variant="solid">
+                    <Chip size="sm" color="secondary" variant="flat">
                       {selectedQuestions.reduce((total, q) => total + q.score, 0)} pts
-                    </Badge>
+                    </Chip>
                   </div>
-                  <div className="flex justify-between items-center mt-1">
+                  <div className="flex justify-between items-center mt-2">
                     <span className="text-sm font-medium">Questions:</span>
-                    <Badge color="secondary" variant="flat">
+                    <Chip size="sm" color="secondary" variant="flat">
                       {selectedQuestions.length}
-                    </Badge>
+                    </Chip>
                   </div>
-                  
+
                   {/* Selection Mode Indicator */}
                   {selectionMode && (
                     <div className="flex justify-between items-center mt-2">
                       <span className="text-sm font-medium">Selection Mode:</span>
-                      <Chip 
-                        size="sm" 
-                        variant="flat" 
+                      <Chip
+                        size="sm"
+                        variant="flat"
                         color={selectionMode === 'manual' ? 'primary' : selectionMode === 'random' ? 'secondary' : 'warning'}
                       >
                         {selectionMode === 'manual' ? 'Manual' : selectionMode === 'random' ? 'Random' : 'Hybrid'}
                       </Chip>
                     </div>
                   )}
-                  
+
                   {/* Selection History */}
                   {selectionHistory.length > 0 && selectionMode === 'hybrid' && (
                     <div className="mt-2">
                       <span className="text-xs text-default-500">Selection History:</span>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {selectionHistory.map((entry, index) => (
-                          <Chip 
+                          <Chip
                             key={index}
-                            size="sm" 
-                            variant="dot" 
+                            size="sm"
+                            variant="dot"
                             color={entry.mode === 'manual' ? 'primary' : 'secondary'}
                           >
                             {entry.mode === 'manual' ? 'Manual' : `Random (${entry.count})`}
@@ -1120,14 +1297,14 @@ export default function CreateSchedulePage() {
                   )}
                 </div>
               )}
-              
+
               {/* Action Buttons */}
               {selectedQuestions.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  <Button 
-                    size="sm" 
-                    variant="bordered" 
-                    color="secondary" 
+                  <Button
+                    size="sm"
+                    variant="bordered"
+                    color="secondary"
                     fullWidth
                     onPress={() => {
                       setIsQuestionModalOpen(true);
@@ -1136,10 +1313,10 @@ export default function CreateSchedulePage() {
                   >
                     Modify Selection
                   </Button>
-                  <Button 
-                    size="sm" 
-                    variant="bordered" 
-                    color="danger" 
+                  <Button
+                    size="sm"
+                    variant="bordered"
+                    color="danger"
                     fullWidth
                     onPress={() => {
                       setSelectedQuestions([]);
@@ -1175,8 +1352,8 @@ export default function CreateSchedulePage() {
       />
 
       {/* Question Selection Modal */}
-      <Modal 
-        isOpen={isQuestionModalOpen} 
+      <Modal
+        isOpen={isQuestionModalOpen}
         onClose={() => {
           setIsQuestionModalOpen(false);
           setCurrentStep('schedule');
@@ -1208,9 +1385,9 @@ export default function CreateSchedulePage() {
                 const selectionMethod = examSelectionMethods[examId] || 'manual';
                 const randomCount = examRandomCounts[examId] || 5;
                 const selectedFromExam = selectedQuestions.filter(q => q.examId === examId);
-                
+
                 if (!exam) return null;
-                
+
                 return (
                   <div key={examId} className="border border-default-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-4">
@@ -1227,7 +1404,7 @@ export default function CreateSchedulePage() {
                         )}
                       </div>
                     </div>
-                    
+
                     {questions.length === 0 ? (
                       <div className="text-center py-8 text-default-500">
                         <Spinner size="sm" className="mb-2" />
@@ -1237,17 +1414,29 @@ export default function CreateSchedulePage() {
                       <div className="space-y-4">
                         {/* Selection Method Toggle */}
                         <div className="flex gap-4">
-                          <Card 
-                            className={`flex-1 border-2 cursor-pointer transition-all ${
-                              selectionMethod === 'manual' 
-                                ? 'border-primary bg-primary/5' 
-                                : 'border-default-200 hover:border-default-300'
-                            }`}
+                          <Card
+                            className={`flex-1 border-2 cursor-pointer transition-all ${selectionMethod === 'manual'
+                              ? 'border-primary bg-primary/5'
+                              : 'border-default-200 hover:border-default-300'
+                              }`}
                             isPressable
                             onPress={() => {
-                              setExamSelectionMethods(prev => ({...prev, [examId]: 'manual'}));
+                              setExamSelectionMethods(prev => ({ ...prev, [examId]: 'manual' }));
                               // Clear any random selections for this exam
                               setSelectedQuestions(prev => prev.filter(q => q.examId !== examId));
+
+                              // Update overall selection mode
+                              const updatedExamMethods = { ...examSelectionMethods, [examId]: 'manual' as const };
+                              const hasManualSelections = Object.values(updatedExamMethods).some(method => method === 'manual');
+                              const hasRandomSelections = Object.values(updatedExamMethods).some(method => method === 'random');
+
+                              if (hasManualSelections && hasRandomSelections) {
+                                setSelectionMode('hybrid');
+                              } else if (Object.values(updatedExamMethods).every(method => method === 'manual')) {
+                                setSelectionMode('manual');
+                              } else {
+                                setSelectionMode('random');
+                              }
                             }}
                           >
                             <CardBody className="p-3 text-center">
@@ -1260,16 +1449,15 @@ export default function CreateSchedulePage() {
                               </p>
                             </CardBody>
                           </Card>
-                          
-                          <Card 
-                            className={`flex-1 border-2 cursor-pointer transition-all ${
-                              selectionMethod === 'random' 
-                                ? 'border-secondary bg-secondary/5' 
-                                : 'border-default-200 hover:border-default-300'
-                            }`}
+
+                          <Card
+                            className={`flex-1 border-2 cursor-pointer transition-all ${selectionMethod === 'random'
+                              ? 'border-secondary bg-secondary/5'
+                              : 'border-default-200 hover:border-default-300'
+                              }`}
                             isPressable
                             onPress={() => {
-                              setExamSelectionMethods(prev => ({...prev, [examId]: 'random'}));
+                              setExamSelectionMethods(prev => ({ ...prev, [examId]: 'random' }));
                               // Generate random selection immediately
                               handleRandomSelectionForExam(examId, randomCount);
                             }}
@@ -1285,7 +1473,7 @@ export default function CreateSchedulePage() {
                             </CardBody>
                           </Card>
                         </div>
-                        
+
                         {/* Random Count Input */}
                         {selectionMethod === 'random' && (
                           <div className="flex items-center gap-3">
@@ -1296,7 +1484,7 @@ export default function CreateSchedulePage() {
                               value={randomCount.toString()}
                               onChange={(e) => {
                                 const newCount = parseInt(e.target.value) || 1;
-                                setExamRandomCounts(prev => ({...prev, [examId]: newCount}));
+                                setExamRandomCounts(prev => ({ ...prev, [examId]: newCount }));
                                 // Regenerate random selection with new count
                                 handleRandomSelectionForExam(examId, newCount);
                               }}
@@ -1315,7 +1503,7 @@ export default function CreateSchedulePage() {
                             </Button>
                           </div>
                         )}
-                        
+
                         {/* Manual Question Selection */}
                         {selectionMethod === 'manual' && (
                           <div className="max-h-60 overflow-y-auto space-y-2">
@@ -1323,15 +1511,14 @@ export default function CreateSchedulePage() {
                               const isSelected = selectedQuestions.some(
                                 sq => sq._id === question._id && sq.examId === examId
                               );
-                              
+
                               return (
-                                <Card 
-                                  key={question._id} 
-                                  className={`border transition-all cursor-pointer hover:shadow-sm ${
-                                    isSelected 
-                                      ? 'border-primary bg-primary/5' 
-                                      : 'border-default-200 hover:border-default-300'
-                                  }`}
+                                <Card
+                                  key={question._id}
+                                  className={`border transition-all w-full cursor-pointer hover:shadow-sm ${isSelected
+                                    ? 'border-primary bg-primary/5'
+                                    : 'border-default-200 hover:border-default-300'
+                                    }`}
                                   isPressable
                                   onPress={() => {
                                     handleManualQuestionToggle(question, examId, exam.title, isSelected);
@@ -1339,13 +1526,13 @@ export default function CreateSchedulePage() {
                                 >
                                   <CardBody className="p-3">
                                     <div className="flex items-start gap-3">
-                                      <Checkbox 
+                                      <Checkbox
                                         isSelected={isSelected}
-                                        onChange={() => {}} // Handled by card press
+                                        onChange={() => handleManualQuestionToggle(question, examId, exam.title, isSelected)} // Handled by card press
                                         className="mt-1"
                                         size="sm"
                                       />
-                                      
+
                                       <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                           {getQuestionTypeIcon(question.type)}
@@ -1356,7 +1543,7 @@ export default function CreateSchedulePage() {
                                             {question.score} pts
                                           </Chip>
                                         </div>
-                                        
+
                                         <p className="text-sm font-medium">
                                           Q{index + 1}: {question.question}
                                         </p>
@@ -1368,7 +1555,7 @@ export default function CreateSchedulePage() {
                             })}
                           </div>
                         )}
-                        
+
                         {/* Random Selection Preview */}
                         {selectionMethod === 'random' && selectedFromExam.length > 0 && (
                           <div className="bg-secondary/10 p-3 rounded-lg">
@@ -1404,10 +1591,10 @@ export default function CreateSchedulePage() {
                   {selectedQuestions.reduce((total, q) => total + q.score, 0)} total points
                 </Badge>
               </div>
-              
+
               <div className="flex gap-2">
-                <Button 
-                  variant="light" 
+                <Button
+                  variant="light"
                   onPress={() => {
                     setIsQuestionModalOpen(false);
                     setIsExamModalOpen(true);
@@ -1416,7 +1603,7 @@ export default function CreateSchedulePage() {
                 >
                   Back to Exams
                 </Button>
-                <Button 
+                <Button
                   color="secondary"
                   variant="bordered"
                   startContent={<MingcuteAddFill className="w-4 h-4" />}
@@ -1424,7 +1611,7 @@ export default function CreateSchedulePage() {
                 >
                   Add More Exams
                 </Button>
-                <Button 
+                <Button
                   color="secondary"
                   onPress={() => {
                     setIsQuestionModalOpen(false);
