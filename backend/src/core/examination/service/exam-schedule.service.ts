@@ -14,8 +14,8 @@ export class ExaminationScheduleService implements IExaminationScheduleService {
         return await this._repository.getExaminationScheduleByExamId(exam_id);
     }
 
-    async createExaminationSchedule(examIds: string[], instructorId: string, questionCount?: number, scheduleName?: string, examSettings?: any): Promise<ExaminationScheduleDocument | null> {
-        return await this._repository.createExaminationSchedule(examIds, instructorId, questionCount, scheduleName, examSettings);
+    async createExaminationSchedule(examIds: string[], instructorId: string, questionCount?: number, scheduleName?: string, examSettings?: any, selectedQuestions?: any[]): Promise<ExaminationScheduleDocument | null> {
+        return await this._repository.createExaminationSchedule(examIds, instructorId, questionCount, scheduleName, examSettings, selectedQuestions);
     }
 
     async getExaminationScheduleById(id: string): Promise<ExaminationScheduleDocument | null> {

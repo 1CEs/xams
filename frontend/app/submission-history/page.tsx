@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientAPI } from '@/config/axios.config'
-import { Card, CardBody, CardHeader, Divider, Spinner, Chip, Button } from '@nextui-org/react'
+import { Accordion, AccordionItem, Button, Card, CardBody, CardHeader, Chip, Divider, Radio, RadioGroup, Spinner } from '@nextui-org/react'
 import { ArrowLeft, FileDocument, Clock, CheckCircle, CloseCircle } from '@/components/icons/icons'
 import { useUserStore } from '@/stores/user.store'
 import { toast } from 'react-toastify'
@@ -18,6 +18,11 @@ interface SubmittedAnswer {
   is_correct?: boolean
   score_obtained?: number
   max_score: number
+  // Original question choices for display
+  original_choices?: Array<{
+    content: string
+    isCorrect: boolean
+  }>
 }
 
 interface ExamSubmission {
@@ -482,17 +487,87 @@ const SubmissionHistoryPage = () => {
                                             {/* Question Text */}
                                             <p className="text-sm text-default-700 mb-3 font-medium">{answer.submitted_question}</p>
                                             
-                                            {/* Student Answer */}
-                                            <div className="text-sm bg-white rounded-md p-3 border border-default-200">
-                                              <span className="text-default-600 font-medium">
-                                                {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
-                                              </span>
-                                              <span className="font-medium text-default-800">
-                                                {answer.question_type === 'mc' && answer.submitted_choices?.join(', ')}
-                                                {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
-                                                {(answer.question_type === 'ses' || answer.question_type === 'les') && answer.submitted_answer}
-                                              </span>
-                                            </div>
+                                            {/* Answer Section with Accordion */}
+                                            {answer.question_type === 'mc' && answer.original_choices ? (
+                                              <Accordion variant="bordered">
+                                                <AccordionItem
+                                                  key="choices"
+                                                  aria-label="Question Choices"
+                                                  title={
+                                                    <div className="flex items-center gap-2">
+                                                      <span className="text-sm font-medium">
+                                                        {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
+                                                      </span>
+                                                      <span className="text-sm font-semibold text-primary">
+                                                        {answer.submitted_choices?.join(', ') || 'No answer selected'}
+                                                      </span>
+                                                    </div>
+                                                  }
+                                                >
+                                                  <div className="pt-2">
+                                                    <RadioGroup
+                                                      value={answer.submitted_choices?.[0] || ''}
+                                                      isReadOnly
+                                                      classNames={{
+                                                        wrapper: "gap-3"
+                                                      }}
+                                                    >
+                                                      {answer.original_choices.map((choice, choiceIndex) => {
+                                                        const isSelected = answer.submitted_choices?.includes(choice.content)
+                                                        const isCorrect = choice.isCorrect
+                                                        
+                                                        return (
+                                                          <Radio
+                                                            key={choiceIndex}
+                                                            value={choice.content}
+                                                            classNames={{
+                                                              base: `max-w-full m-0 p-3 rounded-lg border-2 transition-colors ${
+                                                                isSelected 
+                                                                  ? isCorrect 
+                                                                    ? 'border-success bg-success/10' 
+                                                                    : 'border-danger bg-danger/10'
+                                                                  : isCorrect
+                                                                    ? 'border-success/30 bg-success/5'
+                                                                    : 'border-default-200 bg-default-50'
+                                                              }`,
+                                                              wrapper: "hidden",
+                                                              labelWrapper: "w-full"
+                                                            }}
+                                                          >
+                                                            <div className="flex items-center justify-between w-full">
+                                                              <span className="text-sm">{choice.content}</span>
+                                                              <div className="flex items-center gap-2">
+                                                                {isSelected && (
+                                                                  <Chip size="sm" color="primary" variant="flat">
+                                                                    Selected
+                                                                  </Chip>
+                                                                )}
+                                                                {isCorrect && (
+                                                                  <Chip size="sm" color="success" variant="flat">
+                                                                    Correct
+                                                                  </Chip>
+                                                                )}
+                                                              </div>
+                                                            </div>
+                                                          </Radio>
+                                                        )
+                                                      })}
+                                                    </RadioGroup>
+                                                  </div>
+                                                </AccordionItem>
+                                              </Accordion>
+                                            ) : (
+                                              /* Non-multiple choice answers */
+                                              <div className="text-sm rounded-md p-3 border border-default-200">
+                                                <span className="text-default-600 font-medium">
+                                                  {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
+                                                </span>
+                                                <span className="font-medium text-default-800">
+                                                  {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
+                                                  {(answer.question_type === 'ses' || answer.question_type === 'les') && answer.submitted_answer}
+                                                </span>
+                                              </div>
+                                            )}
                                           </div>
                                         )
                                       })}
@@ -572,17 +647,87 @@ const SubmissionHistoryPage = () => {
                                 {/* Question Text */}
                                 <p className="text-sm text-default-700 mb-3 font-medium">{answer.submitted_question}</p>
                                 
-                                {/* Student Answer */}
-                                <div className="text-sm bg-white rounded-md p-3 border border-default-200">
-                                  <span className="text-default-600 font-medium">
-                                    {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
-                                  </span>
-                                  <span className="font-medium text-default-800">
-                                    {answer.question_type === 'mc' && answer.submitted_choices?.join(', ')}
-                                    {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
-                                    {(answer.question_type === 'ses' || answer.question_type === 'les') && answer.submitted_answer}
-                                  </span>
-                                </div>
+                                {/* Answer Section with Accordion */}
+                                {answer.question_type === 'mc' && answer.original_choices ? (
+                                  <Accordion variant="bordered">
+                                    <AccordionItem
+                                      key="choices"
+                                      aria-label="Question Choices"
+                                      title={
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm font-medium">
+                                            {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
+                                          </span>
+                                          <span className="text-sm font-semibold text-primary">
+                                            {answer.submitted_choices?.join(', ') || 'No answer selected'}
+                                          </span>
+                                        </div>
+                                      }
+                                    >
+                                      <div className="pt-2">
+                                        <RadioGroup
+                                          value={answer.submitted_choices?.[0] || ''}
+                                          isReadOnly
+                                          classNames={{
+                                            wrapper: "gap-3"
+                                          }}
+                                        >
+                                          {answer.original_choices.map((choice, choiceIndex) => {
+                                            const isSelected = answer.submitted_choices?.includes(choice.content)
+                                            const isCorrect = choice.isCorrect
+                                            
+                                            return (
+                                              <Radio
+                                                key={choiceIndex}
+                                                value={choice.content}
+                                                classNames={{
+                                                  base: `max-w-full m-0 p-3 rounded-lg border-2 transition-colors ${
+                                                    isSelected 
+                                                      ? isCorrect 
+                                                        ? 'border-success bg-success/10' 
+                                                        : 'border-danger bg-danger/10'
+                                                      : isCorrect
+                                                        ? 'border-success/30 bg-success/5'
+                                                        : 'border-default-200 bg-default-50'
+                                                  }`,
+                                                  wrapper: "hidden",
+                                                  labelWrapper: "w-full"
+                                                }}
+                                              >
+                                                <div className="flex items-center justify-between w-full">
+                                                  <span className="text-sm">{choice.content}</span>
+                                                  <div className="flex items-center gap-2">
+                                                    {isSelected && (
+                                                      <Chip size="sm" color="primary" variant="flat">
+                                                        Selected
+                                                      </Chip>
+                                                    )}
+                                                    {isCorrect && (
+                                                      <Chip size="sm" color="success" variant="flat">
+                                                        Correct
+                                                      </Chip>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </Radio>
+                                            )
+                                          })}
+                                        </RadioGroup>
+                                      </div>
+                                    </AccordionItem>
+                                  </Accordion>
+                                ) : (
+                                  /* Non-multiple choice answers */
+                                  <div className="text-sm bg-white rounded-md p-3 border border-default-200">
+                                    <span className="text-default-600 font-medium">
+                                      {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
+                                    </span>
+                                    <span className="font-medium text-default-800">
+                                      {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
+                                      {(answer.question_type === 'ses' || answer.question_type === 'les') && answer.submitted_answer}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>

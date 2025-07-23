@@ -21,7 +21,7 @@ export class ExaminationScheduleRepository
         return result;
     }
 
-    async createExaminationSchedule(examIds: string[], instructorId: string, questionCount?: number, scheduleName?: string, examSettings?: any): Promise<any | null> {
+    async createExaminationSchedule(examIds: string[], instructorId: string, questionCount?: number, scheduleName?: string, examSettings?: any, selectedQuestions?: any[]): Promise<any | null> {
         // Get all original examinations
         const originalExams = await ExaminationModel.find({ _id: { $in: examIds } }).exec();
         
@@ -50,12 +50,75 @@ export class ExaminationScheduleRepository
             }
         });
 
-        let selectedQuestions = allQuestions;
+        let questionsToUse = allQuestions;
 
-        // If questionCount is specified and valid, intelligently select questions
-        if (questionCount && questionCount > 0) {
-            selectedQuestions = this.selectQuestionsWithCount(allQuestions, questionCount);
+        // DEBUG: Log what we receive from frontend
+        console.log('=== EXAM SCHEDULE CREATION DEBUG ===');
+        console.log('selectedQuestions received:', selectedQuestions ? selectedQuestions.length : 'null/undefined');
+        console.log('selectedQuestions data:', JSON.stringify(selectedQuestions, null, 2));
+        console.log('allQuestions count:', allQuestions.length);
+        console.log('Sample allQuestion IDs:', allQuestions.slice(0, 3).map(q => ({ id: q._id.toString(), type: q.type })));
+
+        // Use selectedQuestions from frontend if provided, otherwise fall back to original logic
+        if (selectedQuestions && selectedQuestions.length > 0) {
+            console.log('Using selectedQuestions from frontend');
+            // Convert frontend selected questions to the format expected by the database
+            questionsToUse = selectedQuestions.map((q, index) => {
+                console.log(`Processing selected question ${index + 1}:`, {
+                    question_id: q.question_id,
+                    question_type: q.question_type,
+                    score: q.score
+                });
+                
+                // Find the original question from the exams to get the complete question data
+                // Try multiple comparison methods to ensure we find the question
+                let originalQuestion = allQuestions.find(oq => oq._id.toString() === q.question_id);
+                
+                if (!originalQuestion) {
+                    // Try without toString() in case q.question_id is already a string
+                    originalQuestion = allQuestions.find(oq => oq._id === q.question_id);
+                }
+                
+                if (!originalQuestion) {
+                    // Try converting q.question_id to ObjectId for comparison
+                    originalQuestion = allQuestions.find(oq => oq._id.equals && oq._id.equals(q.question_id));
+                }
+                
+                console.log('Question matching attempt:', {
+                    target_id: q.question_id,
+                    target_id_type: typeof q.question_id,
+                    available_ids: allQuestions.slice(0, 3).map(oq => ({ 
+                        id: oq._id.toString(), 
+                        type: typeof oq._id, 
+                        equals_target: oq._id.toString() === q.question_id 
+                    }))
+                });
+                
+                console.log('Found original question:', originalQuestion ? 'YES' : 'NO', 
+                    originalQuestion ? { id: originalQuestion._id.toString(), type: originalQuestion.type } : 'null');
+                    
+                if (originalQuestion) {
+                    const processedQuestion = {
+                        ...originalQuestion,
+                        // Preserve the question type from the frontend selection
+                        type: q.question_type,
+                        score: q.score
+                    };
+                    console.log('Processed question type:', processedQuestion.type);
+                    return processedQuestion;
+                }
+                return originalQuestion;
+            }).filter(Boolean); // Remove any null/undefined questions
+            
+            console.log('Final questionsToUse:', questionsToUse.map(q => ({ id: q._id?.toString(), type: q.type, score: q.score })));
+        } else {
+            console.log('No selectedQuestions provided, using fallback logic');
+            if (questionCount && questionCount > 0) {
+                // Fallback to original logic if no selectedQuestions provided
+                questionsToUse = this.selectQuestionsWithCount(allQuestions, questionCount);
+            }
         }
+        console.log('=== END DEBUG ===');
 
         // Create a new examination schedule with the selected questions and exam settings
         const examinationSchedule = new ExaminationScheduleModel({
@@ -64,7 +127,7 @@ export class ExaminationScheduleRepository
             title: scheduleName || examTitles.join(' + '), // Use custom name or combine exam titles
             description: `Combined examination from: ${examTitles.join(', ')}`,
             category: [...new Set(examCategories)], // Remove duplicates
-            questions: JSON.parse(JSON.stringify(selectedQuestions)), // Deep copy of selected questions
+            questions: JSON.parse(JSON.stringify(questionsToUse)), // Deep copy of selected questions
             created_at: new Date(),
             
             // Include exam settings if provided

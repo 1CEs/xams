@@ -78,7 +78,41 @@ export class ExamSubmissionService implements IExamSubmissionService {
     }
 
     async getScheduleSubmissions(scheduleId: string): Promise<any[]> {
-        return await this._submissionRepository.getSubmissionsByScheduleId(scheduleId);
+        try {
+            const submissions = await this._submissionRepository.getSubmissionsByScheduleId(scheduleId);
+            
+            // Get the exam schedule to access original questions
+            const schedule = await this._scheduleRepository.getExaminationScheduleById(scheduleId);
+            if (!schedule) {
+                return submissions;
+            }
+
+            // Enhance submissions with original question choices
+            const enhancedSubmissions = submissions.map(submission => {
+                const enhancedAnswers = submission.submitted_answers.map((answer: any) => {
+                    const question = schedule.questions.find((q: any) => q._id === answer.question_id);
+                    
+                    return {
+                        ...answer,
+                        // Include original choices for multiple choice questions
+                        original_choices: question?.choices ? question.choices.map((choice: any) => ({
+                            content: choice.content,
+                            isCorrect: choice.isCorrect
+                        })) : undefined
+                    };
+                });
+
+                return {
+                    ...submission,
+                    submitted_answers: enhancedAnswers
+                };
+            });
+
+            return enhancedSubmissions;
+        } catch (error) {
+            console.error('Error getting schedule submissions:', error);
+            throw new Error('Failed to get schedule submissions');
+        }
     }
 
     async getStudentSubmissionForSchedule(scheduleId: string, studentId: string): Promise<IExamSubmission | null> {
@@ -160,7 +194,12 @@ export class ExamSubmissionService implements IExamSubmissionService {
                 return {
                     ...submittedAnswer,
                     is_correct: isCorrect,
-                    score_obtained: scoreObtained
+                    score_obtained: scoreObtained,
+                    // Include original choices for multiple choice questions
+                    original_choices: question.choices ? question.choices.map((choice: any) => ({
+                        content: choice.content,
+                        isCorrect: choice.isCorrect
+                    })) : undefined
                 };
             });
 

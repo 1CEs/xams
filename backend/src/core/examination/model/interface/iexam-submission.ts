@@ -10,6 +10,11 @@ export interface ISubmittedAnswer {
     is_correct?: boolean; // Calculated after grading
     score_obtained?: number; // Score obtained for this question
     max_score: number; // Maximum possible score for this question
+    // Original question choices for display
+    original_choices?: Array<{
+        content: string;
+        isCorrect: boolean;
+    }>;
 }
 
 export interface IExamSubmission {
