@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientAPI } from '@/config/axios.config'
-import { Card, CardBody, CardHeader, Divider, Spinner, Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from '@nextui-org/react'
+import { Card, CardBody, CardHeader, Divider, Spinner, Chip, Button } from '@nextui-org/react'
 import { ArrowLeft, FileDocument, Clock, CheckCircle, CloseCircle } from '@/components/icons/icons'
 import { useUserStore } from '@/stores/user.store'
 import { toast } from 'react-toastify'
@@ -60,8 +60,8 @@ const SubmissionHistoryPage = () => {
   const [submissions, setSubmissions] = useState<ExamSubmission[]>([])
   const [examSchedule, setExamSchedule] = useState<ExamSchedule | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selectedSubmission, setSelectedSubmission] = useState<ExamSubmission | null>(null)
-  const { isOpen, onOpen, onOpenChange } = useDisclosure()
+  const [currentQuestionPage, setCurrentQuestionPage] = useState<{[submissionId: string]: number}>({})
+  const questionsPerPage = 5
 
   // Validate access and fetch data
   useEffect(() => {
@@ -105,6 +105,41 @@ const SubmissionHistoryPage = () => {
 
     fetchData()
   }, [schedule_id, student_id, user, router])
+
+  // Question navigation helpers
+  const getCurrentQuestionPage = (submissionId: string) => {
+    return currentQuestionPage[submissionId] || 1
+  }
+
+  const setSubmissionQuestionPage = (submissionId: string, page: number) => {
+    setCurrentQuestionPage(prev => ({
+      ...prev,
+      [submissionId]: page
+    }))
+  }
+
+  const handleQuestionNavigation = (submissionId: string, questionIndex: number) => {
+    const page = Math.floor(questionIndex / questionsPerPage) + 1
+    setSubmissionQuestionPage(submissionId, page)
+    
+    // Smooth scroll to the question
+    const questionElement = document.getElementById(`question-${submissionId}-${questionIndex}`)
+    if (questionElement) {
+      questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+
+  const getCurrentQuestions = (submission: ExamSubmission) => {
+    const currentPage = getCurrentQuestionPage(submission._id)
+    const startIndex = (currentPage - 1) * questionsPerPage
+    const endIndex = startIndex + questionsPerPage
+    return {
+      questions: submission.submitted_answers.slice(startIndex, endIndex),
+      startIndex,
+      totalPages: Math.ceil(submission.submitted_answers.length / questionsPerPage),
+      currentPage
+    }
+  }
 
   // Format date and time
   const formatDateTime = (date: Date) => {
@@ -278,19 +313,7 @@ const SubmissionHistoryPage = () => {
                         >
                           {submission.status.toUpperCase()}
                         </Chip>
-                        {examSchedule?.allowed_review && (
-                          <Button
-                            size="sm"
-                            variant="light"
-                            color="primary"
-                            onPress={() => {
-                              setSelectedSubmission(submission)
-                              onOpen()
-                            }}
-                          >
-                            View Details
-                          </Button>
-                        )}
+                        {/* Questions are now displayed inline below */}
                       </div>
                     </div>
                   </CardHeader>
@@ -336,96 +359,225 @@ const SubmissionHistoryPage = () => {
                         </p>
                       </div>
                     </div>
-                  </CardBody>
-                </Card>
-              )
-            })
-          )}
-        </div>
-
-        {/* Submission Details Modal */}
-        <Modal 
-          isOpen={isOpen} 
-          onOpenChange={onOpenChange}
-          size="2xl"
-          scrollBehavior="inside"
-        >
-          <ModalContent>
-            {(onClose) => (
-              <>
-                <ModalHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center text-white">
-                      <span className="font-bold">#{selectedSubmission?.attempt_number}</span>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold">Submission Details</h3>
-                      <p className="text-sm text-default-600">
-                        Attempt {selectedSubmission?.attempt_number} - {selectedSubmission ? formatDateTime(selectedSubmission.submission_time).date : ''}
-                      </p>
-                    </div>
-                  </div>
-                </ModalHeader>
-                <ModalBody>
-                  {selectedSubmission && (
-                    <div className="space-y-4">
-                      {/* Summary */}
-                      <div className="bg-default-50 rounded-lg p-4">
-                        <h4 className="font-semibold mb-3">Submission Summary</h4>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-default-600">Status:</span>
-                            <Chip size="sm" variant="flat" color={getStatusColor(selectedSubmission.status)} className="ml-2">
-                              {selectedSubmission.status.toUpperCase()}
-                            </Chip>
-                          </div>
-                          <div>
-                            <span className="text-default-600">Time Taken:</span>
-                            <span className="ml-2 font-medium">{formatTimeTaken(selectedSubmission.time_taken)}</span>
-                          </div>
-                          <div>
-                            <span className="text-default-600">Total Questions:</span>
-                            <span className="ml-2 font-medium">{selectedSubmission.submitted_answers.length}</span>
-                          </div>
-                          <div>
-                            <span className="text-default-600">Final Score:</span>
-                            <span className="ml-2 font-medium">
-                              {selectedSubmission.is_graded ? (
-                                `${selectedSubmission.total_score}/${selectedSubmission.max_possible_score} (${selectedSubmission.percentage_score?.toFixed(1)}%)`
-                              ) : (
-                                'Pending Grading'
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Answers */}
-                      {examSchedule?.show_answer && selectedSubmission.is_graded && (
-                        <div>
-                          <h4 className="font-semibold mb-3">Answer Review</h4>
-                          <div className="space-y-3 max-h-96 overflow-y-auto">
-                            {selectedSubmission.submitted_answers.map((answer, index) => (
-                              <div key={answer.question_id} className="border border-default-200 rounded-lg p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium text-sm">Question {index + 1}</span>
-                                  <div className="flex items-center gap-2">
-                                    <Chip
-                                      size="sm"
-                                      variant="flat"
-                                      color={answer.is_correct ? 'success' : 'danger'}
-                                    >
-                                      {answer.is_correct ? 'Correct' : 'Incorrect'}
-                                    </Chip>
-                                    <span className="text-sm font-medium">
-                                      {answer.score_obtained}/{answer.max_score} pts
+                    
+                    {/* Questions and Answers Section */}
+                    {((examSchedule?.show_answer && submission.is_graded) || user?.role === 'instructor') && (
+                      <div className="mt-6">
+                        <Divider className="mb-4" />
+                        <h4 className="font-semibold mb-4 text-lg">
+                          {user?.role === 'instructor' ? 'Student Submission Review' : 'Answer Review'}
+                        </h4>
+                        
+                        {submission.submitted_answers.length > questionsPerPage ? (
+                          // Paginated view for many questions
+                          <div className="flex gap-6">
+                            {/* Question Navigation Sidebar */}
+                            <Card className="w-1/3 h-fit sticky top-4">
+                              <CardBody className="px-4 py-4">
+                                <div className="flex flex-col gap-4">
+                                  <div className="flex justify-between items-center">
+                                    <h3 className="text-md font-semibold">Questions Navigation</h3>
+                                    <span className="text-sm text-default-600">
+                                      {submission.submitted_answers.length} questions
                                     </span>
                                   </div>
+                                  
+                                  <div className="grid grid-cols-5 gap-2">
+                                    {submission.submitted_answers.map((answer, index) => {
+                                      const currentPage = getCurrentQuestionPage(submission._id)
+                                      const questionPage = Math.floor(index / questionsPerPage) + 1
+                                      const isCurrentPage = questionPage === currentPage
+                                      
+                                      return (
+                                        <Button
+                                          key={answer.question_id}
+                                          size="sm"
+                                          color="default"
+                                          onPress={() => handleQuestionNavigation(submission._id, index)}
+                                          className={`
+                                            ${isCurrentPage ? 'border-primary border-2 bg-primary/10' : 'border-default-200 border'}
+                                            ${answer.is_correct === true ? 'bg-success/20' : ''}
+                                            ${answer.is_correct === false ? 'bg-danger/20' : ''}
+                                          `}
+                                        >
+                                          {index + 1}
+                                        </Button>
+                                      )
+                                    })}
+                                  </div>
+                                  
+                                  <div className="text-sm text-default-600">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <div className="w-3 h-3 bg-success/20 border border-success rounded"></div>
+                                      <span>Correct</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <div className="w-3 h-3 bg-danger/20 border border-danger rounded"></div>
+                                      <span>Incorrect</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-3 h-3 border-primary border-2 rounded"></div>
+                                      <span>Current page</span>
+                                    </div>
+                                  </div>
+                                  
+                                  {(() => {
+                                    const { currentPage, totalPages } = getCurrentQuestions(submission)
+                                    return (
+                                      <p className="text-sm text-default-500">
+                                        Page {currentPage} of {totalPages}
+                                      </p>
+                                    )
+                                  })()}
                                 </div>
-                                <p className="text-sm text-default-700 mb-2">{answer.submitted_question}</p>
-                                <div className="text-sm">
-                                  <span className="text-default-600">Your answer: </span>
-                                  <span className="font-medium">
+                              </CardBody>
+                            </Card>
+                            
+                            {/* Questions Content */}
+                            <div className="w-2/3">
+                              <div className="space-y-4">
+                                {(() => {
+                                  const { questions, startIndex, currentPage, totalPages } = getCurrentQuestions(submission)
+                                  return (
+                                    <>
+                                      {questions.map((answer, relativeIndex) => {
+                                        const absoluteIndex = startIndex + relativeIndex
+                                        return (
+                                          <div 
+                                            key={answer.question_id} 
+                                            id={`question-${submission._id}-${absoluteIndex}`}
+                                            className="border border-default-200 rounded-lg p-4 bg-default-50"
+                                          >
+                                            <div className="flex items-center justify-between mb-3">
+                                              <span className="font-medium text-sm text-primary">Question {absoluteIndex + 1}</span>
+                                              <div className="flex items-center gap-2">
+                                                {/* Show correctness status if available */}
+                                                {answer.is_correct !== undefined && (
+                                                  <Chip
+                                                    size="sm"
+                                                    variant="flat"
+                                                    color={answer.is_correct ? 'success' : 'danger'}
+                                                  >
+                                                    {answer.is_correct ? 'Correct' : 'Incorrect'}
+                                                  </Chip>
+                                                )}
+                                                
+                                                {/* Show score if available, otherwise show max possible score */}
+                                                <span className="text-sm font-medium">
+                                                  {answer.score_obtained !== undefined 
+                                                    ? `${answer.score_obtained}/${answer.max_score} pts`
+                                                    : `Max: ${answer.max_score} pts`
+                                                  }
+                                                </span>
+                                                
+                                                {/* Show question type for instructors */}
+                                                {user?.role === 'instructor' && (
+                                                  <Chip size="sm" variant="bordered" color="default">
+                                                    {answer.question_type.toUpperCase()}
+                                                  </Chip>
+                                                )}
+                                              </div>
+                                            </div>
+                                            
+                                            {/* Question Text */}
+                                            <p className="text-sm text-default-700 mb-3 font-medium">{answer.submitted_question}</p>
+                                            
+                                            {/* Student Answer */}
+                                            <div className="text-sm bg-white rounded-md p-3 border border-default-200">
+                                              <span className="text-default-600 font-medium">
+                                                {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
+                                              </span>
+                                              <span className="font-medium text-default-800">
+                                                {answer.question_type === 'mc' && answer.submitted_choices?.join(', ')}
+                                                {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
+                                                {(answer.question_type === 'ses' || answer.question_type === 'les') && answer.submitted_answer}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        )
+                                      })}
+                                      
+                                      {/* Pagination Controls */}
+                                      <div className="flex justify-between items-center mt-6 pt-4 border-t border-default-200">
+                                        <Button
+                                          color="default"
+                                          variant="bordered"
+                                          onPress={() => {
+                                            const newPage = Math.max(currentPage - 1, 1)
+                                            setSubmissionQuestionPage(submission._id, newPage)
+                                          }}
+                                          isDisabled={currentPage === 1}
+                                        >
+                                          Previous
+                                        </Button>
+                                        
+                                        <span className="text-sm text-default-600">
+                                          Page {currentPage} of {totalPages} ({submission.submitted_answers.length} questions)
+                                        </span>
+                                        
+                                        <Button
+                                          color="default"
+                                          variant="bordered"
+                                          onPress={() => {
+                                            const newPage = Math.min(currentPage + 1, totalPages)
+                                            setSubmissionQuestionPage(submission._id, newPage)
+                                          }}
+                                          isDisabled={currentPage === totalPages}
+                                        >
+                                          Next
+                                        </Button>
+                                      </div>
+                                    </>
+                                  )
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          // Simple view for few questions
+                          <div className="space-y-4">
+                            {submission.submitted_answers.map((answer, answerIndex) => (
+                              <div key={answer.question_id} className="border border-default-200 rounded-lg p-4 bg-default-50">
+                                <div className="flex items-center justify-between mb-3">
+                                  <span className="font-medium text-sm text-primary">Question {answerIndex + 1}</span>
+                                  <div className="flex items-center gap-2">
+                                    {/* Show correctness status if available */}
+                                    {answer.is_correct !== undefined && (
+                                      <Chip
+                                        size="sm"
+                                        variant="flat"
+                                        color={answer.is_correct ? 'success' : 'danger'}
+                                      >
+                                        {answer.is_correct ? 'Correct' : 'Incorrect'}
+                                      </Chip>
+                                    )}
+                                    
+                                    {/* Show score if available, otherwise show max possible score */}
+                                    <span className="text-sm font-medium">
+                                      {answer.score_obtained !== undefined 
+                                        ? `${answer.score_obtained}/${answer.max_score} pts`
+                                        : `Max: ${answer.max_score} pts`
+                                      }
+                                    </span>
+                                    
+                                    {/* Show question type for instructors */}
+                                    {user?.role === 'instructor' && (
+                                      <Chip size="sm" variant="bordered" color="default">
+                                        {answer.question_type.toUpperCase()}
+                                      </Chip>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Question Text */}
+                                <p className="text-sm text-default-700 mb-3 font-medium">{answer.submitted_question}</p>
+                                
+                                {/* Student Answer */}
+                                <div className="text-sm bg-white rounded-md p-3 border border-default-200">
+                                  <span className="text-default-600 font-medium">
+                                    {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
+                                  </span>
+                                  <span className="font-medium text-default-800">
                                     {answer.question_type === 'mc' && answer.submitted_choices?.join(', ')}
                                     {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
                                     {(answer.question_type === 'ses' || answer.question_type === 'les') && answer.submitted_answer}
@@ -434,20 +586,17 @@ const SubmissionHistoryPage = () => {
                               </div>
                             ))}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </ModalBody>
-                <ModalFooter>
-                  <Button color="primary" onPress={onClose}>
-                    Close
-                  </Button>
-                </ModalFooter>
-              </>
-            )}
-          </ModalContent>
-        </Modal>
+                        )}
+                      </div>
+                    )}
+                  </CardBody>
+                </Card>
+              )
+            })
+          )}
+        </div>
+
+        {/* Questions are now displayed inline in each submission card */}
       </div>
     </div>
   )

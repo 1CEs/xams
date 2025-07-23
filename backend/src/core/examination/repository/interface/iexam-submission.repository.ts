@@ -4,7 +4,7 @@ export interface IExamSubmissionRepository {
     createSubmission(submission: IExamSubmission): Promise<IExamSubmission>;
     getSubmissionById(id: string): Promise<IExamSubmission | null>;
     getSubmissionsByStudentId(studentId: string): Promise<IExamSubmission[]>;
-    getSubmissionsByScheduleId(scheduleId: string): Promise<IExamSubmission[]>;
+    getSubmissionsByScheduleId(scheduleId: string): Promise<any[]>;
     getSubmissionByScheduleAndStudent(scheduleId: string, studentId: string, attemptNumber?: number): Promise<IExamSubmission | null>;
     updateSubmission(id: string, updates: Partial<IExamSubmission>): Promise<IExamSubmission | null>;
     deleteSubmission(id: string): Promise<boolean>;

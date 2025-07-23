@@ -1,6 +1,7 @@
 import { IExamSubmissionRepository } from "./interface/iexam-submission.repository";
 import { IExamSubmission } from "../model/interface/iexam-submission";
 import { ExamSubmissionModel } from "../model/exam-submission.model";
+import { UserModel } from "../../user/model/user.model";
 
 export class ExamSubmissionRepository implements IExamSubmissionRepository {
     
@@ -38,13 +39,40 @@ export class ExamSubmissionRepository implements IExamSubmissionRepository {
         }
     }
 
-    async getSubmissionsByScheduleId(scheduleId: string): Promise<IExamSubmission[]> {
+    async getSubmissionsByScheduleId(scheduleId: string): Promise<any[]> {
         try {
             const submissions = await ExamSubmissionModel
                 .find({ schedule_id: scheduleId })
                 .sort({ created_at: -1 })
                 .lean();
-            return submissions;
+
+            // Populate student information for each submission
+            const submissionsWithStudentInfo = await Promise.all(
+                submissions.map(async (submission) => {
+                    try {
+                        const student = await UserModel.findById(submission.student_id)
+                            .select('username email profile_url')
+                            .lean();
+                        
+                        return {
+                            ...submission,
+                            student_info: student ? {
+                                username: student.username,
+                                email: student.email,
+                                profile_url: student.profile_url
+                            } : null
+                        };
+                    } catch (error) {
+                        console.error(`Error fetching student info for ${submission.student_id}:`, error);
+                        return {
+                            ...submission,
+                            student_info: null
+                        };
+                    }
+                })
+            );
+
+            return submissionsWithStudentInfo;
         } catch (error) {
             console.error('Error getting submissions by schedule ID:', error);
             throw new Error('Failed to get schedule submissions');

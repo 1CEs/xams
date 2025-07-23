@@ -77,7 +77,7 @@ export class ExamSubmissionService implements IExamSubmissionService {
         return await this._submissionRepository.getSubmissionsByStudentId(studentId);
     }
 
-    async getScheduleSubmissions(scheduleId: string): Promise<IExamSubmission[]> {
+    async getScheduleSubmissions(scheduleId: string): Promise<any[]> {
         return await this._submissionRepository.getSubmissionsByScheduleId(scheduleId);
     }
 

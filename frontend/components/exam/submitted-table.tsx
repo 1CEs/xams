@@ -5,6 +5,7 @@ export type SubmissionStatus = 'submitted' | 'graded' | 'late';
 
 export interface Submission {
   _id: string;
+  student_id: string;
   username: string;
   email: string;
   status: SubmissionStatus;

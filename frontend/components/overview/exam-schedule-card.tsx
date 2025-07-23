@@ -1,5 +1,5 @@
 import { Button, Chip, Tooltip, useDisclosure, Card, CardBody, CardHeader, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input } from "@nextui-org/react"
-import { MdiBin, MdiPaper, UisSchedule } from "@/components/icons/icons"
+import { MdiBin, MdiPaper, UisSchedule, PhEyeDuotone, MaterialSymbolsListAlt } from "@/components/icons/icons"
 import { useRouter } from "nextjs-toploader/app"
 import { useFetch } from "@/hooks/use-fetch"
 import { useMemo, useState } from "react"
@@ -263,7 +263,7 @@ export default function ExamScheduleCard({ courseId, groupId, setting, index, gr
 
   return (
     <Card 
-      className={`w-full border hover:shadow-md transition-shadow duration-200 ${
+      className={`w-full hover:shadow-md transition-shadow duration-200 ${
         isValidatingAttempt ? 'opacity-70 cursor-wait' : 'cursor-pointer'
       }`}
       isPressable={!isValidatingAttempt}
@@ -300,19 +300,46 @@ export default function ExamScheduleCard({ courseId, groupId, setting, index, gr
             </div>
           </div>
 
-          {!isStudent && onDelete && (
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            {!isStudent && (
+              <>
+                <Tooltip content="View student submissions">
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    color="secondary"
+                    onPress={() => router.push(`/exam/submitted?schedule_id=${setting.schedule_id}`)}
+                  >
+                    <MaterialSymbolsListAlt className="h-4 w-4" />
+                  </Button>
+                </Tooltip>
+                <Tooltip content="Delete exam schedule">
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    color="danger"
+                    onPress={() => onDelete?.(groupName, index)}
+                  >
+                    <MdiBin className="h-4 w-4" />
+                  </Button>
+                </Tooltip>
+              </>
+            )}
+            
             <Button
-              isIconOnly
               size="sm"
-              variant="light"
-              color="danger"
-              onPress={() => {
-                onDelete(groupName, index)
-              }}
+              variant={examStatus.status === 'open' ? 'solid' : 'bordered'}
+              color={examStatus.status === 'open' ? 'secondary' : 'warning'}
+              disabled={isLoading || examStatus.status === 'loading' || (examStatus.status !== 'open' && !isInstructor)}
+              onPress={handleCardClick}
+              className="font-medium"
             >
-              <MdiBin className="w-4 h-4" />
+              {isLoading ? 'Loading...' : examStatus.status === 'open' ? 'Access Exam' : 'View Details'}
             </Button>
-          )}
+          </div>
         </div>
       </CardHeader>
 
