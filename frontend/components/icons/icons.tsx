@@ -397,3 +397,27 @@ export function CloseCircle(props: SVGProps<SVGSVGElement>) {
 		</svg>
 	);
 }
+
+export function TrophyIcon(props: SVGProps<SVGSVGElement>) {
+	return (
+		<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+			<path fill="currentColor" d="M7 3V1h10v2h2a2 2 0 0 1 2 2v3a4 4 0 0 1-4 4h-.54c-.77 2.88-3.2 5-6.46 5s-5.69-2.12-6.46-5H3a4 4 0 0 1-4-4V5a2 2 0 0 1 2-2zm0 4V5H3v3a2 2 0 0 0 2 2zm10 0h2a2 2 0 0 0 2-2V5h-4zm-7 11v1h4v-1a6.976 6.976 0 0 1-4 0zm2-2a4 4 0 0 0 4-4V3H8v9a4 4 0 0 0 4 4z"/>
+		</svg>
+	);
+}
+
+export function ClockIcon(props: SVGProps<SVGSVGElement>) {
+	return (
+		<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+			<path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10s10-4.5 10-10S17.5 2 12 2m4.2 14.2L11 13V7h1.5v5.2l4.5 2.7z"/>
+		</svg>
+	);
+}
+
+export function CheckCircleIcon(props: SVGProps<SVGSVGElement>) {
+	return (
+		<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+			<path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10s10-4.5 10-10S17.5 2 12 2m-2 15l-5-5l1.41-1.41L10 14.17l7.59-7.59L19 8z"/>
+		</svg>
+	);
+}

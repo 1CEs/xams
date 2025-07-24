@@ -276,8 +276,8 @@ export default function ExamScheduleCard({ courseId, groupId, setting, index, gr
               <UisSchedule className="w-5 h-5 text-primary" />
             </div>
             
-            <div>
-              <h3 className="text-lg font-semibold">{schedule.title}</h3>
+            <div className="flex flex-col items-start">
+              <h3 className="text-md">{schedule.title}</h3>
               <div className="flex items-center gap-2">
                 <Chip
                   size="sm"

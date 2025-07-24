@@ -192,7 +192,17 @@ export default function CoursePage() {
                                     </div>
                                     <div className="flex flex-col gap-6">
                                         <div className="mt-4">
-                                            <h3 className="text-lg font-semibold mb-4">Students</h3>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-lg font-semibold">Students</h3>
+                                                <Button
+                                                    color="primary"
+                                                    variant="flat"
+                                                    size="sm"
+                                                    onPress={() => router.push(`/student-scores?courseId=${_id}`)}
+                                                >
+                                                    View Scores
+                                                </Button>
+                                            </div>
                                             {group.students.length > 0 ? (
                                                 <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl overflow-hidden shadow-sm border border-primary/10">
                                                     <div className="bg-secondary/10 px-4 py-3">
