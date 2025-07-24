@@ -2,7 +2,7 @@
 
 import React from "react";
 import CourseCard from "../course/course-card";
-import ExamCalendar from "./exam-calendar";
+import UpcomingExams from "./exam-calendar";
 import { useFetch } from "@/hooks/use-fetch";
 import { useUserStore } from "@/stores/user.store";
 import { SolarRefreshLineDuotone } from "../icons/icons";
@@ -65,7 +65,7 @@ const StudentDashboard = (props: Props) => {
     <div className="w-full space-y-6">
       {/* Exam Calendar Section */}
       <div className="mb-6">
-        <ExamCalendar />
+        <UpcomingExams />
       </div>
       
       {/* Student Portals Section */}

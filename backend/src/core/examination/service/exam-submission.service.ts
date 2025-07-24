@@ -226,6 +226,66 @@ export class ExamSubmissionService implements IExamSubmissionService {
         }
     }
 
+    async manualGradeQuestion(
+        submissionId: string, 
+        questionId: string, 
+        scoreObtained: number, 
+        isCorrect: boolean, 
+        gradedBy: string
+    ): Promise<IExamSubmission | null> {
+        try {
+            const submission = await this._submissionRepository.getSubmissionById(submissionId);
+            if (!submission) {
+                throw new Error('Submission not found');
+            }
+
+            // Find and update the specific question
+            const updatedAnswers = submission.submitted_answers.map(answer => {
+                if (answer.question_id === questionId) {
+                    return {
+                        ...answer,
+                        is_correct: isCorrect,
+                        score_obtained: scoreObtained
+                    };
+                }
+                return answer;
+            });
+
+            // Recalculate total score
+            const totalScore = updatedAnswers.reduce((sum, answer) => {
+                return sum + (answer.score_obtained || 0);
+            }, 0);
+
+            // Calculate percentage
+            const percentageScore = submission.max_possible_score > 0 
+                ? (totalScore / submission.max_possible_score) * 100 
+                : 0;
+
+            // Check if all essay questions are graded
+            const allEssayQuestionsGraded = updatedAnswers.every(answer => {
+                if (answer.question_type === 'ses' || answer.question_type === 'les') {
+                    return answer.score_obtained !== undefined && answer.is_correct !== undefined;
+                }
+                return true; // Non-essay questions are auto-graded
+            });
+
+            const updates: Partial<IExamSubmission> = {
+                submitted_answers: updatedAnswers,
+                total_score: totalScore,
+                percentage_score: percentageScore,
+                graded_by: gradedBy,
+                graded_at: new Date(),
+                is_graded: allEssayQuestionsGraded,
+                status: allEssayQuestionsGraded ? 'graded' : 'submitted'
+            };
+
+            return await this._submissionRepository.updateSubmission(submissionId, updates);
+        } catch (error) {
+            console.error('Error manually grading question:', error);
+            throw new Error('Failed to manually grade question');
+        }
+    }
+
     async updateSubmissionStatus(
         submissionId: string, 
         status: 'submitted' | 'graded' | 'reviewed'

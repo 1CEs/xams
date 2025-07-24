@@ -3,7 +3,8 @@ import { ExamSubmissionController } from "../controllers/exam-submission.control
 import { 
     ExamSubmissionSchema, 
     GradeSubmissionSchema, 
-    CheckAttemptEligibilitySchema 
+    CheckAttemptEligibilitySchema,
+    ManualGradeQuestionSchema 
 } from "./schema/exam-submission.schema";
 
 const controller = new ExamSubmissionController();
@@ -90,5 +91,23 @@ export const examSubmissionRoute = new Elysia({ prefix: '/submission' })
             tags: ['Exam Submission'],
             summary: 'Grade submission',
             description: 'Grade an exam submission (auto-grade MC/TF questions, manual grade essays)'
+        }
+    })
+
+    // Manually grade a specific question (for essay questions)
+    .post('/grade-question', async ({ body }) => {
+        return await controller.manualGradeQuestion(
+            body.submission_id,
+            body.question_id,
+            body.score_obtained,
+            body.is_correct,
+            body.graded_by
+        );
+    }, {
+        body: ManualGradeQuestionSchema,
+        detail: {
+            tags: ['Exam Submission'],
+            summary: 'Manually grade question',
+            description: 'Manually grade a specific question (typically essay questions)'
         }
     });

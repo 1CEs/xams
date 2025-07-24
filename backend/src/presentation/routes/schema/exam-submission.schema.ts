@@ -35,3 +35,11 @@ export const CheckAttemptEligibilitySchema = t.Object({
     student_id: t.String({ description: 'Student ID is required' }),
     allowed_attempts: t.Number({ description: 'Allowed attempts is required' })
 });
+
+export const ManualGradeQuestionSchema = t.Object({
+    submission_id: t.String({ description: 'Submission ID is required' }),
+    question_id: t.String({ description: 'Question ID is required' }),
+    score_obtained: t.Number({ description: 'Score obtained for this question' }),
+    is_correct: t.Boolean({ description: 'Whether the answer is correct' }),
+    graded_by: t.String({ description: 'Grader ID is required' })
+});

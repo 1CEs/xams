@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { Card, CardBody, CardHeader, Button, Chip, Divider, Tooltip, Link } from "@nextui-org/react";
+import React, { useMemo } from "react";
+import { Card, CardBody, Button, Chip, Tooltip, Link } from "@nextui-org/react";
 import { useExamSchedules } from "@/hooks/use-exam-schedules";
 import { SolarRefreshLineDuotone, UisSchedule } from "../icons/icons";
 
@@ -20,15 +20,9 @@ interface ExamScheduleDetail {
   exam_code?: string;
 }
 
-interface CalendarDay {
-  date: Date;
-  isCurrentMonth: boolean;
-  isToday: boolean;
-  exams: ExamScheduleDetail[];
-}
 
-const ExamCalendar = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+
+const UpcomingExams = () => {
   const { examSchedules, isLoading, error } = useExamSchedules();
 
   // Filter upcoming exams (within next 30 days or no date set)
@@ -39,81 +33,8 @@ const ExamCalendar = () => {
     return examSchedules.filter(exam => {
       if (!exam.open_time) return true; // Include exams with no set date
       return exam.open_time >= now && exam.open_time <= thirtyDaysFromNow;
-    }).slice(0, 5);
+    }).slice(0, 10); // Show more exams since we removed the calendar
   }, [examSchedules]);
-
-  // Generate calendar days for current month
-  const calendarDays = useMemo(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    
-    const firstDayOfMonth = new Date(year, month, 1);
-    const lastDayOfMonth = new Date(year, month + 1, 0);
-    const firstDayOfWeek = firstDayOfMonth.getDay();
-    
-    const days: CalendarDay[] = [];
-    
-    // Add days from previous month
-    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
-      const date = new Date(year, month, -i);
-      days.push({
-        date,
-        isCurrentMonth: false,
-        isToday: false,
-        exams: []
-      });
-    }
-    
-    // Add days from current month
-    for (let day = 1; day <= lastDayOfMonth.getDate(); day++) {
-      const date = new Date(year, month, day);
-      const isToday = date.toDateString() === new Date().toDateString();
-      
-      // Find exams for this day
-      const dayExams = examSchedules.filter(exam => {
-        if (!exam.open_time) return false;
-        const examDate = new Date(exam.open_time);
-        return examDate.toDateString() === date.toDateString();
-      });
-      
-      days.push({
-        date,
-        isCurrentMonth: true,
-        isToday,
-        exams: dayExams
-      });
-    }
-    
-    // Add days from next month to complete the grid
-    const remainingDays = 42 - days.length; // 6 rows × 7 days
-    for (let day = 1; day <= remainingDays; day++) {
-      const date = new Date(year, month + 1, day);
-      days.push({
-        date,
-        isCurrentMonth: false,
-        isToday: false,
-        exams: []
-      });
-    }
-    
-    return days;
-  }, [currentDate, examSchedules]);
-
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    setCurrentDate(prev => {
-      const newDate = new Date(prev);
-      if (direction === 'prev') {
-        newDate.setMonth(prev.getMonth() - 1);
-      } else {
-        newDate.setMonth(prev.getMonth() + 1);
-      }
-      return newDate;
-    });
-  };
-
-  const goToToday = () => {
-    setCurrentDate(new Date());
-  };
 
   if (isLoading) {
     return (
@@ -126,128 +47,27 @@ const ExamCalendar = () => {
     );
   }
 
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
 
-  const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <div className="w-full space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold flex items-center gap-2">
-          📅
-          Exam Schedule Calendar
+          🕒
+          Upcoming Exams
         </h2>
-        <Button
+        <Chip
           size="sm"
           variant="flat"
-          color="primary"
-          onPress={goToToday}
+          color="secondary"
+          startContent={<UisSchedule />}
         >
-          Today
-        </Button>
+          {examSchedules.length} Total Exams
+        </Chip>
       </div>
-      
-      <Card className="w-full">
-        <CardHeader className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Button
-              isIconOnly
-              variant="flat"
-              size="sm"
-              onPress={() => navigateMonth('prev')}
-            >
-              ←
-            </Button>
-            <h3 className="text-lg font-semibold">
-              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </h3>
-            <Button
-              isIconOnly
-              variant="flat"
-              size="sm"
-              onPress={() => navigateMonth('next')}
-            >
-              →
-            </Button>
-          </div>
-          <Chip
-            size="sm"
-            variant="flat"
-            color="secondary"
-            startContent={<UisSchedule />}
-          >
-            {examSchedules.length} Exams
-          </Chip>
-        </CardHeader>
-        
-        <Divider />
-        
-        <CardBody className="p-4">
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {/* Week day headers */}
-            {weekDays.map(day => (
-              <div key={day} className="p-2 text-center text-sm font-medium text-default-500">
-                {day}
-              </div>
-            ))}
-            
-            {/* Calendar days */}
-            {calendarDays.map((day, index) => (
-              <div
-                key={index}
-                className={`
-                  min-h-[80px] p-1 border border-default-200 rounded-lg
-                  ${day.isCurrentMonth ? 'bg-background' : 'bg-default-50'}
-                  ${day.isToday ? 'ring-2 ring-primary' : ''}
-                  hover:bg-default-100 transition-colors
-                `}
-              >
-                <div className={`
-                  text-sm font-medium mb-1
-                  ${day.isCurrentMonth ? 'text-foreground' : 'text-default-400'}
-                  ${day.isToday ? 'text-primary font-bold' : ''}
-                `}>
-                  {day.date.getDate()}
-                </div>
-                
-                {/* Exam indicators */}
-                <div className="space-y-1">
-                  {day.exams.slice(0, 2).map((exam, examIndex) => (
-                    <Tooltip
-                      key={examIndex}
-                      content={`${exam.title} - ${exam.course_name}`}
-                      placement="top"
-                    >
-                      <div className="bg-primary/20 text-primary text-xs px-1 py-0.5 rounded truncate cursor-pointer hover:bg-primary/30">
-                        {exam.title.length > 10 ? exam.title.substring(0, 10) + '...' : exam.title}
-                      </div>
-                    </Tooltip>
-                  ))}
-                  {day.exams.length > 2 && (
-                    <div className="text-xs text-default-500 text-center">
-                      +{day.exams.length - 2} more
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardBody>
-      </Card>
 
       {/* Upcoming Exams List */}
       <Card>
-        <CardHeader>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            🕒
-            Upcoming Exams
-          </h3>
-        </CardHeader>
-        <Divider />
         <CardBody className="space-y-3">
           {upcomingExams.length > 0 ? (
             upcomingExams.map((exam, index) => {
@@ -329,4 +149,4 @@ const ExamCalendar = () => {
   );
 };
 
-export default ExamCalendar;
+export default UpcomingExams;

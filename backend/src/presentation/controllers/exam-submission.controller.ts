@@ -170,4 +170,43 @@ export class ExamSubmissionController {
             };
         }
     }
+
+    async manualGradeQuestion(
+        submissionId: string, 
+        questionId: string, 
+        scoreObtained: number, 
+        isCorrect: boolean, 
+        gradedBy: string
+    ) {
+        try {
+            const gradedSubmission = await this._service.manualGradeQuestion(
+                submissionId, 
+                questionId, 
+                scoreObtained, 
+                isCorrect, 
+                gradedBy
+            );
+            
+            if (!gradedSubmission) {
+                return {
+                    success: false,
+                    message: 'Submission not found',
+                    data: null
+                };
+            }
+
+            return {
+                success: true,
+                message: 'Question graded successfully',
+                data: gradedSubmission
+            };
+        } catch (error) {
+            console.error('Error in manualGradeQuestion controller:', error);
+            return {
+                success: false,
+                message: error instanceof Error ? error.message : 'Failed to grade question',
+                data: null
+            };
+        }
+    }
 }

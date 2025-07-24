@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientAPI } from '@/config/axios.config'
-import { Accordion, AccordionItem, Button, Card, CardBody, CardHeader, Chip, Divider, Radio, RadioGroup, Spinner } from '@nextui-org/react'
+import { Accordion, AccordionItem, Button, Card, CardBody, CardHeader, Chip, Divider, Radio, RadioGroup, Spinner, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from '@nextui-org/react'
 import { ArrowLeft, FileDocument, Clock, CheckCircle, CloseCircle } from '@/components/icons/icons'
 import { useUserStore } from '@/stores/user.store'
 import { toast } from 'react-toastify'
@@ -67,6 +67,12 @@ const SubmissionHistoryPage = () => {
   const [loading, setLoading] = useState(true)
   const [currentQuestionPage, setCurrentQuestionPage] = useState<{[submissionId: string]: number}>({})
   const questionsPerPage = 5
+  
+  // Manual grading state
+  const { isOpen: isGradingModalOpen, onOpen: onGradingModalOpen, onOpenChange: onGradingModalOpenChange } = useDisclosure()
+  const [gradingQuestion, setGradingQuestion] = useState<{submissionId: string, questionId: string, answer: SubmittedAnswer} | null>(null)
+  const [gradingScore, setGradingScore] = useState('')
+  const [isGradingLoading, setIsGradingLoading] = useState(false)
 
   // Validate access and fetch data
   useEffect(() => {
@@ -186,6 +192,93 @@ const SubmissionHistoryPage = () => {
       case 'graded': return 'success'
       case 'reviewed': return 'primary'
       default: return 'default'
+    }
+  }
+
+  // Manual grading functions
+  const handleOpenGradingModal = (submissionId: string, questionId: string, answer: SubmittedAnswer) => {
+    setGradingQuestion({ submissionId, questionId, answer })
+    setGradingScore(answer.score_obtained?.toString() || '')
+    onGradingModalOpen()
+  }
+
+  const handleManualGrade = async () => {
+    if (!gradingQuestion || !user) return
+    
+    const score = parseFloat(gradingScore)
+    if (isNaN(score) || score < 0 || score > gradingQuestion.answer.max_score) {
+      toast.error(`Score must be between 0 and ${gradingQuestion.answer.max_score}`)
+      return
+    }
+    
+    setIsGradingLoading(true)
+    try {
+      const response = await clientAPI.post('/submission/grade-question', {
+        submission_id: gradingQuestion.submissionId,
+        question_id: gradingQuestion.questionId,
+        score_obtained: score,
+        is_correct: score > 0,
+        graded_by: user._id
+      })
+      
+      if (response.data.success) {
+        toast.success('Question graded successfully')
+        
+        // Update the submissions state with the new grading data
+        setSubmissions(prevSubmissions => 
+          prevSubmissions.map(submission => {
+            if (submission._id === gradingQuestion.submissionId) {
+              const updatedAnswers = submission.submitted_answers.map(answer => {
+                if (answer.question_id === gradingQuestion.questionId) {
+                  return {
+                    ...answer,
+                    score_obtained: score,
+                    is_correct: score > 0
+                  }
+                }
+                return answer
+              })
+              
+              // Recalculate total score
+              const totalScore = updatedAnswers.reduce((sum, answer) => sum + (answer.score_obtained || 0), 0)
+              const percentageScore = submission.max_possible_score > 0 
+                ? (totalScore / submission.max_possible_score) * 100 
+                : 0
+              
+              // Check if all essay questions are graded
+              const allEssayQuestionsGraded = updatedAnswers.every(answer => {
+                if (answer.question_type === 'ses' || answer.question_type === 'les') {
+                  return answer.score_obtained !== undefined && answer.is_correct !== undefined
+                }
+                return true
+              })
+              
+              return {
+                ...submission,
+                submitted_answers: updatedAnswers,
+                total_score: totalScore,
+                percentage_score: percentageScore,
+                is_graded: allEssayQuestionsGraded,
+                status: allEssayQuestionsGraded ? 'graded' as const : 'submitted' as const,
+                graded_at: new Date(),
+                graded_by: user._id
+              }
+            }
+            return submission
+          })
+        )
+        
+        onGradingModalOpenChange()
+        setGradingQuestion(null)
+        setGradingScore('')
+      } else {
+        toast.error(response.data.message || 'Failed to grade question')
+      }
+    } catch (error) {
+      console.error('Error grading question:', error)
+      toast.error('Failed to grade question')
+    } finally {
+      setIsGradingLoading(false)
     }
   }
 
@@ -614,7 +707,7 @@ const SubmissionHistoryPage = () => {
                             {submission.submitted_answers.map((answer, answerIndex) => (
                               <div key={answer.question_id} className="border border-default-200 rounded-lg p-4 bg-default-50">
                                 <div className="flex items-center justify-between mb-3">
-                                  <span className="font-medium text-sm text-primary">Question {answerIndex + 1}</span>
+                                  <span className="font-medium text-sm text-secondary">Question {answerIndex + 1}</span>
                                   <div className="flex items-center gap-2">
                                     {/* Show correctness status if available */}
                                     {answer.is_correct !== undefined && (
@@ -645,7 +738,10 @@ const SubmissionHistoryPage = () => {
                                 </div>
                                 
                                 {/* Question Text */}
-                                <p className="text-sm text-default-700 mb-3 font-medium">{answer.submitted_question}</p>
+                                <div 
+                                  className="text-sm text-default-700 mb-3 font-medium"
+                                  dangerouslySetInnerHTML={{ __html: answer.submitted_question }}
+                                />
                                 
                                 {/* Answer Section with Accordion */}
                                 {answer.question_type === 'mc' && answer.original_choices ? (
@@ -718,14 +814,54 @@ const SubmissionHistoryPage = () => {
                                   </Accordion>
                                 ) : (
                                   /* Non-multiple choice answers */
-                                  <div className="text-sm bg-white rounded-md p-3 border border-default-200">
-                                    <span className="text-default-600 font-medium">
-                                      {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
-                                    </span>
-                                    <span className="font-medium text-default-800">
-                                      {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
-                                      {(answer.question_type === 'ses' || answer.question_type === 'les') && answer.submitted_answer}
-                                    </span>
+                                  <div className="space-y-3">
+                                    <div className="text-sm rounded-md p-3 border border-default-200">
+                                      <span className="text-default-600 font-medium">
+                                        {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
+                                      </span>
+                                      <span className="font-medium text-default-800">
+                                        {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
+                                        {(answer.question_type === 'ses' || answer.question_type === 'les') && answer.submitted_answer}
+                                      </span>
+                                    </div>
+                                    
+                                    {/* Manual grading section for essay questions */}
+                                    {user?.role === 'instructor' && (answer.question_type === 'ses' || answer.question_type === 'les') && (
+                                      <div className="bg-default-50 rounded-lg p-3 border border-default-200">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="text-sm font-medium text-default-700">
+                                            Manual Grading
+                                          </span>
+                                          {answer.score_obtained !== undefined ? (
+                                            <Chip 
+                                              size="sm" 
+                                              color={answer.is_correct ? "success" : "danger"}
+                                              variant="flat"
+                                            >
+                                              {answer.is_correct ? "✓ Graded" : "✗ Graded"}
+                                            </Chip>
+                                          ) : (
+                                            <Chip size="sm" color="warning" variant="flat">
+                                              📝 Ungraded
+                                            </Chip>
+                                          )}
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-3">
+                                          <span className="text-sm text-default-600">
+                                            Score: {answer.score_obtained ?? 0} / {answer.max_score}
+                                          </span>
+                                          <Button
+                                            size="sm"
+                                            color="secondary"
+                                            variant="bordered"
+                                            onPress={() => handleOpenGradingModal(submission._id, answer.question_id, answer)}
+                                          >
+                                            {answer.score_obtained !== undefined ? 'Update Grade' : 'Grade Question'}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -743,6 +879,88 @@ const SubmissionHistoryPage = () => {
 
         {/* Questions are now displayed inline in each submission card */}
       </div>
+      
+      {/* Manual Grading Modal */}
+      <Modal 
+        isOpen={isGradingModalOpen} 
+        onOpenChange={onGradingModalOpenChange}
+        size="md"
+        backdrop="blur"
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold">Manual Grading</span>
+                  <Chip size="sm" color="primary" variant="flat">
+                    {gradingQuestion?.answer.question_type === 'ses' ? 'Short Essay' : 'Long Essay'}
+                  </Chip>
+                </div>
+              </ModalHeader>
+              <ModalBody>
+                {gradingQuestion && (
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium text-default-700 mb-2">Question:</h4>
+                      <div 
+                        className="text-sm text-default-600 bg-default-50 p-3 rounded-lg border"
+                        dangerouslySetInnerHTML={{ __html: gradingQuestion.answer.submitted_question }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium text-default-700 mb-2">Student Answer:</h4>
+                      <div className="text-sm text-default-800 bg-default-50 p-3 rounded-lg border min-h-[80px]">
+                        {gradingQuestion.answer.submitted_answer || 'No answer provided'}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium text-default-700 mb-2">
+                        Score (0 - {gradingQuestion.answer.max_score} points):
+                      </h4>
+                      <Input
+                        type="number"
+                        placeholder="Enter score"
+                        value={gradingScore}
+                        onChange={(e) => setGradingScore(e.target.value)}
+                        min={0}
+                        max={gradingQuestion.answer.max_score}
+                        step={0.5}
+                        endContent={
+                          <span className="text-sm text-default-400">/ {gradingQuestion.answer.max_score}</span>
+                        }
+                      />
+                    </div>
+                    
+                    <div className="text-xs text-default-500">
+                      💡 Tip: Enter 0 for incorrect answers, or any value between 0 and {gradingQuestion.answer.max_score} for partial/full credit.
+                    </div>
+                  </div>
+                )}
+              </ModalBody>
+              <ModalFooter>
+                <Button 
+                  color="danger" 
+                  variant="light" 
+                  onPress={onClose}
+                  isDisabled={isGradingLoading}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  color="secondary" 
+                  onPress={handleManualGrade}
+                  isLoading={isGradingLoading}
+                >
+                  Save Grade
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   )
 }

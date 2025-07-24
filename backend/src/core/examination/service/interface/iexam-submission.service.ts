@@ -16,6 +16,7 @@ export interface IExamSubmissionService {
     getStudentSubmissionForSchedule(scheduleId: string, studentId: string): Promise<IExamSubmission | null>;
     
     gradeSubmission(submissionId: string, gradedBy: string): Promise<IExamSubmission | null>;
+    manualGradeQuestion(submissionId: string, questionId: string, scoreObtained: number, isCorrect: boolean, gradedBy: string): Promise<IExamSubmission | null>;
     updateSubmissionStatus(submissionId: string, status: 'submitted' | 'graded' | 'reviewed'): Promise<IExamSubmission | null>;
     
     getStudentAttemptCount(scheduleId: string, studentId: string): Promise<number>;
