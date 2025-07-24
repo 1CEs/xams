@@ -252,14 +252,17 @@ const StudentScoresPage = () => {
   // Export to Excel function
   const exportToExcel = () => {
     try {
-      // Prepare data for export
+      // Define column headers in the desired order
+      const headers = ['Student Name', ...examSchedules.map(schedule => schedule.title), 'Total Score']
+      
+      // Prepare data for export with explicit column order
       const exportData = filteredStudentScores.map(student => {
-        const row: any = {
-          'Student Name': student.student_name,
-          'Email': student.student_email,
-        }
+        const row: any[] = []
         
-        // Add scores for each exam
+        // Add student name as first column
+        row.push(student.student_name)
+        
+        // Add scores for each exam in order
         examSchedules.forEach(schedule => {
           const examSubmissions = student.submissions.filter(sub => sub.schedule_id === schedule._id)
           if (examSubmissions.length > 0) {
@@ -272,16 +275,16 @@ const StudentScoresPage = () => {
             })
             
             if (bestSubmission.is_graded) {
-              row[schedule.title] = `${bestSubmission.percentage_score?.toFixed(1)}% (${bestSubmission.total_score}/${bestSubmission.max_possible_score})`
+              row.push(`${bestSubmission.percentage_score?.toFixed(1)}% (${bestSubmission.total_score}/${bestSubmission.max_possible_score})`)
             } else {
-              row[schedule.title] = 'Pending'
+              row.push('Pending')
             }
           } else {
-            row[schedule.title] = 'No Submission'
+            row.push('No Submission')
           }
         })
         
-        // Add total score
+        // Add total score as last column
         const totalScore = student.submissions
           .filter(sub => sub.is_graded && sub.percentage_score !== undefined)
           .reduce((sum, sub) => sum + (sub.percentage_score || 0), 0)
@@ -289,20 +292,19 @@ const StudentScoresPage = () => {
           .filter(sub => sub.is_graded && sub.percentage_score !== undefined).length
         const averageTotal = examCount > 0 ? totalScore / examCount : 0
         
-        row['Total Score'] = examCount > 0 ? `${averageTotal.toFixed(1)}% (${examCount} exams)` : 'No Graded Exams'
+        row.push(examCount > 0 ? `${averageTotal.toFixed(1)}% (${examCount} exams)` : 'No Graded Exams')
         
         return row
       })
       
-      // Create workbook and worksheet
+      // Create workbook and worksheet with explicit headers
       const wb = XLSX.utils.book_new()
-      const ws = XLSX.utils.json_to_sheet(exportData)
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...exportData])
       
       // Set column widths
       const colWidths = [
-        { wch: 20 }, // Student Name
-        { wch: 25 }, // Email
-        ...examSchedules.map(() => ({ wch: 15 })), // Exam columns
+        { wch: 25 }, // Student Name
+        ...examSchedules.map(() => ({ wch: 18 })), // Exam columns
         { wch: 20 }, // Total Score
       ]
       ws['!cols'] = colWidths

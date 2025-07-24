@@ -9,10 +9,18 @@ import {
   User,
   Chip,
   Tooltip,
-  Spinner
+  Spinner,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  useDisclosure
 } from "@nextui-org/react";
 import { clientAPI } from "@/config/axios.config";
 import { errorHandler } from "@/utils/error";
+import { toast } from "react-toastify";
 
 type Column = {
   name: string;
@@ -164,12 +172,18 @@ const statusColorMap = {
 
 type LearnersTableProps = {
   studentIds: string[];
+  courseId: string;
+  groupName: string;
+  onStudentRemoved?: () => void;
 };
 
-export const LearnersTable = ({ studentIds }: LearnersTableProps) => {
+export const LearnersTable = ({ studentIds, courseId, groupName, onStudentRemoved }: LearnersTableProps) => {
   const [students, setStudents] = useState<StudentData[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [studentToRemove, setStudentToRemove] = useState<StudentData | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -211,6 +225,39 @@ export const LearnersTable = ({ studentIds }: LearnersTableProps) => {
     fetchStudents();
   }, [studentIds]);
 
+  const handleRemoveStudent = async () => {
+    if (!studentToRemove) return;
+
+    try {
+      setIsRemoving(true);
+      const response = await clientAPI.delete(
+        `/enrollment/${courseId}/group/${encodeURIComponent(groupName)}/student/${studentToRemove._id}`
+      );
+      
+      if (response.status === 200) {
+        toast.success(`${studentToRemove.username} has been removed from the group`);
+        // Remove student from local state
+        setStudents(prev => prev.filter(student => student._id !== studentToRemove._id));
+        // Call parent callback to refresh data
+        onStudentRemoved?.();
+      }
+    } catch (err: any) {
+      console.error('Error removing student:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to remove student from group';
+      toast.error(errorMessage);
+      errorHandler(err);
+    } finally {
+      setIsRemoving(false);
+      setStudentToRemove(null);
+      onOpenChange();
+    }
+  };
+
+  const openRemoveConfirmation = (student: StudentData) => {
+    setStudentToRemove(student);
+    onOpen();
+  };
+
   const renderCell = React.useCallback((student: StudentData, columnKey: string) => {
     const cellValue = columnKey !== "actions" ? student[columnKey as keyof StudentData] : null;
 
@@ -245,18 +292,11 @@ export const LearnersTable = ({ studentIds }: LearnersTableProps) => {
       case "actions":
         return (
           <div className="relative flex items-center gap-2">
-            <Tooltip content="View Details">
-              <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
-                <EyeIcon />
-              </span>
-            </Tooltip>
-            <Tooltip content="Edit Student">
-              <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
-                <EditIcon />
-              </span>
-            </Tooltip>
             <Tooltip color="danger" content="Remove from Group">
-              <span className="text-lg text-danger cursor-pointer active:opacity-50">
+              <span 
+                className="text-lg text-danger cursor-pointer active:opacity-50 hover:text-danger-600 transition-colors"
+                onClick={() => openRemoveConfirmation(student)}
+              >
                 <DeleteIcon />
               </span>
             </Tooltip>
@@ -292,21 +332,69 @@ export const LearnersTable = ({ studentIds }: LearnersTableProps) => {
   }
 
   return (
-    <Table removeWrapper aria-label="Students table with custom cells">
-      <TableHeader columns={columns}>
-        {(column) => (
-          <TableColumn key={column.uid} align={column.uid === "actions" ? "center" : "start"}>
-            {column.name}
-          </TableColumn>
-        )}
-      </TableHeader>
-      <TableBody items={students}>
-        {(item) => (
-          <TableRow key={item._id}>
-            {(columnKey: any) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
+    <>
+      <Table removeWrapper aria-label="Students table with custom cells">
+        <TableHeader columns={columns}>
+          {(column) => (
+            <TableColumn key={column.uid} align={column.uid === "actions" ? "center" : "start"}>
+              {column.name}
+            </TableColumn>
+          )}
+        </TableHeader>
+        <TableBody items={students}>
+          {(item) => (
+            <TableRow key={item._id}>
+              {(columnKey: any) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+
+      {/* Remove Student Confirmation Modal */}
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <h3 className="text-lg font-semibold text-danger">Remove Student</h3>
+              </ModalHeader>
+              <ModalBody>
+                <p className="text-default-600">
+                  Are you sure you want to remove{" "}
+                  <span className="font-semibold text-primary">
+                    {studentToRemove?.username}
+                  </span>{" "}
+                  from the group{" "}
+                  <span className="font-semibold text-secondary">
+                    {groupName}
+                  </span>?
+                </p>
+                <p className="text-sm text-warning mt-2">
+                  This action will remove the student from this group and they will lose access to all group resources and exams.
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button 
+                  color="default" 
+                  variant="light" 
+                  onPress={onClose}
+                  disabled={isRemoving}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  color="danger" 
+                  onPress={handleRemoveStudent}
+                  isLoading={isRemoving}
+                  disabled={isRemoving}
+                >
+                  {isRemoving ? "Removing..." : "Remove Student"}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+    </>
   );
 };

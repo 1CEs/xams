@@ -209,7 +209,12 @@ export default function CoursePage() {
                                                         <h4 className="font-medium">Enrolled Students ({group.students.length})</h4>
                                                     </div>
                                                     <div className="p-4">
-                                                        <LearnersTable studentIds={group.students} />
+                                                        <LearnersTable 
+                                                            studentIds={group.students} 
+                                                            courseId={_id as string}
+                                                            groupName={group.group_name}
+                                                            onStudentRemoved={() => setTrigger(!trigger)}
+                                                        />
                                                     </div>
                                                 </div>
                                             ) : (

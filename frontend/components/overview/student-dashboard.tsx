@@ -2,6 +2,7 @@
 
 import React from "react";
 import CourseCard from "../course/course-card";
+import ExamCalendar from "./exam-calendar";
 import { useFetch } from "@/hooks/use-fetch";
 import { useUserStore } from "@/stores/user.store";
 import { SolarRefreshLineDuotone } from "../icons/icons";
@@ -61,7 +62,13 @@ const StudentDashboard = (props: Props) => {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-6">
+      {/* Exam Calendar Section */}
+      <div className="mb-6">
+        <ExamCalendar />
+      </div>
+      
+      {/* Student Portals Section */}
       <div className="mb-4">
         <h2 className="text-xl font-bold">Student Portals</h2>
         <Divider className="my-2" />
