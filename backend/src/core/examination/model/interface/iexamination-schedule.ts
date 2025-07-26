@@ -7,7 +7,6 @@ export interface IExaminationSchedule {
     instructor_id: string;
     title: string;
     description: string;
-    category: string[];
     questions: any[];
     created_at: Date;
     

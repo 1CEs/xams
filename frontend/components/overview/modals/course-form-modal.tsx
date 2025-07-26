@@ -2,10 +2,23 @@ import { clientAPI } from '@/config/axios.config'
 import { baseAPIPath } from '@/constants/base'
 import { useTrigger } from '@/stores/trigger.store'
 import { errorHandler } from '@/utils/error'
-import { ModalContent, ModalHeader, ModalBody, Textarea, ModalFooter, Button, Input, useDisclosure, Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from '@nextui-org/react'
+import { ModalContent, ModalHeader, ModalBody, Textarea, ModalFooter, Button, Input, useDisclosure, Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader, Select, SelectItem } from '@nextui-org/react'
 import Image from 'next/image'
 import React, { FormEvent, SetStateAction, useState } from 'react'
 import { toast } from 'react-toastify'
+
+const COURSE_CATEGORIES = [
+    { key: 'general', label: 'General' },
+    { key: 'mathematics', label: 'Mathematics' },
+    { key: 'science', label: 'Science' },
+    { key: 'computer_science', label: 'Computer Science' },
+    { key: 'languages', label: 'Languages' },
+    { key: 'social_studies', label: 'Social Studies' },
+    { key: 'arts', label: 'Arts' },
+    { key: 'business', label: 'Business' },
+    { key: 'health', label: 'Health' },
+    { key: 'engineering', label: 'Engineering' }
+];
 
 type ImageChooserDrawerProps = {
     setBackground: React.Dispatch<SetStateAction<string>>
@@ -68,9 +81,11 @@ const CourseFormModal = (props: Props) => {
     const [courseForm, setCourseForm] = useState<{
         course_name: string;
         description: string;
+        category: string;
     }>({
         course_name: "",
         description: "",
+        category: "general",
     });
     const onCreateCourse = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -80,6 +95,13 @@ const CourseFormModal = (props: Props) => {
             })
             console.log(res)
             toast.success('Create Course successfully')
+            // Clear form after successful submission
+            setCourseForm({
+                course_name: "",
+                description: "",
+                category: "general",
+            });
+            setBackgroundSelector("https://wallpapers.com/images/featured/math-background-jbcyizvw0ckuvcro.jpg");
             setTrigger(!trigger)
         } catch (error) {
             console.log(error)
@@ -102,7 +124,23 @@ const CourseFormModal = (props: Props) => {
                             <Drawer isOpen={isOpen} onOpenChange={onOpenChange}>
                                 <ImageChooserDrawer background={backgroundSelector} setBackground={setBackgroundSelector} />
                             </Drawer>
-                            <Input onValueChange={(course_name: string) => setCourseForm(prev => ({ ...prev, course_name }))} label='Couse Name' isRequired />
+                            <Input onValueChange={(course_name: string) => setCourseForm(prev => ({ ...prev, course_name }))} label='Course Name' isRequired />
+                            <Select
+                                label="Course Category"
+                                placeholder="Select a category"
+                                selectedKeys={[courseForm.category]}
+                                onSelectionChange={(keys) => {
+                                    const selectedKey = Array.from(keys)[0] as string;
+                                    setCourseForm(prev => ({ ...prev, category: selectedKey }));
+                                }}
+                                isRequired
+                            >
+                                {COURSE_CATEGORIES.map((category) => (
+                                    <SelectItem key={category.key} value={category.key}>
+                                        {category.label}
+                                    </SelectItem>
+                                ))}
+                            </Select>
                             <Textarea onValueChange={(description: string) => setCourseForm(prev => ({ ...prev, description }))} name='description' label='description' />
                         </ModalBody>
                         <ModalFooter>

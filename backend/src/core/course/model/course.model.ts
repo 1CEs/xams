@@ -21,6 +21,11 @@ export const CourseSchema = new Schema<ICourse & Document>({
         type: Schema.Types.String,
         required: false
     },
+    category: {
+        type: Schema.Types.String,
+        required: true,
+        enum: ['general', 'mathematics', 'science', 'computer_science', 'languages', 'social_studies', 'arts', 'business', 'health', 'engineering']
+    },
     groups: {
         type: [GroupSchema],
     }

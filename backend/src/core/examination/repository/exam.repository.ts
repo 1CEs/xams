@@ -57,43 +57,57 @@ export class ExaminationRepository
         return result;
     }
 
+    normalizeQuestion(text: string): string {
+        return text
+            .replace(/\s+/g, ' ')         // multiple spaces → single space
+            .replace(/\s+([?.!,;:])/g, '$1') // remove space before punctuation
+            .trim()
+            .toLowerCase();
+    }
+
     async findDuplicateQuestions(questions: IQuestion[], instructorId?: string) {
-        // Extract question texts for comparison
-        const questionTexts = questions.map(q => q.question.trim().toLowerCase());
-        
-        // Build query to find examinations with matching questions
+        // ✅ Normalize uploaded questions
+        const normalizedQuestions = questions.map(q => ({
+            original: q.question,
+            normalized: this.normalizeQuestion(q.question)
+        }));
+    
+        const normalizedTexts = normalizedQuestions.map(q => q.normalized);
+    
+        // ✅ Build MongoDB RegExp query
         const query: any = {
             "questions.question": {
-                $in: questionTexts.map(text => new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'))
+                $in: normalizedTexts.map(text =>
+                    new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i')
+                )
             }
         };
-        
-        // If instructor ID is provided, exclude their own examinations
+    
         if (instructorId) {
             query.instructor_id = { $ne: instructorId };
         }
-        
+    
         const examinations = await this._model.find(query).exec();
-        
+    
         const duplicates: { questionText: string, examId: string, examTitle: string }[] = [];
-        
+    
         examinations.forEach(exam => {
             exam.questions.forEach(existingQuestion => {
-                const normalizedExisting = existingQuestion.question.trim().toLowerCase();
-                const matchingQuestionIndex = questionTexts.findIndex(newText => newText === normalizedExisting);
-                
-                if (matchingQuestionIndex !== -1) {
+                const normalizedExisting = this.normalizeQuestion(existingQuestion.question);
+                const match = normalizedQuestions.find(q => q.normalized === normalizedExisting);
+                if (match) {
                     duplicates.push({
-                        questionText: questions[matchingQuestionIndex].question,
+                        questionText: match.original,
                         examId: exam._id.toString(),
                         examTitle: exam.title
                     });
                 }
             });
         });
-        
+    
         return duplicates;
     }
+    
 
     // Nested Question methods
     async addNestedQuestion(id: string, payload: { question: string; type: string; score: number; questions: IQuestion[] }) {

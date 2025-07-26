@@ -38,16 +38,12 @@ export class ExaminationScheduleRepository
         // Aggregate all questions from all exams
         const allQuestions: any[] = [];
         const examTitles: string[] = [];
-        const examCategories: string[] = [];
         
         originalExams.forEach(exam => {
             if (exam.questions && exam.questions.length > 0) {
                 allQuestions.push(...exam.questions);
             }
             examTitles.push(exam.title);
-            if (exam.category && exam.category.length > 0) {
-                examCategories.push(...exam.category);
-            }
         });
 
         let questionsToUse = allQuestions;
@@ -126,7 +122,6 @@ export class ExaminationScheduleRepository
             instructor_id: instructorId,
             title: scheduleName || examTitles.join(' + '), // Use custom name or combine exam titles
             description: `Combined examination from: ${examTitles.join(', ')}`,
-            category: [...new Set(examCategories)], // Remove duplicates
             questions: JSON.parse(JSON.stringify(questionsToUse)), // Deep copy of selected questions
             created_at: new Date(),
             

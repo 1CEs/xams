@@ -41,7 +41,7 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
                     instructor_id: t.String()
                 })
             })
-            .post('', catchAsync(async ({ body, user, controller }: ExamContext & { body: AddExamBody }) => await controller.addExamination({ ...body, instructor_id: user._id as unknown as string, category: body.category || [] }, user, body.bankId, body.subBankPath)), {
+            .post('', catchAsync(async ({ body, user, controller }: ExamContext & { body: AddExamBody }) => await controller.addExamination({ ...body, instructor_id: user._id as unknown as string }, user, body.bankId, body.subBankPath)), {
                 body: AddExaminationSchema
             })
             .patch('/:id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { id: string }, body: UpdateExamBody }) => await controller.updateExamination(params.id, body, user)), {

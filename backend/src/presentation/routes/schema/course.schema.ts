@@ -5,12 +5,36 @@ export const AddCourseSchema = t.Object({
     course_name: t.String({ description: 'Title is required' }),
     background_src: t.String({ pattern: urlRegex, description: 'Profile URL is required' }),
     description: t.Optional(t.String()),
+    category: t.Union([
+        t.Literal('general'),
+        t.Literal('mathematics'),
+        t.Literal('science'),
+        t.Literal('computer_science'),
+        t.Literal('languages'),
+        t.Literal('social_studies'),
+        t.Literal('arts'),
+        t.Literal('business'),
+        t.Literal('health'),
+        t.Literal('engineering')
+    ], { description: 'Course category is required' })
 })
 
 export const updateCourseSchema = t.Object({
     course_name: t.String({ description: 'Title is required' }),
     background_src: t.String({ pattern: urlRegex, description: 'Profile URL is required' }),
     description: t.Optional(t.String()),
+    category: t.Optional(t.Union([
+        t.Literal('general'),
+        t.Literal('mathematics'),
+        t.Literal('science'),
+        t.Literal('computer_science'),
+        t.Literal('languages'),
+        t.Literal('social_studies'),
+        t.Literal('arts'),
+        t.Literal('business'),
+        t.Literal('health'),
+        t.Literal('engineering')
+    ])),
 })
 
 export const AddGroupSchema = t.Object({

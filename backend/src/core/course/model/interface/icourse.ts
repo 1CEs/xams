@@ -7,5 +7,6 @@ export interface ICourse {
     background_src: string
     course_name: string
     description?: string
+    category: string
     groups?: IGroup[]
 }

@@ -2,7 +2,7 @@
 import NewQuestionForm from "@/components/exam/new-question-form"
 import DraggableQuestion from "@/components/exam/question/draggable-question"
 import NestedQuestionForm from "@/components/exam/question/nested-question"
-import CategorySelector from "@/components/exam/category-selector"
+
 import ConfirmModal from "@/components/modals/confirm-modal"
 import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, IcRoundFolder, MdiBin, MingcuteAddFill, MingcuteFileNewFill, PhEyeDuotone, SystemUiconsReuse } from "@/components/icons/icons"
 import { clientAPI } from "@/config/axios.config"
@@ -51,8 +51,7 @@ export default function CreateExaminationPage() {
     const [isEditing, setIsEditing] = useState<boolean>(false)
     const [formValues, setFormValues] = useState({
         title: '',
-        description: '',
-        category: [] as string[]
+        description: ''
     })
     const [currentPage, setCurrentPage] = useState(1)
     const questionsPerPage = 5
@@ -74,8 +73,7 @@ export default function CreateExaminationPage() {
                 // Initialize form values
                 setFormValues({
                     title: res.data.data.title || '',
-                    description: res.data.data.description || '',
-                    category: res.data.data.category || []
+                    description: res.data.data.description || ''
                 })
 
                 // Clear selection when data changes
@@ -426,17 +424,7 @@ export default function CreateExaminationPage() {
                                             onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
                                             isDisabled={!isEditing}
                                         />
-                                        <div className="w-full">
-                                            <CategorySelector
-                                                isDisable={!isEditing}
-                                                handleChange={(e) => {
-                                                    // Category selection is handled by the CategorySelector component
-                                                    // which will update the formValues.category array
-                                                    const selectedCategories = Array.from(e.target.value || []) as string[];
-                                                    setFormValues({ ...formValues, category: selectedCategories });
-                                                }}
-                                            />
-                                        </div>
+
                                     </CardBody>
                                     <CardFooter className="pt-0 flex justify-between">
                                         <Button

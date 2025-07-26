@@ -6,7 +6,6 @@ export interface IExamination {
     instructor_id: string
     title: string
     description: string
-    category: string[]
     questions: IQuestion[]
     group_id?: string
     password?: string

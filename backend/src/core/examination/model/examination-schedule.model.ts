@@ -18,7 +18,6 @@ export const ExaminationScheduleSchema = new Schema<ExaminationScheduleDocument>
         required: true
     },
     description: { type: String },
-    category: { type: [String] },
     questions: [Schema.Types.Mixed],
     created_at: {
         type: Date,
