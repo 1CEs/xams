@@ -58,6 +58,16 @@ export class ExaminationService implements IExaminationService {
         return result
     }
 
+    async deleteBulkQuestions(id: string, question_ids: string[]) {
+        const result = await this._repository.deleteBulkQuestions(id, question_ids)
+        return result
+    }
+
+    async findDuplicateQuestions(questions: IQuestion[], instructorId?: string) {
+        const result = await this._repository.findDuplicateQuestions(questions, instructorId)
+        return result
+    }
+
     async addNestedQuestion(id: string, payload: { question: string; type: string; score: number; questions: IQuestion[] }) {
         const result = await this._repository.addNestedQuestion(id, payload)
         return result

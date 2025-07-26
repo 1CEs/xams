@@ -217,6 +217,11 @@ export class ExaminationController implements IExaminationController {
         return this._response<typeof exam>('Delete Question Successfully', 200, this._sanitizeExamData(exam, user))
     }
 
+    async deleteBulkQuestions(id: string, question_ids: string[], user?: IInstructor) {
+        const exam = await this._service.deleteBulkQuestions(id, question_ids)
+        return this._response<typeof exam>(`${question_ids.length} Questions Deleted Successfully`, 200, this._sanitizeExamData(exam, user))
+    }
+
     // Nested Question methods
     async addNestedQuestion(id: string, payload: { question: string; type: string; score: number; questions: IQuestion[] }, user?: IInstructor) {
         const exam = await this._service.addNestedQuestion(id, payload)

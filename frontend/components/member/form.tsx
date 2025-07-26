@@ -64,8 +64,16 @@ const Form = (props: Props) => {
                 // Set cookie with the user data from the API response
                 const oneDay = 24 * 60 * 60 * 1000
                 cookies.set('user', JSON.stringify(userData), { expires: Date.now() + oneDay})
+                
+                // Show success message
+                toast.success('Sign in successful!')
             }
-            router.push('/overview')
+            
+            // Use replace instead of push to prevent back navigation to login
+            // Add a small delay to ensure cookies are set before redirect
+            setTimeout(() => {
+                router.replace('/overview')
+            }, 100)
         } catch (error) {
             if (isAxiosError(error)) {
                 const splitWords = error.response?.data.split(" ")

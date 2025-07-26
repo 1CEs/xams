@@ -7,7 +7,7 @@ import ConfirmModal from "@/components/modals/confirm-modal"
 import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, IcRoundFolder, MdiBin, MingcuteAddFill, MingcuteFileNewFill, PhEyeDuotone, SystemUiconsReuse } from "@/components/icons/icons"
 import { clientAPI } from "@/config/axios.config"
 import { errorHandler } from "@/utils/error"
-import { Button, Card, CardBody, CardFooter, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Modal, ModalContent, ModalHeader, ModalBody, Textarea, Tooltip, useDisclosure } from "@nextui-org/react"
+import { Button, Card, CardBody, CardFooter, Checkbox, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Modal, ModalContent, ModalHeader, ModalBody, Textarea, Tooltip, useDisclosure } from "@nextui-org/react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { ChangeEvent, useEffect, useState } from "react"
 import {
@@ -38,6 +38,9 @@ export default function CreateExaminationPage() {
     const _id = searchParams.get('id')
     const { isOpen, onOpen, onOpenChange } = useDisclosure()
     const [deleteQuestionModal, setDeleteQuestionModal] = useState({ isOpen: false, questionId: '' })
+    const [deleteAllModal, setDeleteAllModal] = useState({ isOpen: false })
+    const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set())
+    const [selectAll, setSelectAll] = useState(false)
     const [exam, setExam] = useState<any>(null)
     const [isNewQuestion, setIsNewQuestion] = useState<boolean>(false)
     const [isNestedQuestion, setIsNestedQuestion] = useState<boolean>(false)
@@ -74,6 +77,10 @@ export default function CreateExaminationPage() {
                     description: res.data.data.description || '',
                     category: res.data.data.category || []
                 })
+
+                // Clear selection when data changes
+                setSelectedQuestions(new Set())
+                setSelectAll(false)
 
                 console.log(res.data)
             } catch (error) {
@@ -184,7 +191,7 @@ export default function CreateExaminationPage() {
 
     const onDeleteQuestion = async (id: string) => {
         try {
-            const res = await clientAPI.delete(`exam/question?question_id=${id}&examination_id=${_id}`)
+            const res = await clientAPI.delete(`exam/question?examination_id=${_id}&question_id=${id}`)
             toast.success('Question deleted successfully')
             setTrigger(!trigger)
         } catch (error) {
@@ -218,6 +225,74 @@ export default function CreateExaminationPage() {
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page)
+        // Update select all state based on current selections
+        setSelectAll(selectedQuestions.size === questionList.length && questionList.length > 0)
+    }
+
+    const handleQuestionSelect = (questionId: string, isSelected: boolean) => {
+        const newSelected = new Set(selectedQuestions)
+        if (isSelected) {
+            newSelected.add(questionId)
+        } else {
+            newSelected.delete(questionId)
+        }
+        setSelectedQuestions(newSelected)
+        
+        // Update select all state
+        setSelectAll(newSelected.size === questionList.length)
+    }
+
+    const handleSelectAll = (isSelected: boolean) => {
+        if (isSelected) {
+            const allQuestionIds = new Set(questionList.map(q => q._id!))
+            setSelectedQuestions(allQuestionIds)
+        } else {
+            setSelectedQuestions(new Set())
+        }
+        setSelectAll(isSelected)
+    }
+
+    const handleDeleteSelected = async () => {
+        try {
+            // Use bulk delete API for better performance
+            await clientAPI.delete('exam/questions/bulk', {
+                data: {
+                    examination_id: _id!,
+                    question_ids: Array.from(selectedQuestions)
+                }
+            })
+            
+            toast.success(`${selectedQuestions.size} questions deleted successfully`)
+            setSelectedQuestions(new Set())
+            setSelectAll(false)
+            setDeleteAllModal({ isOpen: false })
+            setTrigger(!trigger)
+        } catch (error) {
+            console.error('Error deleting questions:', error)
+            errorHandler(error)
+        }
+    }
+
+    const handleDeleteAllQuestions = async () => {
+        try {
+            // Use bulk delete API for better performance
+            const allQuestionIds = questionList.map(question => question._id!)
+            await clientAPI.delete('exam/questions/bulk', {
+                data: {
+                    examination_id: _id!,
+                    question_ids: allQuestionIds
+                }
+            })
+            
+            toast.success('All questions deleted successfully')
+            setSelectedQuestions(new Set())
+            setSelectAll(false)
+            setDeleteAllModal({ isOpen: false })
+            setTrigger(!trigger)
+        } catch (error) {
+            console.error('Error deleting all questions:', error)
+            errorHandler(error)
+        }
     }
 
     if (exam) {
@@ -294,6 +369,14 @@ export default function CreateExaminationPage() {
                                     size="sm"
                                     onPress={onOpen}
                                 > Delete </Button>
+                                <Button
+                                    startContent={<MdiBin fontSize={14} />}
+                                    variant="flat"
+                                    color='danger'
+                                    size="sm"
+                                    onPress={() => setDeleteAllModal({ isOpen: true })}
+                                    isDisabled={questionList.length === 0}
+                                > Delete All Questions </Button>
                                 <div className="flex gap-x-2">
                                     <Button
                                         startContent={<IconParkOutlineCheckCorrect fontSize={14} />}
@@ -382,9 +465,47 @@ export default function CreateExaminationPage() {
                             :
 
                             <div className="flex flex-col gap-y-3">
+                                {/* Selection Controls */}
+                                <div className="flex items-center justify-between py-3 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <Checkbox
+                                            color="secondary"
+                                            isSelected={selectAll}
+                                            isIndeterminate={selectedQuestions.size > 0 && selectedQuestions.size < questionList.length}
+                                            onValueChange={handleSelectAll}
+                                            size="sm"
+                                        >
+                                            Select All ({questionList.length} questions)
+                                        </Checkbox>
+                                        {selectedQuestions.size > 0 && (
+                                            <span className="text-sm text-foreground/70">
+                                                {selectedQuestions.size} selected
+                                            </span>
+                                        )}
+                                    </div>
+                                    {selectedQuestions.size > 0 && (
+                                        <Button
+                                            startContent={<MdiBin fontSize={14} />}
+                                            variant="flat"
+                                            color="danger"
+                                            size="sm"
+                                            onPress={() => setDeleteAllModal({ isOpen: true })}
+                                        >
+                                            Delete Selected ({selectedQuestions.size})
+                                        </Button>
+                                    )}
+                                </div>
+                                
                                 <SortableContext items={currentQuestions} strategy={verticalListSortingStrategy}>
                                     {currentQuestions.map((question, index) => (
-                                        <div className="flex gap-x-3" key={index}>
+                                        <div className="flex gap-x-3 items-start" key={index}>
+                                            <Checkbox
+                                                color="secondary"
+                                                isSelected={selectedQuestions.has(question._id!)}
+                                                onValueChange={(isSelected) => handleQuestionSelect(question._id!, isSelected)}
+                                                size="sm"
+                                                className="mt-2"
+                                            />
                                             <DraggableQuestion question={question} id={question.id} />
                                             <Tooltip content="Delete question">
                                                 <Button
@@ -485,6 +606,19 @@ export default function CreateExaminationPage() {
                         subHeader="Are you sure you want to delete this question?" 
                         content="This action cannot be undone. The question will be permanently deleted."
                         onAction={handleDeleteQuestion}
+                    />
+                </Modal>
+
+                {/* Delete All/Selected Questions Confirmation Modal */}
+                <Modal isOpen={deleteAllModal.isOpen} onOpenChange={() => setDeleteAllModal({ isOpen: false })}>
+                    <ConfirmModal 
+                        header={selectedQuestions.size > 0 ? "Delete Selected Questions" : "Delete All Questions"}
+                        subHeader={selectedQuestions.size > 0 
+                            ? `Are you sure you want to delete ${selectedQuestions.size} selected questions?` 
+                            : `Are you sure you want to delete all ${questionList.length} questions?`
+                        }
+                        content="This action cannot be undone. The questions will be permanently deleted."
+                        onAction={selectedQuestions.size > 0 ? handleDeleteSelected : handleDeleteAllQuestions}
                     />
                 </Modal>
 

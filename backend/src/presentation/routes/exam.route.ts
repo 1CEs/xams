@@ -60,6 +60,12 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
                         question_id: t.String()
                     })
             })
+            .delete('/questions/bulk', catchAsync(async({ body, controller, user }: ExamContext & { body: { examination_id: string, question_ids: string[] } }) => await controller.deleteBulkQuestions(body.examination_id, body.question_ids, user)), {
+                body: t.Object({
+                    examination_id: t.String(),
+                    question_ids: t.Array(t.String())
+                })
+            })
             
             // Nested Question routes
             .post('/nested-question/:id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { id: string }, body: NestedQuestionBody }) => await controller.addNestedQuestion(params.id, body, user)), {

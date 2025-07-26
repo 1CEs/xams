@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientAPI } from '@/config/axios.config'
-import { Accordion, AccordionItem, Button, Card, CardBody, CardHeader, Chip, Divider, Radio, RadioGroup, Spinner, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from '@nextui-org/react'
+import { Accordion, AccordionItem, Button, Card, CardBody, CardHeader, Chip, Divider, Radio, RadioGroup, Spinner, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem } from '@nextui-org/react'
 import { ArrowLeft, FileDocument, Clock, CheckCircle, CloseCircle } from '@/components/icons/icons'
 import { useUserStore } from '@/stores/user.store'
 import { toast } from 'react-toastify'
@@ -18,7 +18,6 @@ interface SubmittedAnswer {
   is_correct?: boolean
   score_obtained?: number
   max_score: number
-  // Original question choices for display
   original_choices?: Array<{
     content: string
     isCorrect: boolean
@@ -73,6 +72,14 @@ const SubmissionHistoryPage = () => {
   const [gradingQuestion, setGradingQuestion] = useState<{submissionId: string, questionId: string, answer: SubmittedAnswer} | null>(null)
   const [gradingScore, setGradingScore] = useState('')
   const [isGradingLoading, setIsGradingLoading] = useState(false)
+  
+  // AI Assistant state
+  const [aiSuggestion, setAiSuggestion] = useState<string>('')
+  const [isAiLoading, setIsAiLoading] = useState(false)
+  const [showAiSuggestion, setShowAiSuggestion] = useState(false)
+
+  // Question type filter state
+  const [questionTypeFilter, setQuestionTypeFilter] = useState<string>('all')
 
   // Validate access and fetch data
   useEffect(() => {
@@ -152,6 +159,56 @@ const SubmissionHistoryPage = () => {
     }
   }
 
+  // Filter questions by type
+  const filterQuestionsByType = (answers: SubmittedAnswer[]) => {
+    if (questionTypeFilter === 'all') {
+      return answers
+    }
+    return answers.filter(answer => answer.question_type === questionTypeFilter)
+  }
+
+  // Get filtered questions with pagination
+  const getFilteredQuestions = (submission: ExamSubmission) => {
+    const filteredAnswers = filterQuestionsByType(submission.submitted_answers)
+    const currentPage = getCurrentQuestionPage(submission._id)
+    const startIndex = (currentPage - 1) * questionsPerPage
+    const endIndex = startIndex + questionsPerPage
+    return {
+      questions: filteredAnswers.slice(startIndex, endIndex),
+      startIndex,
+      totalPages: Math.ceil(filteredAnswers.length / questionsPerPage),
+      currentPage,
+      totalFiltered: filteredAnswers.length,
+      allFiltered: filteredAnswers
+    }
+  }
+
+  // Check if pagination should be used
+  const shouldUsePagination = (submission: ExamSubmission) => {
+    const filteredAnswers = filterQuestionsByType(submission.submitted_answers)
+    return filteredAnswers.length > questionsPerPage
+  }
+
+  // Get question type label
+  const getQuestionTypeLabel = (type: string) => {
+    switch (type) {
+      case 'mc': return 'Multiple Choice'
+      case 'tf': return 'True/False'
+      case 'ses': return 'Short Essay'
+      case 'les': return 'Long Essay'
+      default: return type.toUpperCase()
+    }
+  }
+
+  // Question type options for filter
+  const questionTypeOptions = [
+    { key: 'all', label: 'All Questions' },
+    { key: 'mc', label: 'Multiple Choice (MC)' },
+    { key: 'tf', label: 'True/False (TF)' },
+    { key: 'ses', label: 'Short Essay (SES)' },
+    { key: 'les', label: 'Long Essay (LES)' }
+  ]
+
   // Format date and time
   const formatDateTime = (date: Date) => {
     const dateObj = new Date(date)
@@ -199,6 +256,8 @@ const SubmissionHistoryPage = () => {
   const handleOpenGradingModal = (submissionId: string, questionId: string, answer: SubmittedAnswer) => {
     setGradingQuestion({ submissionId, questionId, answer })
     setGradingScore(answer.score_obtained?.toString() || '')
+    // Reset AI suggestion state
+    resetAiSuggestion()
     onGradingModalOpen()
   }
 
@@ -271,6 +330,8 @@ const SubmissionHistoryPage = () => {
         onGradingModalOpenChange()
         setGradingQuestion(null)
         setGradingScore('')
+        // Reset AI suggestion
+        resetAiSuggestion()
       } else {
         toast.error(response.data.message || 'Failed to grade question')
       }
@@ -280,6 +341,48 @@ const SubmissionHistoryPage = () => {
     } finally {
       setIsGradingLoading(false)
     }
+  }
+
+  // AI Assistant functions
+  const handleGetAiSuggestion = async () => {
+    if (!gradingQuestion) return
+
+    // Only handle essay questions
+    if (!['ses', 'les'].includes(gradingQuestion.answer.question_type)) {
+      toast.error('AI assistance is only available for essay questions')
+      return
+    }
+
+    setIsAiLoading(true)
+    setAiSuggestion('')
+    setShowAiSuggestion(false)
+    
+    try {
+      const response = await clientAPI.post('/assistant/grade-essay', {
+        question: gradingQuestion.answer.submitted_question,
+        student_answer: gradingQuestion.answer.submitted_answer || '',
+        max_score: gradingQuestion.answer.max_score,
+        question_type: gradingQuestion.answer.question_type
+      })
+      
+      if (response.data.status === 200) {
+        setAiSuggestion(response.data.data.suggestion)
+        setShowAiSuggestion(true)
+        toast.success('AI grading suggestion generated')
+      } else {
+        toast.error(response.data.message || 'Failed to get AI suggestion')
+      }
+    } catch (error) {
+      console.error('Error getting AI suggestion:', error)
+      toast.error('Failed to get AI grading suggestion')
+    } finally {
+      setIsAiLoading(false)
+    }
+  }
+
+  const resetAiSuggestion = () => {
+    setAiSuggestion('')
+    setShowAiSuggestion(false)
   }
 
   // Calculate statistics
@@ -462,47 +565,86 @@ const SubmissionHistoryPage = () => {
                     {((examSchedule?.show_answer && submission.is_graded) || user?.role === 'instructor') && (
                       <div className="mt-6">
                         <Divider className="mb-4" />
-                        <h4 className="font-semibold mb-4 text-lg">
-                          {user?.role === 'instructor' ? 'Student Submission Review' : 'Answer Review'}
-                        </h4>
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-semibold text-lg">
+                            {user?.role === 'instructor' ? 'Student Submission Review' : 'Answer Review'}
+                          </h4>
+                          
+                          {/* Question Type Filter */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-default-600">Filter by type:</span>
+                            <Select
+                              size="sm"
+                              placeholder="All Questions"
+                              selectedKeys={questionTypeFilter ? [questionTypeFilter] : ['all']}
+                              onSelectionChange={(keys) => {
+                                const selected = Array.from(keys)[0] as string
+                                setQuestionTypeFilter(selected || 'all')
+                                // Reset pagination when filter changes
+                                setCurrentQuestionPage({})
+                              }}
+                              className="w-48"
+                              variant="bordered"
+                            >
+                              {questionTypeOptions.map((option) => (
+                                <SelectItem key={option.key} value={option.key}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </Select>
+                          </div>
+                        </div>
                         
-                        {submission.submitted_answers.length > questionsPerPage ? (
+                        {shouldUsePagination(submission) ? (
                           // Paginated view for many questions
                           <div className="flex gap-6">
                             {/* Question Navigation Sidebar */}
                             <Card className="w-1/3 h-fit sticky top-4">
                               <CardBody className="px-4 py-4">
                                 <div className="flex flex-col gap-4">
-                                  <div className="flex justify-between items-center">
-                                    <h3 className="text-md font-semibold">Questions Navigation</h3>
-                                    <span className="text-sm text-default-600">
-                                      {submission.submitted_answers.length} questions
-                                    </span>
-                                  </div>
-                                  
-                                  <div className="grid grid-cols-5 gap-2">
-                                    {submission.submitted_answers.map((answer, index) => {
-                                      const currentPage = getCurrentQuestionPage(submission._id)
-                                      const questionPage = Math.floor(index / questionsPerPage) + 1
-                                      const isCurrentPage = questionPage === currentPage
-                                      
-                                      return (
-                                        <Button
-                                          key={answer.question_id}
-                                          size="sm"
-                                          color="default"
-                                          onPress={() => handleQuestionNavigation(submission._id, index)}
-                                          className={`
-                                            ${isCurrentPage ? 'border-primary border-2 bg-primary/10' : 'border-default-200 border'}
-                                            ${answer.is_correct === true ? 'bg-success/20' : ''}
-                                            ${answer.is_correct === false ? 'bg-danger/20' : ''}
-                                          `}
-                                        >
-                                          {index + 1}
-                                        </Button>
-                                      )
-                                    })}
-                                  </div>
+                                  {(() => {
+                                    const filteredData = getFilteredQuestions(submission)
+                                    return (
+                                      <>
+                                        <div className="flex justify-between items-center">
+                                          <h3 className="text-md font-semibold">Questions Navigation</h3>
+                                          <div className="text-sm text-default-600">
+                                            {questionTypeFilter !== 'all' ? (
+                                              <span>
+                                                {filteredData.totalFiltered} / {submission.submitted_answers.length} questions
+                                              </span>
+                                            ) : (
+                                              <span>{submission.submitted_answers.length} questions</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-5 gap-2">
+                                          {filteredData.allFiltered.map((answer, index) => {
+                                            const currentPage = getCurrentQuestionPage(submission._id)
+                                            const questionPage = Math.floor(index / questionsPerPage) + 1
+                                            const isCurrentPage = questionPage === currentPage
+                                            
+                                            return (
+                                              <Button
+                                                key={answer.question_id}
+                                                size="sm"
+                                                color="default"
+                                                onPress={() => handleQuestionNavigation(submission._id, index)}
+                                                className={`
+                                                  ${isCurrentPage ? 'border-primary border-2 bg-primary/10' : 'border-default-200 border'}
+                                                  ${answer.is_correct === true ? 'bg-success/20' : ''}
+                                                  ${answer.is_correct === false ? 'bg-danger/20' : ''}
+                                                `}
+                                              >
+                                                {index + 1}
+                                              </Button>
+                                            )
+                                          })}
+                                        </div>
+                                      </>
+                                    )
+                                  })()}
                                   
                                   <div className="text-sm text-default-600">
                                     <div className="flex items-center gap-2 mb-1">
@@ -520,10 +662,10 @@ const SubmissionHistoryPage = () => {
                                   </div>
                                   
                                   {(() => {
-                                    const { currentPage, totalPages } = getCurrentQuestions(submission)
+                                    const filteredData = getFilteredQuestions(submission)
                                     return (
                                       <p className="text-sm text-default-500">
-                                        Page {currentPage} of {totalPages}
+                                        Page {filteredData.currentPage} of {filteredData.totalPages}
                                       </p>
                                     )
                                   })()}
@@ -535,7 +677,7 @@ const SubmissionHistoryPage = () => {
                             <div className="w-2/3">
                               <div className="space-y-4">
                                 {(() => {
-                                  const { questions, startIndex, currentPage, totalPages } = getCurrentQuestions(submission)
+                                  const { questions, startIndex, currentPage, totalPages } = getFilteredQuestions(submission)
                                   return (
                                     <>
                                       {questions.map((answer, relativeIndex) => {
@@ -578,7 +720,7 @@ const SubmissionHistoryPage = () => {
                                             </div>
                                             
                                             {/* Question Text */}
-                                            <p className="text-sm text-default-700 mb-3 font-medium">{answer.submitted_question}</p>
+                                            <p className="text-sm text-default-700 mb-3 font-medium" dangerouslySetInnerHTML={{ __html: answer.submitted_question }}></p>
                                             
                                             {/* Answer Section with Accordion */}
                                             {answer.question_type === 'mc' && answer.original_choices ? (
@@ -651,14 +793,54 @@ const SubmissionHistoryPage = () => {
                                               </Accordion>
                                             ) : (
                                               /* Non-multiple choice answers */
-                                              <div className="text-sm rounded-md p-3 border border-default-200">
-                                                <span className="text-default-600 font-medium">
-                                                  {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
-                                                </span>
-                                                <span className="font-medium text-default-800">
-                                                  {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
-                                                  {(answer.question_type === 'ses' || answer.question_type === 'les') && answer.submitted_answer}
-                                                </span>
+                                              <div className="space-y-3">
+                                                <div className="text-sm rounded-md p-3 border border-default-200">
+                                                  <span className="text-default-600 font-medium">
+                                                    {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
+                                                  </span>
+                                                  <span className="font-medium text-default-800">
+                                                    {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
+                                                    {(answer.question_type === 'ses' || answer.question_type === 'les') && answer.submitted_answer}
+                                                  </span>
+                                                </div>
+                                                
+                                                {/* Manual grading section for essay questions */}
+                                                {user?.role === 'instructor' && (answer.question_type === 'ses' || answer.question_type === 'les') && (
+                                                  <div className="bg-default-50 rounded-lg p-3 border border-default-200">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                      <span className="text-sm font-medium text-default-700">
+                                                        Manual Grading
+                                                      </span>
+                                                      {answer.score_obtained !== undefined ? (
+                                                        <Chip 
+                                                          size="sm" 
+                                                          color={answer.is_correct ? "success" : "danger"}
+                                                          variant="flat"
+                                                        >
+                                                          {answer.is_correct ? "✓ Graded" : "✗ Graded"}
+                                                        </Chip>
+                                                      ) : (
+                                                        <Chip size="sm" color="warning" variant="flat">
+                                                          📝 Ungraded
+                                                        </Chip>
+                                                      )}
+                                                    </div>
+                                                    
+                                                    <div className="flex items-center gap-3">
+                                                      <span className="text-sm text-default-600">
+                                                        Score: {answer.score_obtained ?? 0} / {answer.max_score}
+                                                      </span>
+                                                      <Button
+                                                        size="sm"
+                                                        color="secondary"
+                                                        variant="bordered"
+                                                        onPress={() => handleOpenGradingModal(submission._id, answer.question_id, answer)}
+                                                      >
+                                                        {answer.score_obtained !== undefined ? 'Update Grade' : 'Grade Question'}
+                                                      </Button>
+                                                    </div>
+                                                  </div>
+                                                )}
                                               </div>
                                             )}
                                           </div>
@@ -704,7 +886,9 @@ const SubmissionHistoryPage = () => {
                         ) : (
                           // Simple view for few questions
                           <div className="space-y-4">
-                            {submission.submitted_answers.map((answer, answerIndex) => (
+                            {(() => {
+                              const filteredAnswers = filterQuestionsByType(submission.submitted_answers)
+                              return filteredAnswers.map((answer, answerIndex) => (
                               <div key={answer.question_id} className="border border-default-200 rounded-lg p-4 bg-default-50">
                                 <div className="flex items-center justify-between mb-3">
                                   <span className="font-medium text-sm text-secondary">Question {answerIndex + 1}</span>
@@ -865,7 +1049,8 @@ const SubmissionHistoryPage = () => {
                                   </div>
                                 )}
                               </div>
-                            ))}
+                            ))
+                            })()}
                           </div>
                         )}
                       </div>
@@ -933,6 +1118,45 @@ const SubmissionHistoryPage = () => {
                         }
                       />
                     </div>
+                    
+                    {/* AI Assistant Section - Only for essay questions */}
+                    {gradingQuestion && ['ses', 'les'].includes(gradingQuestion.answer.question_type) && (
+                      <div className="border border-primary/20 rounded-lg p-4 bg-primary/5">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-primary-700 flex items-center gap-2">
+                            🤖 AI Grading Assistant
+                            <Chip size="sm" color="primary" variant="dot">
+                              Beta
+                            </Chip>
+                          </h4>
+                          <Button
+                            size="sm"
+                            color="primary"
+                            variant="bordered"
+                            onPress={handleGetAiSuggestion}
+                            isLoading={isAiLoading}
+                            isDisabled={isGradingLoading}
+                          >
+                            {isAiLoading ? 'Analyzing...' : 'Get AI Suggestion'}
+                          </Button>
+                        </div>
+                        
+                        {showAiSuggestion && aiSuggestion && (
+                          <div className="bg-white rounded-lg p-3 border border-primary/30 max-h-60 overflow-y-auto">
+                            <div className="text-xs text-primary-600 mb-2 font-medium">
+                              AI Grading Suggestion:
+                            </div>
+                            <div className="text-sm text-default-800 whitespace-pre-wrap">
+                              {aiSuggestion}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="text-xs text-primary-600 mt-2">
+                          💡 AI suggestions are for guidance only. Use your professional judgment for final grading.
+                        </div>
+                      </div>
+                    )}
                     
                     <div className="text-xs text-default-500">
                       💡 Tip: Enter 0 for incorrect answers, or any value between 0 and {gradingQuestion.answer.max_score} for partial/full credit.
