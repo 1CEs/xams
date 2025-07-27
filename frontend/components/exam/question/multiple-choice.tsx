@@ -138,12 +138,12 @@ const MultipleChoiceForm: React.FC<MultipleChoiceFormProps> = () => {
             ))}
             <div className='flex justify-between items-center'>
                 <Checkbox
-                    isSelected={values.isRandomChoices}
-                    onValueChange={(isSelected) => setFieldValue('isRandomChoices', isSelected)}
+                    isSelected={!values.isRandomChoices}
+                    onValueChange={(isSelected) => setFieldValue('isRandomChoices', !isSelected)}
                     size='md'
                     color='secondary'
                 >
-                    <span className='text-sm'>Randomize choices</span>
+                    <span className='text-sm'>Don't randomize choices (Only for this question)</span>
                 </Checkbox>
                 <Button
                     variant="flat"

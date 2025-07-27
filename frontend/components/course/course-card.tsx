@@ -18,10 +18,14 @@ type CourseCardProps = {
   groups?: IGroup[]
 } & CardProps
 
-const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, groups = [], ...props }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, groups, ...props }) => {
   const {isOpen, onOpen, onOpenChange} = useDisclosure()
   const { trigger, setTrigger } = useTrigger()
   const { user } = useUserStore()
+
+  if (!groups) {
+    groups = []
+  }
 
   // Check if the user is a student and if they're enrolled in any group of this course
   const isStudent = user?.role === 'student'
@@ -36,12 +40,17 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
   // Get all student IDs from all groups for avatar display
   const allStudentIds = useMemo(() => {
     const studentIds = groups.flatMap(group => group.students)
-    // Remove duplicates and limit to first 4 for performance
-    return Array.from(new Set(studentIds)).slice(0, 4)
+    // Remove duplicates for randomization
+    return Array.from(new Set(studentIds))
   }, [groups])
 
-  // Fetch student profiles for avatars
-  const { profiles: studentProfiles, isLoading: profilesLoading } = useStudentProfiles(allStudentIds)
+
+  // Fetch randomized student profiles for avatars
+  const { profiles: studentProfiles, isLoading: profilesLoading } = useStudentProfiles(
+    allStudentIds, 
+    true, // Enable randomization
+    3    // Maximum 3 avatars to display
+  )
   const totalStudentCount = groups.reduce((total, group) => total + group.students.length, 0)
 
   const onCourseDelete = async () => {
@@ -73,13 +82,13 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
                   <Avatar key={`loading-${idx}`} className="animate-pulse bg-default-300" />
                 ))
               ) : (
-                // Show real student avatars with profile data
-                studentProfiles.slice(0, 3).map((profile, idx) => (
-                  <Tooltip key={profile._id} content={profile.username} placement="top">
+                // Show randomized student avatars with profile data
+                studentProfiles.map((profile, idx) => (
+                  <Tooltip key={`${profile._id}-${idx}`} content={`${profile.username} (Random Student)`} placement="top">
                     <Avatar 
                       src={profile.profile_url}
                       name={profile.username.slice(0, 2).toUpperCase()}
-                      className="cursor-pointer hover:scale-110 transition-transform"
+                      className="cursor-pointer hover:scale-110 transition-transform ring-2 ring-primary/20"
                     />
                   </Tooltip>
                 ))

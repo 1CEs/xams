@@ -146,6 +146,12 @@ const NestedQuestionForm = ({ examinationId }: NestedQuestionFormProps) => {
             }}
             onSubmit={async (values, { setFieldValue }) => {
                 try {
+                    // Validate question context is filled
+                    if (!values.question || values.question.trim() === "" || values.question === "<p></p>" || values.question === "<p><br></p>") {
+                        toast.error("Please fill in the question context before saving")
+                        return
+                    }
+
                     // Get the question IDs from nested questions
                     const questionIds = nestedQuestions.map(q => q._id).filter(id => id) as string[]
                     

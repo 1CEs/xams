@@ -15,7 +15,7 @@ const QuestionSchema = new Schema<QuestionDocument>({
     },
     isRandomChoices: {
         type: Boolean,
-        default: false
+        default: true
     },
     choices: {
         type: [{
@@ -38,12 +38,12 @@ const QuestionSchema = new Schema<QuestionDocument>({
         },
         default: false
     },
-    expectedAnswer: {
-        type: String,
+    expectedAnswers: {
+        type: [String],
         required: function () {
             return this.type === 'ses' || this.type === 'les';
         },
-        default: ''
+        default: []
     },
     maxWords: {
         type: Number,

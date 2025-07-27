@@ -11,14 +11,26 @@ interface StudentProfile {
   role: string;
 }
 
-export const useStudentProfiles = (studentIds: string[]) => {
+export const useStudentProfiles = (studentIds: string[], randomize: boolean = false, maxAvatars: number = 3) => {
   const [profiles, setProfiles] = useState<StudentProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [randomizedIds, setRandomizedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Randomize student IDs if randomize is enabled
+    if (randomize && studentIds.length > 0) {
+      const shuffled = [...studentIds].sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, maxAvatars);
+      setRandomizedIds(selected);
+    } else {
+      setRandomizedIds(studentIds.slice(0, maxAvatars));
+    }
+  }, [studentIds, randomize, maxAvatars]);
 
   useEffect(() => {
     const fetchProfiles = async () => {
-      if (!studentIds || studentIds.length === 0) {
+      if (!randomizedIds || randomizedIds.length === 0) {
         setProfiles([]);
         return;
       }
@@ -27,8 +39,8 @@ export const useStudentProfiles = (studentIds: string[]) => {
         setIsLoading(true);
         setError(null);
 
-        // Fetch student data for each student ID
-        const promises = studentIds.slice(0, 4).map(id => 
+        // Fetch student data for each randomized student ID
+        const promises = randomizedIds.map(id => 
           clientAPI.get(`/user/${id}`)
             .then(response => ({
               _id: response.data.data._id,
@@ -60,7 +72,7 @@ export const useStudentProfiles = (studentIds: string[]) => {
     };
 
     fetchProfiles();
-  }, [studentIds]);
+  }, [randomizedIds]);
 
   return { profiles, isLoading, error };
 };

@@ -14,7 +14,7 @@ interface Question {
   isRandomChoices?: boolean
   choices?: Choice[]
   isTrue?: boolean
-  expectedAnswer?: string
+  expectedAnswers?: string[]
   maxWords?: number
   score: number
   questions?: Question[] // For nested questions
@@ -282,14 +282,44 @@ const QuestionCard = memo(({
         )}
 
         {(q.type === 'ses' || q.type === 'les') && (
-          <Textarea
-            label="Your Answer"
-            placeholder="Type your answer here..."
-            defaultValue={answers.find(a => a.questionId === q._id)?.essayAnswer || ''}
-            onValueChange={(value) => handleEssayChange(q._id, value)}
-            minRows={q.type === 'les' ? 5 : 2}
-            maxRows={q.type === 'les' ? 10 : 4}
-          />
+          <div className="space-y-4">
+            {/* Display Expected Answers */}
+            {q.expectedAnswers && q.expectedAnswers.length > 0 && (
+              <div className="bg-default-50 rounded-lg p-4 border border-default-200">
+                <h4 className="text-sm font-semibold text-foreground/80 mb-3">
+                  📝 Expected Answer{q.expectedAnswers.length > 1 ? 's' : ''} ({q.expectedAnswers.length})
+                </h4>
+                <div className="space-y-3">
+                  {q.expectedAnswers.map((expectedAnswer, index) => (
+                    <div key={index} className="bg-background rounded-md p-3 border border-default-100">
+                      <div className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center mt-0.5">
+                          {index + 1}
+                        </span>
+                        <div 
+                          className="text-sm text-foreground/90 prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: expectedAnswer }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-foreground/60 mt-3">
+                  💡 Your answer should match one of the expected answers above or demonstrate similar understanding.
+                </p>
+              </div>
+            )}
+            
+            {/* Answer Textarea */}
+            <Textarea
+              label="Your Answer"
+              placeholder="Type your answer here..."
+              defaultValue={answers.find(a => a.questionId === q._id)?.essayAnswer || ''}
+              onValueChange={(value) => handleEssayChange(q._id, value)}
+              minRows={q.type === 'les' ? 5 : 2}
+              maxRows={q.type === 'les' ? 10 : 4}
+            />
+          </div>
         )}
       </div>
     )

@@ -44,6 +44,7 @@ const CourseList = (props: Props) => {
       {data.data.map((course, idx: number) => (
         <CourseCard
           id={course._id}
+          groups={course.groups}
           className="w-[222px]"
           key={idx}
           title={course.course_name}

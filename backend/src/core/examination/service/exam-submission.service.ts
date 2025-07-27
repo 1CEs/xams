@@ -175,11 +175,29 @@ export class ExamSubmissionService implements IExamSubmissionService {
                         }
                         break;
 
-                    case 'ses': // Short Essay - Manual grading required
-                    case 'les': // Long Essay - Manual grading required
-                        // For essay questions, we can't auto-grade
-                        isCorrect = false; // Will be manually graded
-                        scoreObtained = 0;
+                    case 'ses': // Short Essay - Can auto-grade with multiple expected answers
+                    case 'les': // Long Essay - Can auto-grade with multiple expected answers
+                        if (question.expectedAnswers && question.expectedAnswers.length > 0 && submittedAnswer.submitted_answer) {
+                            // Auto-grade by checking if submitted answer matches any expected answer
+                            const submittedText = submittedAnswer.submitted_answer.toLowerCase().trim();
+                            const expectedAnswers = question.expectedAnswers.map((answer: string) => answer.toLowerCase().trim());
+                            
+                            // Check for exact match or partial match (contains logic)
+                            isCorrect = expectedAnswers.some((expectedAnswer: string) => {
+                                return submittedText === expectedAnswer || 
+                                       (expectedAnswer.length > 10 && submittedText.includes(expectedAnswer)) ||
+                                       (submittedText.length > 10 && expectedAnswer.includes(submittedText));
+                            });
+                            
+                            if (isCorrect) {
+                                scoreObtained = submittedAnswer.max_score;
+                                correctAnswers++;
+                            }
+                        } else {
+                            // No expected answers provided, requires manual grading
+                            isCorrect = false;
+                            scoreObtained = 0;
+                        }
                         break;
 
                     case 'nested': // Nested questions - Handle recursively

@@ -10,12 +10,11 @@ type Props = {}
 const CreateAction = (props: Props) => {
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const modalRenderer = {
-        exam: <ExamFormModal />,
         course: <CourseFormModal />,
         bank: <BankFormModal />
 
     }
-    const [modalSelector, setModalSelector] = useState<keyof typeof modalRenderer>('exam')
+    const [modalSelector, setModalSelector] = useState<keyof typeof modalRenderer>('course')
     const onModalOpen = (name: keyof typeof modalRenderer) => {
         setModalSelector(name)
         onOpen()
@@ -41,14 +40,6 @@ const CreateAction = (props: Props) => {
                         onPress={() => onModalOpen('course')}
                     >
                         New Course
-                    </DropdownItem>
-                    <DropdownItem
-                        startContent={<HealthiconsIExamMultipleChoice fontSize={24} />}
-                        key="wxamination"
-                        description="Create a new examination"
-                        onPress={() => onModalOpen('exam')}
-                    >
-                        New Examination
                     </DropdownItem>
                     <DropdownItem
                         startContent={<MaterialSymbolsAssignment fontSize={24} />}

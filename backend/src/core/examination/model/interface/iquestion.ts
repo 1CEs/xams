@@ -12,7 +12,7 @@ export interface IQuestion {
         score: number
     }[]
     isTrue?: boolean
-    expectedAnswer?: string
+    expectedAnswers?: string[]
     maxWords?: number
     score: number
     questions?: IQuestion[] // Only present when type is 'nested'

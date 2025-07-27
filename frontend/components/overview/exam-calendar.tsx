@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardBody, Button, Chip, Tooltip, Link } from "@nextui-org/react";
 import { useExamSchedules } from "@/hooks/use-exam-schedules";
 import { SolarRefreshLineDuotone, UisSchedule } from "../icons/icons";
@@ -25,6 +25,7 @@ interface ExamScheduleDetail {
 
 const UpcomingExams = () => {
   const { examSchedules, isLoading, error } = useExamSchedules();
+  const [showAll, setShowAll] = useState(false);
 
   // Filter upcoming exams (within next 30 days or no date set)
   const upcomingExams = useMemo(() => {
@@ -55,14 +56,14 @@ const UpcomingExams = () => {
           ⏰ Upcoming Exams
         </h2>
         <Chip size="sm" variant="flat" color="secondary">
-          {examSchedules.length} Total
+          {upcomingExams.length} Total
         </Chip>
       </div>
 
       {/* Compact Upcoming Exams List */}
       {upcomingExams.length > 0 ? (
         <div className="space-y-2">
-          {upcomingExams.slice(0, 3).map((exam, index) => {
+          {upcomingExams.slice(0, showAll ? upcomingExams.length : 3).map((exam, index) => {
             const isOpenNow = !exam.open_time || new Date() >= exam.open_time;
             const isClosed = exam.close_time && new Date() > exam.close_time;
             
@@ -132,8 +133,13 @@ const UpcomingExams = () => {
                     variant="flat" 
                     color="primary"
                     className="text-xs"
+                    onClick={() => setShowAll(!showAll)}
                   >
-                    View {upcomingExams.length - 3} more exam{upcomingExams.length - 3 !== 1 ? 's' : ''}
+                    {showAll ? (
+                      <>Show less</>
+                    ) : (
+                      <>View {upcomingExams.length - 3} more exam{upcomingExams.length - 3 !== 1 ? 's' : ''}</>
+                    )}
                   </Button>
                 </div>
               </CardBody>

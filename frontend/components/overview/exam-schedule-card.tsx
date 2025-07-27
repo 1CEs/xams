@@ -1,4 +1,4 @@
-import { Button, Chip, Tooltip, useDisclosure, Card, CardBody, CardHeader, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input } from "@nextui-org/react"
+import { Button, Checkbox, Chip, Tooltip, useDisclosure, Card, CardBody, CardHeader, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input } from "@nextui-org/react"
 import { MdiBin, MdiPaper, UisSchedule, PhEyeDuotone, MaterialSymbolsListAlt } from "@/components/icons/icons"
 import { useRouter } from "nextjs-toploader/app"
 import { useFetch } from "@/hooks/use-fetch"
@@ -41,9 +41,24 @@ interface ExamScheduleCardProps {
   groupName: string
   isStudent?: boolean
   onDelete?: (groupName: string, examSettingIndex: number) => void
+  // Selection props for bulk operations
+  isSelected?: boolean
+  onSelectionChange?: () => void
+  showCheckbox?: boolean
 }
 
-export default function ExamScheduleCard({ courseId, groupId, setting, index, groupName, isStudent = false, onDelete }: ExamScheduleCardProps) {
+export default function ExamScheduleCard({ 
+  courseId, 
+  groupId, 
+  setting, 
+  index, 
+  groupName, 
+  isStudent = false, 
+  onDelete,
+  isSelected = false,
+  onSelectionChange,
+  showCheckbox = false
+}: ExamScheduleCardProps) {
   const { isOpen, onOpen, onOpenChange } = useDisclosure()
   const { isOpen: isAttemptWarningOpen, onOpen: onAttemptWarningOpen, onOpenChange: onAttemptWarningChange } = useDisclosure()
   const router = useRouter()
@@ -453,7 +468,7 @@ export default function ExamScheduleCard({ courseId, groupId, setting, index, gr
                   Cancel
                 </Button>
                 <Button 
-                  color="primary"
+                  color="secondary"
                   isLoading={isValidatingAttempt}
                   onPress={async () => {
                     const input = document.querySelector('input[placeholder="Enter access code"]') as HTMLInputElement

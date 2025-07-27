@@ -2,7 +2,6 @@
 import { IconoirSort, MdiSearch } from "@/components/icons/icons";
 import CourseList from "@/components/overview/course-list";
 import CreateAction from "@/components/overview/create-action";
-import ExamList from "@/components/overview/exam-list";
 import { Card, CardBody, Select, SelectItem, Tab, Tabs } from "@nextui-org/react";
 import { Input } from "@nextui-org/react";
 import BankList from "@/components/overview/bank-list";
@@ -30,9 +29,6 @@ export default function InstructorOverview() {
                 <Tabs className="flex justify-center pb-3">
                     <Tab key='course' title='Course'>
                         <CourseList />
-                    </Tab>
-                    <Tab key='examination' title='Examination'>
-                        <ExamList />
                     </Tab>
                     <Tab key='bank' title='Bank'>
                         <BankList />

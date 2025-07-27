@@ -4,7 +4,7 @@ import { FluentSettings16Filled, MdiBin, MingcuteAddFill, UisSchedule } from "@/
 import Loading from "@/components/state/loading"
 import NotFound from "@/components/state/not-found"
 import { useFetch } from "@/hooks/use-fetch"
-import { Accordion, AccordionItem, Avatar, AvatarGroup, Button, Calendar, Chip, Modal, Tab, Tabs, Tooltip, useDisclosure } from "@nextui-org/react"
+import { Accordion, AccordionItem, Avatar, AvatarGroup, Button, Calendar, Checkbox, Chip, Modal, Tab, Tabs, Tooltip, useDisclosure } from "@nextui-org/react"
 import ConfirmModal from "@/components/modals/confirm-modal"
 import { clientAPI } from "@/config/axios.config"
 import { errorHandler } from "@/utils/error"
@@ -15,8 +15,8 @@ import GroupFormModal from "@/components/overview/modals/group-form-modal"
 import ExamScheduleModal from "@/components/overview/modals/exam-schedule-modal"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
-import { useState, useEffect } from "react"
-import { today, getLocalTimeZone } from '@internationalized/date'
+import { useState, useEffect, useMemo } from "react"
+import { useStudentProfiles } from "@/hooks/use-student-profiles"
 import { LearnersTable } from "@/components/course/learner-table"
 import { useRouter } from "nextjs-toploader/app"
 import CourseUpdateModal from "@/components/overview/modals/course-update-modal"
@@ -27,7 +27,9 @@ export default function CoursePage() {
     const params = useSearchParams()
     const _id = params.get('id')
     const { data, error, isLoading } = useFetch<ServerResponse<CourseResponse>>(`/course/${_id}`)
-    console.log(data?.data)
+    console.log('Course data:', data?.data)
+    console.log('Groups:', data?.data?.groups)
+    console.log('Groups length:', data?.data?.groups?.length)
     
     // Fetch instructor data when course data becomes available
     const [instructor, setInstructor] = useState<ServerResponse<UserResponse> | null>(null)
@@ -49,6 +51,44 @@ export default function CoursePage() {
                 })
         }
     }, [data?.data?.instructor_id])
+    
+    // Get all student IDs from all groups for avatar display
+    const allStudentIds = useMemo(() => {
+        if (!data?.data?.groups || data.data.groups.length === 0) {
+            console.log('No groups found or groups array is empty')
+            return []
+        }
+        const studentIds = data.data.groups.flatMap(group => {
+            console.log(`Group ${group.group_name} has ${group.students?.length || 0} students:`, group.students)
+            return group.students || []
+        })
+        console.log('All student IDs:', studentIds)
+        // Remove duplicates for randomization
+        return Array.from(new Set(studentIds))
+    }, [data?.data?.groups])
+
+    // Calculate total student count with debugging
+    const totalStudentCount = useMemo(() => {
+        if (!data?.data?.groups) {
+            console.log('No groups data available for student count')
+            return 0
+        }
+        const count = data.data.groups.reduce((total, group) => {
+            const groupStudentCount = group.students?.length || 0
+            console.log(`Group ${group.group_name}: ${groupStudentCount} students`)
+            return total + groupStudentCount
+        }, 0)
+        console.log('Total student count:', count)
+        return count
+    }, [data?.data?.groups])
+
+    // Fetch randomized student profiles for avatars
+    const { profiles: studentProfiles, isLoading: profilesLoading } = useStudentProfiles(
+        allStudentIds, 
+        true, // Enable randomization
+        5    // Maximum 5 avatars to display
+    )
+    
     const { isOpen, onOpen, onOpenChange } = useDisclosure()
     const { trigger, setTrigger } = useTrigger()
     const router = useRouter()
@@ -56,6 +96,12 @@ export default function CoursePage() {
     // State for modals
     const [groupToDelete, setGroupToDelete] = useState<string | null>(null)
     const [examToDelete, setExamToDelete] = useState<{ groupName: string, examSettingIndex: number } | null>(null)
+    
+    // State for bulk exam schedule deletion
+    const [selectedExamSchedules, setSelectedExamSchedules] = useState<Set<string>>(new Set())
+    const [selectAllExamSchedules, setSelectAllExamSchedules] = useState(false)
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+    const { isOpen: isBulkDeleteModalOpen, onOpen: onBulkDeleteModalOpen, onOpenChange: onBulkDeleteModalOpenChange } = useDisclosure()
     const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onOpenChange: onDeleteModalOpenChange } = useDisclosure()
     const { isOpen: isDeleteExamModalOpen, onOpen: onDeleteExamModalOpen, onOpenChange: onDeleteExamModalOpenChange } = useDisclosure()
     const { isOpen: isScheduleModalOpen, onOpen: onScheduleModalOpen, onOpenChange: onScheduleModalOpenChange } = useDisclosure()
@@ -70,6 +116,105 @@ export default function CoursePage() {
     const openDeleteExamConfirmation = (groupName: string, examSettingIndex: number) => {
         setExamToDelete({ groupName, examSettingIndex })
         onDeleteExamModalOpen()
+    }
+    
+    // Handle individual exam schedule selection
+    const handleExamScheduleSelect = (scheduleId: string, groupName: string, index: number) => {
+        const selectionKey = `${groupName}-${index}-${scheduleId}`
+        const newSelected = new Set(selectedExamSchedules)
+        
+        if (newSelected.has(selectionKey)) {
+            newSelected.delete(selectionKey)
+        } else {
+            newSelected.add(selectionKey)
+        }
+        
+        setSelectedExamSchedules(newSelected)
+        
+        // Update select all state based on current selections
+        const totalExamSchedules = getTotalExamScheduleCount()
+        setSelectAllExamSchedules(newSelected.size === totalExamSchedules && totalExamSchedules > 0)
+    }
+    
+    // Get total count of all exam schedules across all groups
+    const getTotalExamScheduleCount = () => {
+        if (!data?.data?.groups) return 0
+        return data.data.groups.reduce((total, group) => {
+            return total + (group.schedule_ids?.length || 0)
+        }, 0)
+    }
+    
+    // Handle select all exam schedules
+    const handleSelectAllExamSchedules = () => {
+        if (!data?.data?.groups) return
+        
+        const newSelected = new Set<string>()
+        
+        if (!selectAllExamSchedules) {
+            // Select all
+            data.data.groups.forEach(group => {
+                group.schedule_ids?.forEach((scheduleId, index) => {
+                    const selectionKey = `${group.group_name}-${index}-${scheduleId}`
+                    newSelected.add(selectionKey)
+                })
+            })
+        }
+        // If selectAllExamSchedules is true, newSelected remains empty (deselect all)
+        
+        setSelectedExamSchedules(newSelected)
+        setSelectAllExamSchedules(!selectAllExamSchedules)
+    }
+    
+    // Handle bulk delete exam schedules
+    const handleBulkDeleteExamSchedules = async () => {
+        if (selectedExamSchedules.size === 0) {
+            toast.warning('No exam schedules selected')
+            return
+        }
+        
+        setIsBulkDeleting(true)
+        
+        try {
+            const deletePromises: Promise<any>[] = []
+            
+            // Group selections by group name for efficient processing
+            const selectionsByGroup = new Map<string, Array<{ index: number; scheduleId: string }>>()
+            
+            selectedExamSchedules.forEach(selectionKey => {
+                const [groupName, indexStr, scheduleId] = selectionKey.split('-')
+                const index = parseInt(indexStr, 10)
+                
+                if (!selectionsByGroup.has(groupName)) {
+                    selectionsByGroup.set(groupName, [])
+                }
+                selectionsByGroup.get(groupName)!.push({ index, scheduleId })
+            })
+            
+            // Sort by index in descending order to avoid index shifting issues
+            selectionsByGroup.forEach((selections, groupName) => {
+                selections.sort((a, b) => b.index - a.index)
+                
+                selections.forEach(({ index }) => {
+                    deletePromises.push(
+                        clientAPI.delete(`/course/${_id}/group/${groupName}/exam-setting/${index}`)
+                    )
+                })
+            })
+            
+            await Promise.all(deletePromises)
+            
+            toast.success(`Successfully deleted ${selectedExamSchedules.size} exam schedule(s)`)
+            setSelectedExamSchedules(new Set())
+            setSelectAllExamSchedules(false)
+            setTrigger(!trigger)
+            onBulkDeleteModalOpenChange()
+            
+        } catch (error: any) {
+            console.error('Error during bulk delete:', error)
+            toast.error('Failed to delete some exam schedules')
+        } finally {
+            setIsBulkDeleting(false)
+        }
     }
 
     const handleDeleteGroup = async () => {
@@ -230,22 +375,61 @@ export default function CoursePage() {
 
                                         {group.schedule_ids && group.schedule_ids.length > 0 && (
                                             <div className="mt-4">
-                                                <h3 className="text-lg font-semibold mb-4">Scheduled Exams</h3>
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <h3 className="text-lg font-semibold">Scheduled Exams</h3>
+                                                    
+                                                    {/* Bulk Selection Controls */}
+                                                    <div className="flex items-center gap-3">
+                                                        <Checkbox
+                                                            isSelected={selectAllExamSchedules}
+                                                            onValueChange={handleSelectAllExamSchedules}
+                                                            color="primary"
+                                                            size="sm"
+                                                        >
+                                                            Select All
+                                                        </Checkbox>
+                                                        
+                                                        {selectedExamSchedules.size > 0 && (
+                                                            <>
+                                                                <Chip color="primary" variant="flat" size="sm">
+                                                                    {selectedExamSchedules.size} selected
+                                                                </Chip>
+                                                                <Button
+                                                                    color="danger"
+                                                                    variant="flat"
+                                                                    size="sm"
+                                                                    startContent={<MdiBin />}
+                                                                    onPress={onBulkDeleteModalOpen}
+                                                                    isLoading={isBulkDeleting}
+                                                                >
+                                                                    Delete Selected
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {group.schedule_ids.map((scheduleId, idx) => (
-                                                        <ExamScheduleCard
-                                                            courseId={_id as string}
-                                                            key={idx}
-                                                            groupId={group._id}
-                                                            setting={{
-                                                                _id: scheduleId,
-                                                                schedule_id: scheduleId
-                                                            }}
-                                                            index={idx}
-                                                            groupName={group.group_name}
-                                                            onDelete={openDeleteExamConfirmation}
-                                                        />
-                                                    ))}
+                                                    {group.schedule_ids.map((scheduleId, idx) => {
+                                                        const selectionKey = `${group.group_name}-${idx}-${scheduleId}`
+                                                        return (
+                                                            <ExamScheduleCard
+                                                                courseId={_id as string}
+                                                                key={idx}
+                                                                groupId={group._id}
+                                                                setting={{
+                                                                    _id: scheduleId,
+                                                                    schedule_id: scheduleId
+                                                                }}
+                                                                index={idx}
+                                                                groupName={group.group_name}
+                                                                onDelete={openDeleteExamConfirmation}
+                                                                // Selection props
+                                                                isSelected={selectedExamSchedules.has(selectionKey)}
+                                                                onSelectionChange={() => handleExamScheduleSelect(scheduleId, group.group_name, idx)}
+                                                                showCheckbox={true}
+                                                            />
+                                                        )
+                                                    })}
                                                 </div>
                                             </div>
                                         )}
@@ -272,11 +456,44 @@ export default function CoursePage() {
             </div>
             <div className="flex flex-col gap-y-6 basis-3/12">
                 <AvatarGroup size="md" isBordered max={5}>
-                    {
-                        Array.from({ length: Math.random() * 10 + 1 }).map((_, idx) => (
-                            <Avatar key={idx} src="https://pic.re/image" />
+                    {isLoading || !data?.data ? (
+                        // Show loading skeleton avatars when main data is loading
+                        Array.from({ length: 3 }).map((_, idx) => (
+                            <Avatar key={`main-loading-${idx}`} className="animate-pulse bg-default-300" />
                         ))
-                    }
+                    ) : profilesLoading && totalStudentCount > 0 ? (
+                        // Show loading skeleton avatars when profiles are loading
+                        Array.from({ length: Math.min(5, totalStudentCount) }).map((_, idx) => (
+                            <Avatar key={`profile-loading-${idx}`} className="animate-pulse bg-default-300" />
+                        ))
+                    ) : studentProfiles.length > 0 ? (
+                        // Show randomized student avatars with profile data
+                        <>
+                            {studentProfiles.map((profile, idx) => (
+                                <Tooltip key={`${profile._id}-${idx}`} content={`${profile.username} (Random Student)`} placement="top">
+                                    <Avatar 
+                                        src={profile.profile_url}
+                                        name={profile.username.slice(0, 2).toUpperCase()}
+                                        className="cursor-pointer hover:scale-110 transition-transform ring-2 ring-primary/20"
+                                    />
+                                </Tooltip>
+                            ))}
+                            {/* Show total student count if there are more than 5 students */}
+                            {totalStudentCount > 5 && (
+                                <Tooltip content={`${totalStudentCount - 5} more students`} placement="top">
+                                    <Avatar 
+                                        name={`+${totalStudentCount - 5}`}
+                                        className="bg-primary text-white text-xs cursor-pointer hover:scale-110 transition-transform"
+                                    />
+                                </Tooltip>
+                            )}
+                        </>
+                    ) : (
+                        // Show message when no students are enrolled
+                        <div className="text-xs text-default-500 px-2 py-1 bg-default-100 rounded-lg">
+                            {totalStudentCount === 0 ? 'No students enrolled' : 'Loading student profiles...'}
+                        </div>
+                    )}
                 </AvatarGroup>
                 <Accordion className="p-0" isCompact variant="splitted">
                     <AccordionItem
@@ -363,6 +580,16 @@ export default function CoursePage() {
                         subHeader="Are you sure you want to delete this course?"
                         content={`This will permanently delete the course "${data.data.course_name}" and all associated groups, exams, and student data. This action cannot be undone.`}
                         onAction={handleDeleteCourse}
+                    />
+                </Modal>
+
+                {/* Bulk exam schedule deletion confirmation modal */}
+                <Modal isOpen={isBulkDeleteModalOpen} onOpenChange={onBulkDeleteModalOpenChange}>
+                    <ConfirmModal
+                        header="Delete Selected Exam Schedules"
+                        subHeader={`Are you sure you want to delete ${selectedExamSchedules.size} exam schedule(s)?`}
+                        content="This will permanently delete the selected examination schedules from their respective groups. This action cannot be undone."
+                        onAction={handleBulkDeleteExamSchedules}
                     />
                 </Modal>
 

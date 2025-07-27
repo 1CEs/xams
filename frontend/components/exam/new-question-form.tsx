@@ -61,9 +61,10 @@ const NewQuestionForm = ({ examination_id }: Props) => {
                 initialValues={{
                     question: '',
                     type: 'mc',
+                    isRandomChoices: true,
                     choices: [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
                     isTrue: false,
-                    expectedAnswer: '',
+                    expectedAnswers: [''],
                     maxWords: 0,
                     score: 1
                 }}
@@ -95,7 +96,7 @@ const NewQuestionForm = ({ examination_id }: Props) => {
                                 type: 'mc',
                                 choices: [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
                                 isTrue: false,
-                                expectedAnswer: '',
+                                expectedAnswers: [''],
                                 maxWords: 0,
                                 score: 1
                             }
