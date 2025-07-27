@@ -306,74 +306,79 @@ export default function SubmittedExamPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Button
-          isIconOnly
-          variant="light"
-          color="default"
-          onPress={() => router.back()}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Exam Submissions
-          </h1>
-          <p className="text-default-600">{examSchedule.data.title}</p>
-        </div>
-        <div className="text-right">
-          <Chip color="secondary" variant="flat">
-            {submissions.length} Submissions
-          </Chip>
-        </div>
-      </div>
-
-      {/* Exam Info Card */}
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex justify-between items-center w-full">
-            <div>
-              <h3 className="text-lg font-semibold">{examSchedule.data.title}</h3>
-              {examSchedule.data.description && (
-                <p className="text-sm text-default-600">{examSchedule.data.description}</p>
-              )}
-            </div>
-            <div className="text-right space-y-1">
-              <div className="text-sm text-default-600">
-                <span className="font-medium">{examSchedule.data.question_count}</span> Questions
-              </div>
-              <div className="text-sm text-default-600">
-                <span className="font-medium">{examSchedule.data.allowed_attempts}</span> Max Attempts
-              </div>
-            </div>
+    <div className="min-h-screen p-4 sm:p-6 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+          <Button
+            isIconOnly
+            variant="light"
+            color="default"
+            onPress={() => router.back()}
+            className="self-start sm:self-center"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              Exam Submissions
+            </h1>
+            <p className="text-sm sm:text-base text-default-600 mt-1 truncate">{examSchedule.data.title}</p>
           </div>
-        </CardHeader>
-      </Card>
-      
-      {/* Submissions Table */}
-      <Card>
-        <CardHeader>
-          <h3 className="text-lg font-semibold">Student Submissions</h3>
-        </CardHeader>
-        <CardBody>
-          {submissions.length > 0 ? (
-            <SubmittedTable 
-              submissions={submissions}
-              onView={handleView}
-              onGrade={handleGrade}
-            />
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-default-600 mb-4">No submissions found for this exam</p>
-              <p className="text-sm text-default-500">
-                Students haven't submitted any attempts yet.
-              </p>
+          <div className="self-start sm:self-center">
+            <Chip color="secondary" variant="flat" size="sm" className="text-xs sm:text-sm">
+              {submissions.length} Submissions
+            </Chip>
+          </div>
+        </div>
+
+        {/* Exam Info Card */}
+        <Card className="mb-6">
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base sm:text-lg font-semibold truncate">{examSchedule.data.title}</h3>
+                {examSchedule.data.description && (
+                  <p className="text-xs sm:text-sm text-default-600 mt-1">{examSchedule.data.description}</p>
+                )}
+              </div>
+              <div className="flex flex-row sm:flex-col gap-4 sm:gap-1 text-center sm:text-right">
+                <div className="text-xs sm:text-sm text-default-600">
+                  <span className="font-medium">{examSchedule.data.question_count}</span> Questions
+                </div>
+                <div className="text-xs sm:text-sm text-default-600">
+                  <span className="font-medium">{examSchedule.data.allowed_attempts}</span> Max Attempts
+                </div>
+              </div>
             </div>
-          )}
-        </CardBody>
-      </Card>
+          </CardHeader>
+        </Card>
+      
+        {/* Submissions Table */}
+        <Card>
+          <CardHeader className="p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold">Student Submissions</h3>
+          </CardHeader>
+          <CardBody className="p-4 sm:p-6">
+            {submissions.length > 0 ? (
+              <div className="overflow-x-auto">
+                <SubmittedTable 
+                  submissions={submissions}
+                  onView={handleView}
+                  onGrade={handleGrade}
+                />
+              </div>
+            ) : (
+              <div className="text-center py-8 px-4">
+                <p className="text-sm sm:text-base text-default-600 mb-4">No submissions found for this exam</p>
+                <p className="text-xs sm:text-sm text-default-500">
+                  Students haven't submitted any attempts yet.
+                </p>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      </div>
 
       {/* Floating Action Button */}
       <Button
@@ -389,32 +394,46 @@ export default function SubmittedExamPage() {
       </Button>
 
       {/* AI Validation Modal */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} size={isSelectingLearners ? '2xl' : 'md'}>
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={closeModal} 
+        size={isSelectingLearners ? '2xl' : 'md'}
+        scrollBehavior="inside"
+        classNames={{
+          base: "mx-4",
+          header: "p-4 sm:p-6",
+          body: "p-4 sm:p-6",
+          footer: "p-4 sm:p-6"
+        }}
+      >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
-            {isSelectingLearners ? 'Select Learners' : 'AI Essay Grading Assistant'}
+            <h3 className="text-base sm:text-lg font-semibold">
+              {isSelectingLearners ? 'Select Learners' : 'AI Essay Grading Assistant'}
+            </h3>
           </ModalHeader>
           <ModalBody>
             {isSelectingLearners ? (
-              <div className="max-h-[60vh] overflow-y-auto">
+              <div className="max-h-[50vh] sm:max-h-[60vh] overflow-y-auto">
                 <div className="flex flex-col gap-2">
                   {submissions.map((learner) => (
-                    <div key={learner._id} className="flex items-center gap-4 p-2 hover:bg-default-100 rounded-lg">
+                    <div key={learner._id} className="flex items-center gap-3 sm:gap-4 p-2 hover:bg-default-100 rounded-lg">
                       <Checkbox
                         color="secondary"
                         isSelected={selectedLearners.has(learner._id)}
                         onValueChange={() => toggleLearnerSelection(learner._id)}
                         aria-label={`Select ${learner.username}`}
+                        size="sm"
                       />
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <img
                           src={learner.profile_url}
                           alt={learner.username}
-                          className="w-8 h-8 rounded-full"
+                          className="w-8 h-8 rounded-full flex-shrink-0"
                         />
-                        <div>
-                          <p className="font-medium">{learner.username}</p>
-                          <p className="text-xs text-gray-500">{learner.email}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm sm:text-base truncate">{learner.username}</p>
+                          <p className="text-xs text-gray-500 truncate">{learner.email}</p>
                         </div>
                       </div>
                     </div>
@@ -423,25 +442,27 @@ export default function SubmittedExamPage() {
               </div>
             ) : (
               <>
-                <p>Generate AI grading suggestions for essay questions:</p>
-                <div className="flex flex-col gap-2 mt-2">
+                <p className="text-sm sm:text-base mb-4">Generate AI grading suggestions for essay questions:</p>
+                <div className="flex flex-col gap-3">
                   <Button 
                     color="secondary" 
                     variant={validationScope === 'all' ? 'solid' : 'bordered'}
                     onPress={() => handleEssayGrading('all')}
-                    className="justify-start"
+                    className="justify-start h-auto py-3"
                     isLoading={isLoadingSubmissions && validationScope === 'all'}
+                    size="sm"
                   >
-                    All Submissions
+                    <span className="text-sm">All Submissions</span>
                   </Button>
                   <Button 
                     color="secondary" 
                     variant={validationScope === 'ungraded' ? 'solid' : 'bordered'}
                     onPress={() => handleEssayGrading('ungraded')}
-                    className="justify-start"
+                    className="justify-start h-auto py-3"
                     isLoading={isLoadingSubmissions && validationScope === 'ungraded'}
+                    size="sm"
                   >
-                    Ungraded Submissions Only
+                    <span className="text-sm">Ungraded Submissions Only</span>
                   </Button>
                   <Button 
                     variant={validationScope === 'selected' ? 'solid' : 'bordered'}

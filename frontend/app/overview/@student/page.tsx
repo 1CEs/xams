@@ -6,13 +6,16 @@ import AvailableCourses from "@/components/overview/available-courses";
 
 export default function StudentOverview() {
     return (
-        <div className="p-6">
-            
+        <div className="p-2 sm:p-4 md:p-6 min-h-screen">
             {/* Dashboard section showing enrolled courses */}
-            <StudentDashboard />
+            <div className="mb-6 md:mb-8">
+                <StudentDashboard />
+            </div>
             
             {/* Section for available courses to enroll */}
-            <AvailableCourses />
+            <div className="mt-4 md:mt-6">
+                <AvailableCourses />
+            </div>
         </div>
     );
 }

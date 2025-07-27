@@ -131,9 +131,9 @@ export default function CoursePage() {
     }
 
     return (
-        <div className="flex size-full gap-y-8 gap-x-14 px-32">
-            <div className="flex flex-col basis-9/12 gap-y-4">
-                <div className="relative h-[24rem] w-full rounded-lg overflow-hidden">
+        <div className="flex flex-col lg:flex-row size-full gap-6 lg:gap-8 xl:gap-14 px-4 sm:px-8 md:px-16 lg:px-24 xl:px-32">
+            <div className="flex flex-col lg:basis-9/12 gap-y-4">
+                <div className="relative h-48 sm:h-64 md:h-80 lg:h-[24rem] w-full rounded-lg overflow-hidden">
                     <Image
                         unoptimized
                         className="h-full w-full object-cover"
@@ -143,20 +143,20 @@ export default function CoursePage() {
                         alt="course background"
                     />
                     <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/25" />
-                    <div className="absolute inset-0 p-8 flex flex-col justify-start">
+                    <div className="absolute inset-0 p-4 sm:p-6 md:p-8 flex flex-col justify-start">
                         <div className="h-full w-full flex flex-col justify-between">
-                            <div className="space-y-3">
-                                <h1 className="text-4xl font-bold text-white">{data.data.course_name}</h1>
-                                <p className="text-white/90 indent-16 text-justify">{data.data.description}</p>
+                            <div className="space-y-2 sm:space-y-3">
+                                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">{data.data.course_name}</h1>
+                                <p className="text-sm sm:text-base text-white/90 text-justify line-clamp-3 sm:line-clamp-none">{data.data.description}</p>
                             </div>
 
-                            <div className="flex items-center justify-between gap-4 mt-4">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mt-4">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-white font-bold">{instructor?.data.info.first_name} {instructor?.data.info.last_name}</span>
+                                    <span className="text-sm sm:text-base text-white font-bold">{instructor?.data.info.first_name} {instructor?.data.info.last_name}</span>
                                 </div>
                                 <div className="flex items-center gap-2 bg-background/70 p-2 rounded-xl">
-                                    <span className="text-white text-sm">Groups:</span>
-                                    <span className="text-white text-sm">{data.data.groups?.length || 0}</span>
+                                    <span className="text-white text-xs sm:text-sm">Groups:</span>
+                                    <span className="text-white text-xs sm:text-sm">{data.data.groups?.length || 0}</span>
                                 </div>
                             </div>
                         </div>
@@ -167,12 +167,12 @@ export default function CoursePage() {
                         data.data.groups.map((group: IGroup, index: number) => (
                             <Tab key={index} title={group.group_name}>
                                 <div className="">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <div>
-                                            <h2 className="text-xl font-bold">{group.group_name}</h2>
-                                            <div className="flex gap-2 mt-1">
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4">
+                                        <div className="flex-1 min-w-0">
+                                            <h2 className="text-lg sm:text-xl font-bold truncate">{group.group_name}</h2>
+                                            <div className="flex flex-wrap gap-2 mt-1">
                                                 <span className="text-xs bg-secondary/20 px-2 py-1 rounded-full">
-                                                    Join Code: {group.join_code}
+                                                    Join Code: {group.join_code || 'No password'}
                                                 </span>
                                                 <span className="text-xs bg-primary/20 px-2 py-1 rounded-full">
                                                     {group.students.length} students
@@ -228,18 +228,18 @@ export default function CoursePage() {
                                             )}
                                         </div>
 
-                                        {group.exam_setting && group.exam_setting.length > 0 && (
+                                        {group.schedule_ids && group.schedule_ids.length > 0 && (
                                             <div className="mt-4">
                                                 <h3 className="text-lg font-semibold mb-4">Scheduled Exams</h3>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {group.exam_setting.map((setting, idx) => (
+                                                    {group.schedule_ids.map((scheduleId, idx) => (
                                                         <ExamScheduleCard
                                                             courseId={_id as string}
                                                             key={idx}
                                                             groupId={group._id}
                                                             setting={{
-                                                                _id: setting._id,
-                                                                schedule_id: setting.schedule_id
+                                                                _id: scheduleId,
+                                                                schedule_id: scheduleId
                                                             }}
                                                             index={idx}
                                                             groupName={group.group_name}
@@ -270,14 +270,16 @@ export default function CoursePage() {
                     )}
                 </Tabs>
             </div>
-            <div className="flex flex-col gap-y-6 basis-3/12">
-                <AvatarGroup size="md" isBordered max={5}>
-                    {
-                        Array.from({ length: Math.random() * 10 + 1 }).map((_, idx) => (
-                            <Avatar key={idx} src="https://pic.re/image" />
-                        ))
-                    }
-                </AvatarGroup>
+            <div className="flex flex-col gap-y-4 sm:gap-y-6 lg:basis-3/12 mt-6 lg:mt-0">
+                <div className="flex justify-center lg:justify-start">
+                    <AvatarGroup size="sm" className="sm:size-md" isBordered max={5}>
+                        {
+                            Array.from({ length: Math.random() * 10 + 1 }).map((_, idx) => (
+                                <Avatar key={idx} src="https://pic.re/image" className="w-8 h-8 sm:w-10 sm:h-10" />
+                            ))
+                        }
+                    </AvatarGroup>
+                </div>
                 <Accordion className="p-0" isCompact variant="splitted">
                     <AccordionItem
                         startContent={
@@ -286,25 +288,30 @@ export default function CoursePage() {
                                 variant="light"
                                 isIconOnly
                                 onPress={onOpen}
+                                className="min-w-unit-8 w-8 h-8"
                             >
-                                <MingcuteAddFill />
+                                <MingcuteAddFill className="text-sm" />
                             </Button>
                         }
                         key={1}
                         aria-label="Group"
-                        title="Group"
+                        title={<span className="text-sm sm:text-base">Group</span>}
+                        classNames={{
+                            title: "text-sm sm:text-base",
+                            content: "text-xs sm:text-sm"
+                        }}
                     >
                         {data.data.groups && data.data.groups.length > 0 ? (
                             <div className="flex flex-col gap-y-2">
                                 {data.data.groups.map((group: IGroup, index: number) => (
-                                    <div key={index} className="p-2 border border-secondary/50 rounded-md">
-                                        <div className="flex justify-between items-center">
-                                            <h3 className="text-sm font-semibold">{group.group_name}</h3>
-                                            <div className="flex items-center gap-x-2">
-                                                <span className="text-xs bg-secondary/20 px-2 py-1 rounded-full">
-                                                    Code: {group.join_code}
+                                    <div key={index} className="p-2 sm:p-3 border border-secondary/50 rounded-md">
+                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                            <h3 className="text-xs sm:text-sm font-semibold truncate">{group.group_name}</h3>
+                                            <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                                                <span className="text-xs bg-secondary/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
+                                                    Code: {group.join_code || 'No password'}
                                                 </span>
-                                                <span className="text-xs bg-primary/20 px-2 py-1 rounded-full">
+                                                <span className="text-xs bg-primary/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                                                     {group.students.length} students
                                                 </span>
                                                 <Tooltip content={`Delete ${group.group_name}`}>
@@ -314,8 +321,9 @@ export default function CoursePage() {
                                                         variant="light"
                                                         color="danger"
                                                         onPress={() => openDeleteConfirmation(group.group_name)}
+                                                        className="min-w-unit-6 w-6 h-6 sm:min-w-unit-8 sm:w-8 sm:h-8"
                                                     >
-                                                        <MdiBin fontSize={16} />
+                                                        <MdiBin className="text-xs sm:text-sm" />
                                                     </Button>
                                                 </Tooltip>
                                             </div>

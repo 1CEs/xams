@@ -17,7 +17,7 @@ export default function OverviewLayout({
     const { user } = useUserStore()
     console.log(user)
     return (
-        <div className="size-full pt-12 px-14">
+        <div className="size-full pt-8 sm:pt-12 px-4 sm:px-8 md:px-12 lg:px-14">
             <Breadcrumb />
             <Suspense fallback={
                 <Loading />

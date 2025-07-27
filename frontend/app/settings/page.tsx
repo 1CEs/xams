@@ -128,72 +128,176 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex justify-center">
-      <Card className="max-w-md w-full">
-        <CardHeader className="font-bold text-xl flex justify-between items-center">
-          User Settings
-          <Switch
-            size="sm"
-            isSelected={isEditing}
-            onValueChange={setIsEditing}
-          >
-            Edit
-          </Switch>
-        </CardHeader>
-        <CardBody>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Input
-              type="text"
-              label="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              isDisabled={!isEditing}
-            />
-            <Input
-              type="email"
-              label="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              isDisabled={!isEditing}
-            />
-            <Input
-              type="password"
-              label="Password"
-              placeholder="Leave blank to keep current password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              isDisabled={!isEditing}
-            />
-            <Input
-              type="text"
-              label="Profile Image URL"
-              value={profileUrl}
-              onChange={(e) => setProfileUrl(e.target.value)}
-              isDisabled={!isEditing}
-            />
-            
-            <div className="mb-4">
-              <Input
-                type="text"
-                label="Birth Date (MM/DD/YYYY)"
-                value={birthDateString}
-                onChange={isEditing ? handleManualDateChange : undefined}
-                isDisabled={!isEditing}
-                placeholder="MM/DD/YYYY"
-              />
-              {isEditing && (
-                <div className="mt-2 text-sm text-gray-500">
-                  Enter date in MM/DD/YYYY format
-                </div>
-              )}
+    <div className="min-h-screen p-4 sm:p-6 md:p-8">
+      <div className="max-w-2xl mx-auto">
+        {/* Page Header */}
+        <div className="mb-6 md:mb-8 text-center">
+          <h1 className="text-2xl sm:text-3xl font-bold text-default-700 mb-2">Account Settings</h1>
+          <p className="text-default-500 text-sm sm:text-base">Manage your profile information and preferences</p>
+        </div>
+
+        <Card className="w-full">
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
+              <div>
+                <h2 className="font-bold text-xl sm:text-2xl text-default-700">Profile Settings</h2>
+                <p className="text-default-500 text-sm mt-1">Update your personal information</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-default-600">{isEditing ? 'Editing' : 'View Only'}</span>
+                <Switch
+                  size="sm"
+                  isSelected={isEditing}
+                  onValueChange={setIsEditing}
+                  color="primary"
+                >
+                  Edit Mode
+                </Switch>
+              </div>
             </div>
-            
-            <Button color="secondary" isLoading={loading} type="submit" isDisabled={!isEditing}>
-              Update
-            </Button>
-          </form>
-        </CardBody>
-      </Card>
+          </CardHeader>
+          <CardBody className="p-4 sm:p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Basic Information Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-default-700 border-b border-default-200 pb-2">
+                  Basic Information
+                </h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    type="text"
+                    label="Username"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    isDisabled={!isEditing}
+                    size="sm"
+                    classNames={{
+                      input: "text-sm sm:text-base",
+                      label: "text-sm sm:text-base"
+                    }}
+                  />
+                  <Input
+                    type="email"
+                    label="Email Address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    isDisabled={!isEditing}
+                    size="sm"
+                    classNames={{
+                      input: "text-sm sm:text-base",
+                      label: "text-sm sm:text-base"
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Security Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-default-700 border-b border-default-200 pb-2">
+                  Security
+                </h3>
+                
+                <Input
+                  type="password"
+                  label="New Password"
+                  placeholder="Leave blank to keep current password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  isDisabled={!isEditing}
+                  size="sm"
+                  description="Enter a new password only if you want to change it"
+                  classNames={{
+                    input: "text-sm sm:text-base",
+                    label: "text-sm sm:text-base",
+                    description: "text-xs sm:text-sm"
+                  }}
+                />
+              </div>
+
+              {/* Profile Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-default-700 border-b border-default-200 pb-2">
+                  Profile Details
+                </h3>
+                
+                <Input
+                  type="url"
+                  label="Profile Image URL"
+                  value={profileUrl}
+                  onChange={(e) => setProfileUrl(e.target.value)}
+                  isDisabled={!isEditing}
+                  size="sm"
+                  placeholder="https://example.com/your-image.jpg"
+                  classNames={{
+                    input: "text-sm sm:text-base",
+                    label: "text-sm sm:text-base"
+                  }}
+                />
+                
+                <div className="space-y-2">
+                  <Input
+                    type="text"
+                    label="Birth Date"
+                    value={birthDateString}
+                    onChange={isEditing ? handleManualDateChange : undefined}
+                    isDisabled={!isEditing}
+                    placeholder="MM/DD/YYYY"
+                    size="sm"
+                    classNames={{
+                      input: "text-sm sm:text-base",
+                      label: "text-sm sm:text-base"
+                    }}
+                  />
+                  {isEditing && (
+                    <p className="text-xs sm:text-sm text-default-500 ml-1">
+                      Enter date in MM/DD/YYYY format
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-default-200">
+                <Button 
+                  color="secondary" 
+                  isLoading={loading} 
+                  type="submit" 
+                  isDisabled={!isEditing}
+                  className="w-full sm:w-auto min-w-[120px]"
+                  size="md"
+                >
+                  {loading ? 'Updating...' : 'Update Profile'}
+                </Button>
+                {isEditing && (
+                  <Button 
+                    variant="flat" 
+                    onPress={() => {
+                      setIsEditing(false);
+                      // Reset form to original values
+                      if (user) {
+                        setName(user.username || "");
+                        setEmail(user.email || "");
+                        setPassword("");
+                        setProfileUrl(user.profile_url || "");
+                        if (user.info?.birth) {
+                          const date = new Date(user.info.birth);
+                          setBirthDate(new CalendarDate(date.getFullYear(), date.getMonth() + 1, date.getDate()));
+                          setBirthDateString(date.toLocaleDateString());
+                        }
+                      }
+                    }}
+                    className="w-full sm:w-auto"
+                    size="md"
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
+            </form>
+          </CardBody>
+        </Card>
+      </div>
     </div>
   );
 }

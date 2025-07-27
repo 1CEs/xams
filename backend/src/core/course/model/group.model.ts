@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { SettingSchema } from "./setting.model";
 import { IGroup } from "./interface/igroup";
 
 const { Schema } = mongoose
@@ -17,8 +16,9 @@ export const GroupSchema = new Schema<IGroup>({
         type: [Schema.Types.String],
         required: true
     },
-    exam_setting: {
-        type: [SettingSchema],
-        required: true
+    schedule_ids: {
+        type: [Schema.Types.String],
+        required: true,
+        default: []
     }
 }, { _id: true })

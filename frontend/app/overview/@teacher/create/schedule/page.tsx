@@ -287,6 +287,86 @@ export default function CreateSchedulePage() {
     }
   }
 
+  // IP Range validation and helper functions
+  const validateIPAddress = (ip: string): boolean => {
+    const ipv4Regex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+    return ipv4Regex.test(ip)
+  }
+
+  const validateCIDR = (cidr: string): boolean => {
+    const cidrRegex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(3[0-2]|[12]?[0-9])$/
+    return cidrRegex.test(cidr)
+  }
+
+  const validateIPRange = (range: string): boolean => {
+    const rangeRegex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)-(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+    return rangeRegex.test(range)
+  }
+
+  const validateIPEntry = (entry: string): { isValid: boolean; error: string } => {
+    if (!entry || entry.trim() === '') {
+      return { isValid: false, error: 'IP entry cannot be empty' }
+    }
+
+    const trimmedEntry = entry.trim()
+
+    // Check for single IP address
+    if (validateIPAddress(trimmedEntry)) {
+      return { isValid: true, error: '' }
+    }
+
+    // Check for CIDR notation
+    if (validateCIDR(trimmedEntry)) {
+      return { isValid: true, error: '' }
+    }
+
+    // Check for IP range (IP1-IP2)
+    if (validateIPRange(trimmedEntry)) {
+      return { isValid: true, error: '' }
+    }
+
+    return { 
+      isValid: false, 
+      error: 'Invalid format. Use single IP (192.168.1.1), CIDR (192.168.1.0/24), or range (192.168.1.1-192.168.1.10)' 
+    }
+  }
+
+  const addIpRange = () => {
+    const validation = validateIPEntry(newIpRange)
+    
+    if (!validation.isValid) {
+      setIpValidationError(validation.error)
+      return
+    }
+
+    if (ipRanges.includes(newIpRange.trim())) {
+      setIpValidationError('This IP range is already added')
+      return
+    }
+
+    setIpRanges(prev => [...prev, newIpRange.trim()])
+    setNewIpRange('')
+    setIpValidationError('')
+  }
+
+  const removeIpRange = (rangeToRemove: string) => {
+    setIpRanges(prev => prev.filter(range => range !== rangeToRemove))
+  }
+
+  const addPresetIpRange = (preset: string) => {
+    if (!ipRanges.includes(preset)) {
+      setIpRanges(prev => [...prev, preset])
+    }
+  }
+
+  // Common IP range presets for convenience
+  const ipRangePresets = [
+    { label: 'Local Network', range: '192.168.1.0/24' },
+    { label: 'Campus Network', range: '10.0.0.0/8' },
+    { label: 'Private Class B', range: '172.16.0.0/12' },
+    { label: 'Localhost', range: '127.0.0.1' }
+  ]
+
   const removeSelectedQuestion = (questionId: string, examId: string) => {
     setSelectedQuestions(prev =>
       prev.filter(q => !(q._id === questionId && q.examId === examId))
@@ -369,6 +449,12 @@ export default function CreateSchedulePage() {
     randomize_choice: true,
     question_count: 0  // Number of questions to randomly select
   })
+
+  // IP Blocker state
+  const [ipRanges, setIpRanges] = useState<string[]>([])
+  const [newIpRange, setNewIpRange] = useState('')
+  const [enableIpRestriction, setEnableIpRestriction] = useState(false)
+  const [ipValidationError, setIpValidationError] = useState('')
 
   // Fetch available examinations and groups
   useEffect(() => {
@@ -646,6 +732,13 @@ export default function CreateSchedulePage() {
       return
     }
 
+    // Validate IP restriction if enabled
+    if (enableIpRestriction && ipRanges.length === 0) {
+      setError('Please add at least one IP range for IP restriction')
+      setSubmitting(false)
+      return
+    }
+
     try {
       // Format dates to ISO strings for API
       const formattedForm = {
@@ -663,7 +756,8 @@ export default function CreateSchedulePage() {
           open_time: formattedForm.open_time,
           close_time: formattedForm.close_time,
         }),
-        ip_range: formattedForm.ip_range || '',
+        // IP range handling - use new format if IP restriction is enabled
+        ip_range: enableIpRestriction ? ipRanges.join(',') : '',
         // Only include exam code if enabled
         ...(enableExamCode && formattedForm.exam_code && {
           exam_code: formattedForm.exam_code,
@@ -709,8 +803,14 @@ export default function CreateSchedulePage() {
           // Optional features status
           features_enabled: {
             scheduling: enableScheduling,
-            exam_code: enableExamCode
-          }
+            exam_code: enableExamCode,
+            ip_restriction: enableIpRestriction
+          },
+          // IP restriction metadata
+          ip_restriction_metadata: enableIpRestriction ? {
+            total_ranges: ipRanges.length,
+            ip_ranges: ipRanges
+          } : null
         }
       }
 
@@ -1124,16 +1224,111 @@ export default function CreateSchedulePage() {
                   <div className="bg-default-50 p-4 pt-0 rounded-lg">
                     <h3 className="text-lg font-semibold mb-4">Exam Options</h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <Input
-                        type="text"
-                        label="IP Range (Optional)"
-                        placeholder="e.g., 192.168.1.0/24"
-                        value={examSettingForm.ip_range}
-                        onChange={(e) => setExamSettingForm({ ...examSettingForm, ip_range: e.target.value })}
-                        isDisabled={submitting}
-                      />
+                    {/* IP Restriction Section */}
+                    <div className="space-y-4 mb-4">
+                      <div className="flex items-center justify-between p-3 bg-default-100 rounded-xl">
+                        <div>
+                          <h4 className="font-medium text-sm">IP Address Restriction</h4>
+                          <p className="text-xs text-default-500">Limit exam access to specific IP addresses or ranges</p>
+                        </div>
+                        <Switch
+                          color="secondary"
+                          isSelected={enableIpRestriction}
+                          onValueChange={setEnableIpRestriction}
+                          isDisabled={submitting}
+                        />
+                      </div>
 
+                      {enableIpRestriction && (
+                        <div className="space-y-4 p-4 border border-default-200 rounded-lg">
+                          {/* Added IP Ranges List */}
+                          {ipRanges.length > 0 && (
+                            <div className="space-y-2">
+                              <h5 className="text-sm font-medium text-default-700">Allowed IP Ranges:</h5>
+                              <div className="space-y-2">
+                                {ipRanges.map((range, index) => (
+                                  <div key={index} className="flex items-center justify-between p-2 bg-success-50 border border-success-200 rounded-lg">
+                                    <span className="text-sm font-mono text-success-700">{range}</span>
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="light"
+                                      color="danger"
+                                      onPress={() => removeIpRange(range)}
+                                      isDisabled={submitting}
+                                    >
+                                      <MdiBin width={16} height={16} />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Add New IP Range */}
+                          <div className="space-y-3">
+                            <div className="flex gap-2">
+                              <Input
+                                type="text"
+                                placeholder="192.168.1.0/24 or 192.168.1.1-192.168.1.10 or 192.168.1.1"
+                                value={newIpRange}
+                                onChange={(e) => setNewIpRange(e.target.value)}
+                                isDisabled={submitting}
+                                isInvalid={!!ipValidationError}
+                                errorMessage={ipValidationError}
+                                className="flex-1"
+                                description="Enter a single IP, CIDR notation, or IP range"
+                              />
+                              <Button
+                                color="secondary"
+                                onPress={addIpRange}
+                                isDisabled={submitting || !newIpRange.trim()}
+                                className="px-6"
+                              >
+                                Add
+                              </Button>
+                            </div>
+
+                            {/* Preset IP Ranges */}
+                            <div className="space-y-2">
+                              <h6 className="text-xs font-medium text-default-600">Quick Add Common Ranges:</h6>
+                              <div className="flex flex-wrap gap-2">
+                                {ipRangePresets.map((preset, index) => (
+                                  <Button
+                                    key={index}
+                                    size="sm"
+                                    variant="flat"
+                                    color="secondary"
+                                    onPress={() => addPresetIpRange(preset.range)}
+                                    isDisabled={submitting || ipRanges.includes(preset.range)}
+                                    className="text-xs"
+                                  >
+                                    {preset.label}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Information */}
+                          <div className="p-3 bg-warning-50 border border-warning-200 rounded-lg">
+                            <p className="text-xs text-warning-700">
+                              ⚠️ <strong>Note:</strong> Students will only be able to access the exam from the specified IP addresses or ranges. Make sure to include all necessary IP addresses for your students.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {!enableIpRestriction && (
+                        <div className="p-3 bg-success-50 border border-success-200 rounded-lg">
+                          <p className="text-sm text-success-700">
+                            🌐 <strong>No IP Restriction:</strong> Students can access this exam from any IP address.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <Input
                         type="number"
                         label="Allowed Attempts"

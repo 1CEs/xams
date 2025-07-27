@@ -12,6 +12,7 @@ interface ExamScheduleDetail {
   close_time?: Date;
   allowed_attempts: number;
   course_name: string;
+  course_id: string;
   group_name: string;
   schedule_id: string;
   instructor_id: string;
@@ -49,9 +50,9 @@ export const useExamSchedules = () => {
         // For each enrolled course and group, fetch exam schedule details
         enrolledCourses.forEach(course => {
           course.groups.forEach(group => {
-            if (group.students.includes(user._id) && group.exam_setting) {
-              group.exam_setting.forEach(setting => {
-                const promise = clientAPI.get(`/exam-schedule/${setting.schedule_id}`)
+            if (group.students.includes(user._id) && group.schedule_ids) {
+              group.schedule_ids.forEach(scheduleId => {
+                const promise = clientAPI.get(`/exam-schedule/${scheduleId}`)
                   .then(response => {
                     const scheduleData = response.data.data;
                     return {
@@ -62,15 +63,16 @@ export const useExamSchedules = () => {
                       close_time: scheduleData.close_time ? new Date(scheduleData.close_time) : undefined,
                       allowed_attempts: scheduleData.allowed_attempts,
                       course_name: course.course_name,
+                      course_id: course._id,
                       group_name: group.group_name,
-                      schedule_id: setting.schedule_id,
+                      schedule_id: scheduleId,
                       instructor_id: scheduleData.instructor_id,
                       question_count: scheduleData.question_count,
                       exam_code: scheduleData.exam_code
                     } as ExamScheduleDetail;
                   })
                   .catch(error => {
-                    console.error(`Failed to fetch schedule ${setting.schedule_id}:`, error);
+                    console.error(`Failed to fetch schedule ${scheduleId}:`, error);
                     return null;
                   });
                 

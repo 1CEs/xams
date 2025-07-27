@@ -13,6 +13,7 @@ interface ExamScheduleDetail {
   close_time?: Date;
   allowed_attempts: number;
   course_name: string;
+  course_id: string;
   group_name: string;
   schedule_id: string;
   instructor_id: string;
@@ -47,152 +48,113 @@ const UpcomingExams = () => {
     );
   }
 
-
-
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-default-700 flex items-center gap-2">
-            ⏰ Upcoming Exams
-          </h2>
-          <p className="text-default-500 mt-1">
-            Stay on top of your exam schedule
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Chip
-            size="lg"
-            variant="flat"
-            color="secondary"
-            startContent={<UisSchedule />}
-          >
-            {examSchedules.length} Total Exam{examSchedules.length !== 1 ? 's' : ''}
-          </Chip>
-        </div>
+        <h2 className="text-xl font-semibold text-default-700 flex items-center gap-2">
+          ⏰ Upcoming Exams
+        </h2>
+        <Chip size="sm" variant="flat" color="secondary">
+          {examSchedules.length} Total
+        </Chip>
       </div>
 
-      {/* Upcoming Exams List */}
-      <Card className="shadow-lg">
-        <CardBody className="p-6">
-          {upcomingExams.length > 0 ? (
-            <div className="space-y-4">
-              {upcomingExams.map((exam, index) => {
-                const isOpenNow = !exam.open_time || new Date() >= exam.open_time;
-                const isClosed = exam.close_time && new Date() > exam.close_time;
-                
-                return (
-                  <div key={index} className="group relative">
-                    <div className="flex items-center justify-between p-6 bg-gradient-to-r from-default-50 via-default-100 to-primary-50 rounded-xl border border-default-200 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                            <span className="text-lg">📝</span>
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-foreground text-lg group-hover:text-primary-600 transition-colors">
-                              {exam.title}
-                            </h4>
-                            <p className="text-sm text-default-600 font-medium">
-                              {exam.course_name} • {exam.group_name}
-                            </p>
-                          </div>
-                          {exam.exam_code && (
-                            <Chip size="sm" color="warning" variant="flat" className="ml-2">
-                              🔒 Password Required
-                            </Chip>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-6 text-sm text-default-500 ml-13">
-                          <div className="flex items-center gap-1">
-                            <span className="text-primary-500">📋</span>
-                            <span>{exam.question_count} questions</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-secondary-500">🔄</span>
-                            <span>{exam.allowed_attempts} attempt{exam.allowed_attempts !== 1 ? 's' : ''} allowed</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex-1/2 text-right space-y-3">
-                        {exam.open_time ? (
-                          <div className="space-y-2">
-                            <Chip 
-                              size="md" 
-                              color={isClosed ? "danger" : isOpenNow ? "success" : "primary"} 
-                              variant="flat"
-                              startContent={
-                                <span className="text-sm">
-                                  {isClosed ? "🔒" : isOpenNow ? "✅" : "⏳"}
-                                </span>
-                              }
-                              className="font-semibold"
-                            >
-                              {isClosed ? "Closed" : isOpenNow ? "Open Now" : "Upcoming"}
-                            </Chip>
-                            <div className="space-y-1">
-                              <p className="text-xs text-default-600 font-medium">
-                                📅 Opens: {exam.open_time.toLocaleDateString()} at {exam.open_time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </p>
-                              {exam.close_time && (
-                                <p className="text-xs text-default-600 font-medium">
-                                  ⏰ Closes: {exam.close_time.toLocaleDateString()} at {exam.close_time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <Chip size="md" color="success" variant="flat" className="font-semibold">
-                            <span className="mr-1">🌟</span>
-                            Available Anytime
+      {/* Compact Upcoming Exams List */}
+      {upcomingExams.length > 0 ? (
+        <div className="space-y-2">
+          {upcomingExams.slice(0, 3).map((exam, index) => {
+            const isOpenNow = !exam.open_time || new Date() >= exam.open_time;
+            const isClosed = exam.close_time && new Date() > exam.close_time;
+            
+            return (
+              <Card key={index} className="hover:shadow-md transition-shadow">
+                <CardBody className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm">📝</span>
+                        <h4 className="font-semibold text-foreground truncate">
+                          {exam.title}
+                        </h4>
+                        {exam.exam_code && (
+                          <Chip size="sm" color="warning" variant="flat">
+                            🔒
                           </Chip>
                         )}
-                        <div className="pt-2">
-                          <Button
-                            as={Link}
-                            href={`/overview/course?id=${exam.schedule_id.split('-')[0]}`}
-                            size="sm"
-                            color="secondary"
-                            variant="solid"
-                            className="font-medium"
-                            startContent={<span>🎯</span>}
-                          >
-                            Start Exam
-                          </Button>
-                        </div>
                       </div>
+                      <p className="text-xs text-default-600 truncate">
+                        {exam.course_name} • {exam.question_count}Q • {exam.allowed_attempts} attempts
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 ml-4">
+                      <Chip 
+                        size="sm" 
+                        color={isClosed ? "danger" : isOpenNow ? "success" : "primary"} 
+                        variant="flat"
+                      >
+                        {isClosed ? "Closed" : isOpenNow ? "Open" : "Upcoming"}
+                      </Chip>
+                      <Button
+                        as={Link}
+                        href={`/overview/course?id=${exam.course_id}`}
+                        size="sm"
+                        color="primary"
+                        variant="flat"
+                        isIconOnly
+                      >
+                        🎯
+                      </Button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-16 space-y-4">
-              <div className="text-8xl mb-6">📅</div>
-              <h3 className="text-xl font-semibold text-default-700">No Upcoming Exams</h3>
-              <p className="text-default-500 text-lg max-w-md mx-auto">
-                Great news! You don't have any exams scheduled for the next 30 days. 
-                {examSchedules.length > 0 && (
-                  <span className="block mt-2 text-sm">
-                    You have {examSchedules.length} total exam{examSchedules.length !== 1 ? 's' : ''} scheduled for later
-                  </span>
-                )}
-              </p>
-              <div className="pt-4">
-                <Button 
-                  color="primary" 
-                  variant="flat" 
-                  startContent={<span>🔍</span>}
-                >
-                  Browse All Exams
-                </Button>
-              </div>
-            </div>
+                  
+                  {exam.open_time && (
+                    <div className="mt-2 text-xs text-default-500">
+                      {exam.open_time > new Date() && (
+                        <span>📅 {exam.open_time.toLocaleDateString()} {exam.open_time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      )}
+                      {exam.close_time && exam.close_time > new Date() && (
+                        <span className="ml-3">⏰ Due: {exam.close_time.toLocaleDateString()} {exam.close_time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      )}
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+            );
+          })}
+          
+          {upcomingExams.length > 3 && (
+            <Card>
+              <CardBody className="p-3">
+                <div className="text-center">
+                  <Button 
+                    size="sm" 
+                    variant="flat" 
+                    color="primary"
+                    className="text-xs"
+                  >
+                    View {upcomingExams.length - 3} more exam{upcomingExams.length - 3 !== 1 ? 's' : ''}
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
           )}
-        </CardBody>
-      </Card>
+        </div>
+      ) : (
+        <Card>
+          <CardBody className="p-6 text-center">
+            <div className="text-4xl mb-2">📅</div>
+            <p className="text-sm text-default-600">
+              No upcoming exams in the next 30 days
+            </p>
+            {examSchedules.length > 0 && (
+              <p className="text-xs text-default-500 mt-1">
+                {examSchedules.length} exam{examSchedules.length !== 1 ? 's' : ''} scheduled for later
+              </p>
+            )}
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 };

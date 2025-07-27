@@ -12,10 +12,5 @@ type IGroup = {
     group_name: string
     join_code: string
     students: string[]
-    exam_setting: ISetting[]
-}
-
-type ISetting = {
-    _id: string
-    schedule_id: string
+    schedule_ids: string[]
 }

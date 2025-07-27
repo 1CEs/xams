@@ -1,6 +1,5 @@
 import { ICourse } from "../../core/course/model/interface/icourse";
 import { IGroup } from "../../core/course/model/interface/igroup";
-import { ISetting } from "../../core/course/model/interface/setting";
 import { CourseService } from "../../core/course/service/course.service";
 import { ICourseService } from "../../core/course/service/interface/icourse.service";
 import { ExaminationScheduleService } from "../../core/examination/service/exam-schedule.service";
@@ -167,11 +166,11 @@ export class CourseController implements ICourseController {
         const groupToDelete = course.groups[groupIndex]
         
         // Delete all examination schedules associated with this group
-        if (groupToDelete.exam_setting && groupToDelete.exam_setting.length > 0) {
-            for (const examSetting of groupToDelete.exam_setting) {
+        if (groupToDelete.schedule_ids && groupToDelete.schedule_ids.length > 0) {
+            for (const scheduleId of groupToDelete.schedule_ids) {
                 try {
-                    if (examSetting.schedule_id) {
-                        await this._examScheduleService.deleteExaminationSchedule(examSetting.schedule_id)
+                    if (scheduleId) {
+                        await this._examScheduleService.deleteExaminationSchedule(scheduleId)
                     }
                 } catch (error: any) {
                     console.error('Error deleting examination schedule:', error)
@@ -212,9 +211,9 @@ export class CourseController implements ICourseController {
             return this._response('Group not found', 404, null)
         }
 
-        // Initialize exam_setting array if it doesn't exist
-        if (!course.groups[groupIndex].exam_setting) {
-            course.groups[groupIndex].exam_setting = []
+        // Initialize schedule_ids array if it doesn't exist
+        if (!course.groups[groupIndex].schedule_ids) {
+            course.groups[groupIndex].schedule_ids = []
         }
 
         try {
@@ -242,13 +241,8 @@ export class CourseController implements ICourseController {
                 return this._response('Failed to create examination schedule', 500, null);
             }
 
-            // Create a simplified setting that only stores the schedule_id
-            const setting: ISetting = {
-                schedule_id: examSchedule._id?.toString() || ''
-            };
-
-            // Add the simplified setting to the group
-            course.groups[groupIndex].exam_setting.push(setting);
+            // Add the schedule ID to the group
+            course.groups[groupIndex].schedule_ids.push(examSchedule._id?.toString() || '');
             
             // Update the course with the modified groups array
             const updated = await this._service.updateCourse(courseId, { groups: course.groups });
@@ -282,23 +276,23 @@ export class CourseController implements ICourseController {
             return this._response('Group not found', 404, null)
         }
 
-        // Check if the group has exam settings
-        if (!course.groups[groupIndex].exam_setting || course.groups[groupIndex].exam_setting.length === 0) {
+        // Check if the group has schedule IDs
+        if (!course.groups[groupIndex].schedule_ids || course.groups[groupIndex].schedule_ids.length === 0) {
             return this._response('No exam settings found for this group', 404, null)
         }
 
         // Check if the exam setting index is valid
-        if (examSettingIndex < 0 || examSettingIndex >= course.groups[groupIndex].exam_setting.length) {
+        if (examSettingIndex < 0 || examSettingIndex >= course.groups[groupIndex].schedule_ids.length) {
             return this._response('Invalid exam setting index', 404, null)
         }
 
-        // Get the exam setting to be deleted to retrieve the schedule_id
-        const examSettingToDelete = course.groups[groupIndex].exam_setting[examSettingIndex]
+        // Get the schedule ID to be deleted
+        const scheduleIdToDelete = course.groups[groupIndex].schedule_ids[examSettingIndex]
         
         try {
-            // Delete the examination schedule from the database if it has a schedule_id
-            if (examSettingToDelete.schedule_id) {
-                await this._examScheduleService.deleteExaminationSchedule(examSettingToDelete.schedule_id)
+            // Delete the examination schedule from the database
+            if (scheduleIdToDelete) {
+                await this._examScheduleService.deleteExaminationSchedule(scheduleIdToDelete)
             }
         } catch (error: any) {
             console.error('Error deleting examination schedule:', error)
@@ -306,8 +300,8 @@ export class CourseController implements ICourseController {
             // This prevents orphaned exam settings in case the schedule was already deleted
         }
 
-        // Remove the exam setting from the array
-        course.groups[groupIndex].exam_setting.splice(examSettingIndex, 1)
+        // Remove the schedule ID from the array
+        course.groups[groupIndex].schedule_ids.splice(examSettingIndex, 1)
         
         // Update the course with the modified groups array
         const updated = await this._service.updateCourse(courseId, { groups: course.groups })
@@ -354,10 +348,8 @@ export class CourseController implements ICourseController {
                         // Check if student is in this group
                         if (group.students && group.students.includes(userId)) {
                             // Check if this group has the exam schedule
-                            if (group.exam_setting && group.exam_setting.length > 0) {
-                                const hasSchedule = group.exam_setting.some(setting => 
-                                    setting.schedule_id === scheduleId
-                                )
+                            if (group.schedule_ids && group.schedule_ids.length > 0) {
+                                const hasSchedule = group.schedule_ids.includes(scheduleId)
                                 
                                 if (hasSchedule) {
                                     return this._response('Student has access to this exam', 200, { 

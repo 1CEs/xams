@@ -101,34 +101,63 @@ const Form = (props: Props) => {
 
     return (
         <form onSubmit={onFormSubmit} className={props.className}>
-            <Card >
-                <CardHeader className='justify-center flex-col'>
-                    <Image src={fullLogo.src} width={200} fallbackSrc="https://placehold.co/500x400/353535/FFFFFF/webp?text=Loading"/>
-                    <p>きょういくざむす</p>
+            <Card className='w-full'>
+                <CardHeader className='justify-center flex-col p-4 sm:p-6'>
+                    <Image 
+                        src={fullLogo.src} 
+                        width={150} 
+                        className='w-32 sm:w-40 md:w-48 lg:w-52'
+                        fallbackSrc="https://placehold.co/500x400/353535/FFFFFF/webp?text=Loading"
+                    />
+                    <p className='text-sm sm:text-base mt-2'>きょういくざむす</p>
                 </CardHeader>
-                <CardBody className='flex-col gap-y-3'>
-                    {error && <span className='text-danger text-tiny'>*{error}</span>}
-                    {props.children}
+                <CardBody className='flex-col gap-y-4 p-4 sm:p-6'>
+                    {error && <span className='text-danger text-xs sm:text-sm'>*{error}</span>}
+                    <div className='space-y-4'>
+                        {props.children}
+                    </div>
                 </CardBody>
-                <CardFooter className='flex-col gap-y-6'>
-                    <div className='size-full flex justify-between items-center'>
-                        <Button isDisabled={loading} isLoading={loading} type='submit' className='hero-background text-background' color='primary'>{loading ? null : props.buttonContent}</Button>
+                <CardFooter className='flex-col gap-y-4 sm:gap-y-6 p-4 sm:p-6'>
+                    <div className='w-full flex flex-col sm:flex-row justify-between items-center gap-4'>
+                        <Button 
+                            isDisabled={loading} 
+                            isLoading={loading} 
+                            type='submit' 
+                            className='hero-background text-background w-full sm:w-auto min-w-[120px]' 
+                            color='primary'
+                            size='md'
+                        >
+                            {loading ? null : props.buttonContent}
+                        </Button>
                         {props.isSignUp ?
-                            <div className='flex justify-between items-center gap-x-5'>
-                                <span className='text-tiny text-white/50'>Sign up as a </span>
-                                <RadioGroup name='role' size='sm' defaultValue='student' orientation='horizontal'>
-                                    <Radio value='student'>Student</Radio>
-                                    <Radio value='instructor'>Instructor</Radio>
+                            <div className='flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4'>
+                                <span className='text-xs sm:text-sm text-white/50'>Sign up as a</span>
+                                <RadioGroup 
+                                    name='role' 
+                                    size='sm' 
+                                    defaultValue='student' 
+                                    orientation='horizontal'
+                                    classNames={{
+                                        wrapper: "gap-2 sm:gap-4"
+                                    }}
+                                >
+                                    <Radio value='student' classNames={{ label: "text-xs sm:text-sm" }}>Student</Radio>
+                                    <Radio value='instructor' classNames={{ label: "text-xs sm:text-sm" }}>Instructor</Radio>
                                 </RadioGroup>
                             </div>
                             :
-                            <Link href="/member/forgot-password" size='sm'>Forgot password</Link>
+                            <Link href="/member/forgot-password" size='sm' className='text-xs sm:text-sm'>Forgot password</Link>
                         }
                     </div>
                     <Divider />
-                    <div className='flex gap-x-4 pb-3 text-sm items-center'>
-                        <span className='text-white/30'>{props.isSignUp ? 'Already have an account?' : `Don't have an accounr?`}</span>
-                        <Link className='hero-foreground' href={`/member/${props.isSignUp ? 'sign-in' : 'sign-up'}`}>{props.isSignUp ? 'Sign In' : 'Sign Up'}</Link>
+                    <div className='flex flex-col sm:flex-row gap-2 sm:gap-4 pb-3 text-xs sm:text-sm items-center justify-center'>
+                        <span className='text-white/30 text-center'>{props.isSignUp ? 'Already have an account?' : `Don't have an account?`}</span>
+                        <Link 
+                            className='hero-foreground text-xs sm:text-sm font-medium' 
+                            href={`/member/${props.isSignUp ? 'sign-in' : 'sign-up'}`}
+                        >
+                            {props.isSignUp ? 'Sign In' : 'Sign Up'}
+                        </Link>
                     </div>
                 </CardFooter>
             </Card>

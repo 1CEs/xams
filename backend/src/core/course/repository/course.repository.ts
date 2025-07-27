@@ -4,7 +4,6 @@ import { ICourse } from "../model/interface/icourse";
 import { ICourseRepository } from "./interface/icourse.repository";
 import { CourseModel } from "../model/course.model";
 import { IGroup } from "../model/interface/igroup";
-import { ISetting } from "../model/interface/setting";
 import { ExaminationScheduleModel } from "../../examination/model/examination-schedule.model";
 
 export class CourseRepository extends BaseRepository<ICourse & Document> implements ICourseRepository {
@@ -35,13 +34,14 @@ export class CourseRepository extends BaseRepository<ICourse & Document> impleme
             return null
         }
         
-        const setting = group.exam_setting.find((setting: ISetting) => setting._id == setting_id)
-        if (!setting) {
+        // Find the schedule ID directly from the schedule_ids array
+        const scheduleId = group.schedule_ids.find((id: string) => id === setting_id)
+        if (!scheduleId) {
             return null
         }
         
         // Get the exam schedule using the schedule_id
-        const examSchedule = await ExaminationScheduleModel.findById(setting.schedule_id).exec()
+        const examSchedule = await ExaminationScheduleModel.findById(scheduleId).exec()
         if (!examSchedule) {
             return null
         }
@@ -64,13 +64,14 @@ export class CourseRepository extends BaseRepository<ICourse & Document> impleme
             return null
         }
         
-        const setting = group.exam_setting.find((setting: ISetting) => setting._id == setting_id)
-        if (!setting) {
+        // Find the schedule ID directly from the schedule_ids array
+        const scheduleId = group.schedule_ids.find((id: string) => id === setting_id)
+        if (!scheduleId) {
             return null
         }
         
         // Get the exam schedule using the schedule_id and return it
-        const examSchedule = await ExaminationScheduleModel.findById(setting.schedule_id).exec()
+        const examSchedule = await ExaminationScheduleModel.findById(scheduleId).exec()
         return examSchedule
     }
 }

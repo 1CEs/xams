@@ -57,15 +57,11 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
     .delete('/:id', catchAsync(async ({ params, controller }: CourseContext & { params: { id: string } }) => await controller.deleteCourse(params.id)))
     // Group routes
     .post('/:id/group', catchAsync(async ({ params, body, controller }: CourseContext & { params: { id: string }, body: AddGroupBody }) => {
-        // Ensure required fields are present and convert date strings to Date objects
+        // Ensure required fields are present
         const groupData = {
             ...body,
             students: body.students || [],
-            exam_setting: (body.exam_setting || []).map((setting: any) => ({
-                ...setting,
-                open_time: new Date(setting.open_time),
-                close_time: new Date(setting.close_time)
-            }))
+            schedule_ids: body.schedule_ids || []
         };
         return await controller.addGroup(params.id, groupData);
     }), {

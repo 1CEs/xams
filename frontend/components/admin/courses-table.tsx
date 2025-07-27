@@ -23,7 +23,7 @@ interface Course {
   groups?: Array<{
     group_name: string
     students: string[]
-    exam_setting: any[]
+    schedule_ids: string[]
   }>
   created_at?: string
   updated_at?: string
