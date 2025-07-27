@@ -14,7 +14,7 @@ const SignInForm = (props: Props) => {
             isSignUp={false}
             content='Sign In'
             buttonContent='Sign In'
-            className='w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl'
+            className=' w-1/3'
         >
             <Input name='identifier' type='text' label='Email or Username' placeholder='Enter your email or username' required isRequired />
             <PasswordInput name='password' />

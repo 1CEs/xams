@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import CourseCard from "../course/course-card";
 import { useUserStore } from "@/stores/user.store";
 import { SolarRefreshLineDuotone, MdiSearch } from "../icons/icons";
-import { Alert, Divider, Input } from "@nextui-org/react";
+import { Alert, Input } from "@nextui-org/react";
 import { clientAPI } from "@/config/axios.config";
 import { errorHandler } from "@/utils/error";
 
@@ -77,50 +77,68 @@ const AvailableCourses = (props: Props) => {
 
   if (!courses || courses.length === 0) {
     return (
-      <div className="size-full flex gap-4 justify-center items-center">
-        <h1>No Courses Available</h1>
+      <div className="min-h-[400px] flex flex-col items-center justify-center space-y-4">
+        <div className="text-center space-y-4">
+          <div className="text-8xl mb-4">📚</div>
+          <h2 className="text-2xl font-bold text-default-700">No Courses Available</h2>
+          <p className="text-default-500 text-lg max-w-md">
+            There are no courses available at the moment. Please check back later.
+          </p>
+        </div>
       </div>
     );
   }
 
   if (filteredCourses.length === 0) {
     return (
-      <div className="size-full flex gap-4 justify-center items-center">
-        <h1>No available courses to enroll</h1>
+      <div className="min-h-[400px] flex flex-col items-center justify-center space-y-4">
+        <div className="text-center space-y-4">
+          <div className="text-8xl mb-4">🎯</div>
+          <h2 className="text-2xl font-bold text-default-700">All Caught Up!</h2>
+          <p className="text-default-500 text-lg max-w-md">
+            You're already enrolled in all available courses. Great job staying on top of your learning!
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full mt-8">
-      <div className="mb-4">
-        <h2 className="text-xl font-bold">Available Courses to Enroll</h2>
-        <Divider className="my-2" />
-        
-        {/* Search bar */}
-        <div className="mt-4 mb-2 max-w-md">
-          <Input
-            placeholder="Search courses..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            startContent={<MdiSearch className="text-default-400" />}
-            isClearable
-            className="w-full"
-          />
-        </div>
+    <div className="w-full space-y-6">
+      {/* Search bar */}
+      <div className="w-1/4">
+        <Input
+          placeholder="Search available courses..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          startContent={<MdiSearch className="text-default-400" />}
+          isClearable
+          size="lg"
+          className="w-full"
+        />
       </div>
-      <div className="w-fit p-4 flex gap-4 flex-wrap justify-start">
+      
+      {/* Course Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredCourses.map((course: CourseResponse, idx: number) => (
-          <CourseCard
-            id={course._id}
-            className="w-[222px]"
-            key={idx}
-            title={course.course_name}
-            description={course.description}
-            bgSrc={course.background_src}
-            groups={course.groups}
-          />
+          <div key={idx} className="transform transition-all duration-300 hover:scale-105">
+            <CourseCard
+              id={course._id}
+              className="h-full"
+              title={course.course_name}
+              description={course.description}
+              bgSrc={course.background_src}
+              groups={course.groups}
+            />
+          </div>
         ))}
+      </div>
+      
+      {/* Results count */}
+      <div className="text-center mt-8">
+        <p className="text-default-500">
+          Showing {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''} available for enrollment
+        </p>
       </div>
     </div>
   );

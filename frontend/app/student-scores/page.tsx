@@ -432,43 +432,36 @@ const StudentScoresPage = () => {
   }
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
-          <Button
-            variant="light"
-            onPress={() => router.back()}
-            startContent={<ArrowLeft className="w-4 h-4" />}
-            size="sm"
-            className="self-start"
-          >
-            Back
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Student Scores</h1>
-            <p className="text-sm sm:text-base text-default-600 truncate">
-              {courseData?.course_name}
-            </p>
-          </div>
+    <div className="container mx-auto p-6 max-w-7xl">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <Button
+          color="default"
+          variant="flat"
+          onPress={() => router.back()}
+          startContent={<ArrowLeft className="w-4 h-4" />}
+        >
+          Back
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold">Student Scores</h1>
+          <p className="text-default-600">
+            {courseData?.course_name}
+          </p>
         </div>
+      </div>
 
-        {/* Filter and Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Filter */}
-          <Card className="sm:col-span-2 lg:col-span-1">
-            <CardBody className="p-4">
-              <Select
-                label="Filter by Exam"
-                placeholder="Select exam schedule"
-                selectedKeys={[selectedSchedule]}
-                onSelectionChange={(keys) => setSelectedSchedule(Array.from(keys)[0] as string)}
-                size="sm"
-                classNames={{
-                  label: "text-xs sm:text-sm",
-                  value: "text-xs sm:text-sm"
-                }}
-              >
+      {/* Filter and Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+        {/* Filter */}
+        <Card>
+          <CardBody>
+            <Select
+              label="Filter by Exam"
+              placeholder="Select exam schedule"
+              selectedKeys={[selectedSchedule]}
+              onSelectionChange={(keys) => setSelectedSchedule(Array.from(keys)[0] as string)}
+            >
               {[<SelectItem key="all" value="all">All Exams</SelectItem>].concat(
                 examSchedules.map((schedule) => (
                   <SelectItem key={schedule._id} value={schedule._id}>
@@ -480,100 +473,87 @@ const StudentScoresPage = () => {
           </CardBody>
         </Card>
 
-          {/* Stats Cards */}
-          <Card>
-            <CardBody className="flex flex-row items-center gap-2 sm:gap-3 p-3 sm:p-4">
-              <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg flex-shrink-0">
-                <FileDocument className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-default-600">Total Students</p>
-                <p className="text-base sm:text-lg font-semibold">{overallStats.totalStudents}</p>
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardBody className="flex flex-row items-center gap-2 sm:gap-3 p-3 sm:p-4">
-              <div className="p-1.5 sm:p-2 bg-success/10 rounded-lg flex-shrink-0">
-                <TrophyIcon className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-default-600">Class Average</p>
-                <p className="text-base sm:text-lg font-semibold">{overallStats.classAverage.toFixed(1)}%</p>
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardBody className="flex flex-row items-center gap-2 sm:gap-3 p-3 sm:p-4">
-              <div className="p-1.5 sm:p-2 bg-warning/10 rounded-lg flex-shrink-0">
-                <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 text-warning" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-default-600">Highest Score</p>
-                <p className="text-base sm:text-lg font-semibold">{overallStats.highestScore.toFixed(1)}%</p>
-              </div>
-            </CardBody>
-          </Card>
-      </div>
-
-        {/* Students Table */}
+        {/* Stats Cards */}
         <Card>
-          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold">Student Performance</h3>
-            <Button
-              color="success"
-              variant="flat"
-              onPress={exportToExcel}
-              startContent={<FileDocument className="w-3 h-3 sm:w-4 sm:h-4" />}
-              size="sm"
-              className="self-start sm:self-center"
-            >
-              <span className="text-xs sm:text-sm">Export to Excel</span>
-            </Button>
-          </CardHeader>
-          <Divider />
-          <CardBody className="p-0 sm:p-0">
-            <div className="overflow-x-auto">
-              <Table 
-                aria-label="Student scores table"
-                classNames={{
-                  wrapper: "min-h-[400px]",
-                  th: "text-xs sm:text-sm",
-                  td: "text-xs sm:text-sm"
-                }}
-              >
-                <TableHeader columns={columns}>
-                  {(column) => (
-                    <TableColumn 
-                      key={column.uid} 
-                      align={column.uid === "student" ? "start" : "center"}
-                      className="text-xs sm:text-sm font-medium"
-                    >
-                      {column.name}
-                    </TableColumn>
-                  )}
-                </TableHeader>
-                <TableBody>
-                  {filteredStudentScores.map((item) => (
-                    <TableRow key={item.student_id}>
-                      {columns.map((column) => (
-                        <TableCell 
-                          key={column.uid}
-                          className={column.uid === "student" ? "text-left" : "text-center"}
-                        >
-                          {renderCell(item, column.uid)}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+          <CardBody className="flex flex-row items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <FileDocument className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-default-600">Total Students</p>
+              <p className="text-lg font-semibold">{overallStats.totalStudents}</p>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody className="flex flex-row items-center gap-3">
+            <div className="p-2 bg-success/10 rounded-lg">
+              <TrophyIcon className="w-5 h-5 text-success" />
+            </div>
+            <div>
+              <p className="text-sm text-default-600">Class Average</p>
+              <p className="text-lg font-semibold">{overallStats.classAverage.toFixed(1)}%</p>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody className="flex flex-row items-center gap-3">
+            <div className="p-2 bg-warning/10 rounded-lg">
+              <CheckCircleIcon className="w-5 h-5 text-warning" />
+            </div>
+            <div>
+              <p className="text-sm text-default-600">Highest Score</p>
+              <p className="text-lg font-semibold">{overallStats.highestScore.toFixed(1)}%</p>
             </div>
           </CardBody>
         </Card>
       </div>
+
+      {/* Students Table */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <h3 className="text-lg font-semibold">Student Performance</h3>
+          <Button
+            color="success"
+            variant="flat"
+            onPress={exportToExcel}
+            startContent={<FileDocument className="w-4 h-4" />}
+          >
+            Export to Excel
+          </Button>
+        </CardHeader>
+        <Divider />
+        <CardBody>
+          <Table aria-label="Student scores table">
+            <TableHeader columns={columns}>
+              {(column) => (
+                <TableColumn 
+                  key={column.uid} 
+                  align={column.uid === "student" ? "start" : "center"}
+                >
+                  {column.name}
+                </TableColumn>
+              )}
+            </TableHeader>
+            <TableBody>
+              {filteredStudentScores.map((item) => (
+                <TableRow key={item.student_id}>
+                  {columns.map((column) => (
+                    <TableCell 
+                      key={column.uid}
+                      className={column.uid === "student" ? "text-left" : "text-center"}
+                    >
+                      {renderCell(item, column.uid)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardBody>
+      </Card>
     </div>
   )
 }

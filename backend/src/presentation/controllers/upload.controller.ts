@@ -60,15 +60,14 @@ export class UploadController implements IUploadController {
                     isCorrect: false
                 })
             } else {
+                const questionText = line.replace(/^\d+[).]?\s*/, "");
                 currentQuestion = currentQuestion
-                    ? `${currentQuestion} ${line}`
-                    : line
+                    ? `${currentQuestion} ${questionText}`
+                    : questionText
             }
         }
         return questions
     }
-
-
 
     async readAikenFormat(user: IUser | IStudent | IInstructor, file: File) {
         try {
@@ -84,7 +83,6 @@ export class UploadController implements IUploadController {
                 return this._response("No valid questions found in the file", 400, []);
             }
 
-            // Note: Duplicate checking will be handled by frontend using localStorage
             return this._response(
                 "Read and upload question successfully",
                 200,

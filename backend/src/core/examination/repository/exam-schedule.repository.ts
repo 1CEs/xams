@@ -49,6 +49,7 @@ export class ExaminationScheduleRepository
         let questionsToUse = allQuestions;
 
         // DEBUG: Log what we receive from frontend
+        console.log(selectedQuestions)
         console.log('=== EXAM SCHEDULE CREATION DEBUG ===');
         console.log('selectedQuestions received:', selectedQuestions ? selectedQuestions.length : 'null/undefined');
         console.log('selectedQuestions data:', JSON.stringify(selectedQuestions, null, 2));

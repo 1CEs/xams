@@ -1,4 +1,4 @@
-Which data type is used to store whole numbers in most programming languages?
+1. Which data type is used to store whole numbers in most programming languages?
 A. float
 B. int
 C. char

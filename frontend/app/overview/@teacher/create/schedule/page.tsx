@@ -282,6 +282,10 @@ export default function CreateSchedulePage() {
         return 'Short Answer'
       case 'nested':
         return 'Nested Questions'
+      case 'les':
+        return 'Long Essay'
+      case 'ses':
+        return 'Short Essay'
       default:
         return 'Unknown'
     }

@@ -898,18 +898,7 @@ return (
                     {breadcrumbs.length}/{maxDepth}
                 </span>
             </div>
-            {breadcrumbs.length >= maxDepth - 1 && (
-                <div className={`text-xs px-2 py-1 rounded-full ${
-                    breadcrumbs.length >= maxDepth
-                        ? 'bg-red-900/70 text-red-300'
-                        : 'bg-amber-900/70 text-amber-300'
-                }`}>
-                    {breadcrumbs.length >= maxDepth
-                        ? '⚠️ Maximum depth reached'
-                        : '⚠️ Approaching maximum depth'
-                    }
-                </div>
-            )}
+            
         </div>
 
         <div className="flex justify-between items-center mb-4">

@@ -85,7 +85,8 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
             show_answer: body.show_answer,
             randomize_question: body.randomize_question,
             randomize_choice: body.randomize_choice,
-            question_count: body.question_count
+            question_count: body.question_count,
+            selected_questions: body.selected_questions
         };
         return await controller.addGroupExamSetting(params.id, params.groupName, examSettingData);
     }), {
