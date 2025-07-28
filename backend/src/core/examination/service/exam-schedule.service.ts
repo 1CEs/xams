@@ -22,6 +22,10 @@ export class ExaminationScheduleService implements IExaminationScheduleService {
         return await this._repository.findById(id);
     }
 
+    async updateExaminationSchedule(id: string, updateData: any): Promise<ExaminationScheduleDocument | null> {
+        return await this._repository.updateExaminationSchedule(id, updateData);
+    }
+
     async deleteExaminationSchedule(id: string): Promise<boolean> {
         const result = await this._repository.delete(id);
         

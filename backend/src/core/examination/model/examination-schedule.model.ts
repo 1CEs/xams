@@ -33,7 +33,8 @@ export const ExaminationScheduleSchema = new Schema<ExaminationScheduleDocument>
     show_answer: { type: Boolean },
     randomize_question: { type: Boolean },
     randomize_choice: { type: Boolean },
-    question_count: { type: Number }
+    question_count: { type: Number },
+    total_score: { type: Number } // Total score for the exam schedule
 }, { timestamps: true })
 
 export const ExaminationScheduleModel = model('examination_schedules', ExaminationScheduleSchema)

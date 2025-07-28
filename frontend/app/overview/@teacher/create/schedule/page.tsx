@@ -192,6 +192,8 @@ export default function CreateSchedulePage() {
   const searchParams = useSearchParams()
   const courseId = searchParams.get('courseId') || ""
   const groupId = searchParams.get('groupId') || ""
+  const scheduleId = searchParams.get('scheduleId') || ""
+  const mode = searchParams.get('mode') || "create" // 'create' or 'edit'
 
   const { trigger, setTrigger } = useTrigger()
   const { user } = useUserStore()
@@ -221,6 +223,13 @@ export default function CreateSchedulePage() {
   // Optional features state
   const [enableScheduling, setEnableScheduling] = useState<boolean>(false)
   const [enableExamCode, setEnableExamCode] = useState<boolean>(false)
+  const [enableManualScore, setEnableManualScore] = useState<boolean>(false)
+  const [manualTotalScore, setManualTotalScore] = useState<number>(0)
+
+  // Edit mode state
+  const isEditMode = mode === 'edit' && scheduleId
+  const [existingSchedule, setExistingSchedule] = useState<any>(null)
+  const [loadingExistingSchedule, setLoadingExistingSchedule] = useState<boolean>(false)
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -542,6 +551,117 @@ export default function CreateSchedulePage() {
     fetchData()
   }, [courseId, groupId, user?._id])
 
+  // Fetch existing schedule data when in edit mode
+  useEffect(() => {
+    const fetchExistingSchedule = async () => {
+      if (!isEditMode || !scheduleId) return
+      
+      try {
+        setLoadingExistingSchedule(true)
+        console.log('Fetching existing schedule:', scheduleId)
+        
+        const response = await clientAPI.get(`/exam-schedule/${scheduleId}`)
+        const schedule = response.data.data
+        
+        console.log('Existing schedule data:', schedule)
+        setExistingSchedule(schedule)
+        
+        // Populate form with existing data
+        setExamSettingForm({
+          exam_ids: schedule.exam_ids || [],
+          schedule_name: schedule.title || '',
+          open_time: schedule.open_time ? new Date(schedule.open_time) : new Date(),
+          close_time: schedule.close_time ? new Date(schedule.close_time) : new Date(Date.now() + 1 * 60 * 60 * 1000),
+          ip_range: schedule.ip_range || '',
+          exam_code: schedule.exam_code || '',
+          allowed_attempts: schedule.allowed_attempts || 1,
+          allowed_review: schedule.allowed_review ?? true,
+          show_answer: schedule.show_answer ?? false,
+          randomize_question: schedule.randomize_question ?? true,
+          randomize_choice: schedule.randomize_choice ?? true,
+          question_count: schedule.question_count || 0
+        })
+        
+        // Set optional features based on existing data
+        setEnableScheduling(!!(schedule.open_time || schedule.close_time))
+        setEnableExamCode(!!schedule.exam_code)
+        setEnableManualScore(!!schedule.total_score)
+        if (schedule.total_score) {
+          setManualTotalScore(schedule.total_score)
+        }
+        
+        // Set IP ranges if they exist
+        if (schedule.ip_range) {
+          const ranges = schedule.ip_range.split(',').filter((range: string) => range.trim())
+          setIpRanges(ranges)
+          setEnableIpRestriction(ranges.length > 0)
+        }
+        
+        // Set selected exams and fetch their questions
+        if (schedule.exam_ids && schedule.exam_ids.length > 0) {
+          setSelectedExams(schedule.exam_ids)
+          await fetchExamQuestions(schedule.exam_ids)
+        }
+        
+        // Set selected questions from the existing schedule
+        // The schedule stores questions directly in the 'questions' field
+        if (schedule.questions && schedule.questions.length > 0) {
+          console.log('Loading questions from schedule:', schedule.questions.length)
+          
+          // Transform the schedule questions to match the selectedQuestions format
+          const transformedQuestions = schedule.questions.map((question: any, index: number) => {
+            // Try to determine which exam this question belongs to
+            // For now, distribute questions across available exams
+            const examIndex = schedule.exam_ids && schedule.exam_ids.length > 1 
+              ? index % schedule.exam_ids.length 
+              : 0
+            const examId = schedule.exam_ids?.[examIndex] || ''
+            
+            return {
+              // Properties expected by the submit handler
+              _id: question._id,
+              examId: examId,
+              examTitle: schedule.description || 'Unknown Exam',
+            type: question.type,
+            question: question.question,
+            score: question.score,
+            choices: question.choices || [],
+            expectedAnswer: question.expectedAnswer || '',
+            expectedAnswers: question.expectedAnswers || [],
+            isTrue: question.isTrue || false,
+            maxWords: question.maxWords || 0,
+            isRandomChoices: question.isRandomChoices || false,
+            // Additional properties for compatibility
+            question_id: question._id,
+            question_type: question.type,
+            question_text: question.question,
+            // Include the full question object for any missing properties
+            ...question
+            }
+          })
+          
+          console.log('Transformed questions:', transformedQuestions)
+          setSelectedQuestions(transformedQuestions)
+        }
+        
+        // Set the selected group for edit mode (we know which group from URL)
+        if (groupId) {
+          console.log('Setting selected group for edit mode:', groupId)
+          setSelectedGroups([decodeURIComponent(groupId)])
+        }
+        
+      } catch (err) {
+        console.error('Error fetching existing schedule:', err)
+        setError('Failed to load existing schedule data')
+        errorHandler(err)
+      } finally {
+        setLoadingExistingSchedule(false)
+      }
+    }
+    
+    fetchExistingSchedule()
+  }, [isEditMode, scheduleId])
+
   const getSelectedExamsTitle = (): string => {
     if (examSettingForm.exam_ids.length === 0) {
       return 'Select exams'
@@ -743,6 +863,13 @@ export default function CreateSchedulePage() {
       return
     }
 
+    // Validate manual score if enabled
+    if (enableManualScore && manualTotalScore <= 0) {
+      setError('Please provide a valid total score greater than 0')
+      setSubmitting(false)
+      return
+    }
+
     try {
       // Format dates to ISO strings for API
       const formattedForm = {
@@ -772,6 +899,7 @@ export default function CreateSchedulePage() {
         randomize_question: formattedForm.randomize_question,
         randomize_choice: formattedForm.randomize_choice,
         question_count: selectedQuestions.length,
+        total_score: enableManualScore ? manualTotalScore : selectedQuestions.reduce((total, q) => total + q.score, 0),
 
         // Enhanced data for multi-exam and question selection support
         exam_ids: formattedForm.exam_ids, // All selected exam IDs
@@ -783,7 +911,6 @@ export default function CreateSchedulePage() {
           score: q.score,
           question_text: q.question // Include question text for reference
         })),
-        total_score: selectedQuestions.reduce((total, q) => total + q.score, 0),
 
         // Exam sources breakdown for analytics and reporting
         exam_sources: selectedExams.map(examId => {
@@ -823,6 +950,9 @@ export default function CreateSchedulePage() {
         total_questions: selectedQuestions.length,
         total_exams: selectedExams.length,
         total_score: enhancedData.total_score,
+        enable_manual_score: enableManualScore,
+        manual_total_score: manualTotalScore,
+        auto_calculated_score: selectedQuestions.reduce((total, q) => total + q.score, 0),
         scheduling_enabled: enableScheduling,
         exam_code_enabled: enableExamCode,
         has_open_time: !!enhancedData.open_time,
@@ -854,33 +984,54 @@ export default function CreateSchedulePage() {
         });
 
         try {
-          const result = await clientAPI.post(
-            `/course/${courseId}/group/${encodeURIComponent(groupName)}/exam-setting`,
-            scheduleData
-          );
-          console.log(`✅ Successfully created schedule for group ${groupName}:`, result.data);
+          let result;
+          if (isEditMode && scheduleId) {
+            // Update existing schedule
+            result = await clientAPI.put(
+              `/course/${courseId}/group/${encodeURIComponent(groupName)}/exam-setting/${scheduleId}`,
+              scheduleData
+            );
+            console.log(`✅ Successfully updated schedule for group ${groupName}:`, result.data);
+          } else {
+            // Create new schedule
+            result = await clientAPI.post(
+              `/course/${courseId}/group/${encodeURIComponent(groupName)}/exam-setting`,
+              scheduleData
+            );
+            console.log(`✅ Successfully created schedule for group ${groupName}:`, result.data);
+          }
           results.push(result);
         } catch (error) {
-          console.error(`❌ Failed to create schedule for group ${groupName}:`, error);
+          console.error(`❌ Failed to ${isEditMode ? 'update' : 'create'} schedule for group ${groupName}:`, error);
           throw error;
         }
       }
 
-      // Log successful creation for debugging
-      console.log('Successfully created exam schedules:', results.length);
+      // Log successful operation for debugging
+      console.log(`Successfully ${isEditMode ? 'updated' : 'created'} exam schedules:`, results.length);
 
-      if (selectedGroups.length === 1) {
-        toast.success('Examination schedule created successfully')
+      if (isEditMode) {
+        toast.success('Examination schedule updated successfully')
       } else {
-        toast.success(`Examination schedules created successfully for ${selectedGroups.length} groups`)
+        if (selectedGroups.length === 1) {
+          toast.success('Examination schedule created successfully')
+        } else {
+          toast.success(`Examination schedules created successfully for ${selectedGroups.length} groups`)
+        }
       }
 
       setTrigger(!trigger)
 
-      // Navigate back to the schedules page
-      router.push('/overview/create/schedule')
+      // Navigate back to appropriate page
+      if (isEditMode) {
+        // Navigate back to the course page after editing
+        router.push(`/overview/course?id=${courseId}`)
+      } else {
+        // Navigate back to the schedules page after creating
+        router.push('/overview/create/schedule')
+      }
     } catch (err: any) {
-      console.error('Error creating examination schedule:', err)
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} examination schedule:`, err)
 
       // Enhanced error logging
       if (err.response?.data) {
@@ -888,9 +1039,9 @@ export default function CreateSchedulePage() {
       }
 
       if (err.response && err.response.data && err.response.data.message) {
-        setError(`Failed to create schedule: ${err.response.data.message}`)
+        setError(`Failed to ${isEditMode ? 'update' : 'create'} schedule: ${err.response.data.message}`)
       } else {
-        setError('Failed to create examination schedule. Please check your selections and try again.')
+        setError(`Failed to ${isEditMode ? 'update' : 'create'} examination schedule. Please check your selections and try again.`)
         errorHandler(err)
       }
     } finally {
@@ -900,13 +1051,47 @@ export default function CreateSchedulePage() {
 
   return (
     <div className="container mx-auto px-4 py-0 max-w-7xl">
-      {/* Header with breadcrumbs */}
+      {/* Header with back button */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <UisSchedule className="text-secondary" />
-            Create Exam Schedule
-          </h1>
+        <div className="flex items-center gap-4">
+          <Button
+            isIconOnly
+            variant="light"
+            onPress={() => {
+              if (window.history.length > 1) {
+                router.back();
+              } else {
+                router.push('/overview/course');
+              }
+            }}
+            className="text-default-600 hover:text-default-900"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <UisSchedule className="text-secondary" />
+              {isEditMode ? 'Edit Exam Schedule' : 'Create Exam Schedule'}
+            </h1>
+            {isEditMode && existingSchedule && (
+              <p className="text-sm text-default-600 mt-1">
+                Editing: {existingSchedule.title}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1080,8 +1265,14 @@ export default function CreateSchedulePage() {
                           })}
                         </div>
 
-                        <div className="flex gap-4 text-xs text-default-500">
+                        <div className="flex flex-wrap gap-4 text-xs text-default-500">
                           <span>Add more questions by clicking "Modify Selection" or "Add More Exams"</span>
+                          <span className="flex items-center gap-1">
+                            📊 Total Score: 
+                            <span className="font-medium text-primary">
+                              {enableManualScore ? `${manualTotalScore} pts (manual)` : `${selectedQuestions.reduce((total, q) => total + q.score, 0)} pts (auto)`}
+                            </span>
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1333,19 +1524,192 @@ export default function CreateSchedulePage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <Input
-                        type="number"
-                        label="Allowed Attempts"
-                        placeholder="1"
-                        min={1}
-                        description="Number of attempts allowed per student"
-                        value={examSettingForm.allowed_attempts.toString()}
-                        onChange={(e) => setExamSettingForm({
-                          ...examSettingForm,
-                          allowed_attempts: parseInt(e.target.value) || 1
-                        })}
-                        isDisabled={submitting}
-                      />
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">
+                          Allowed Attempts
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="bordered"
+                            onPress={() => {
+                              const newValue = Math.max(1, examSettingForm.allowed_attempts - 1);
+                              setExamSettingForm({
+                                ...examSettingForm,
+                                allowed_attempts: newValue
+                              });
+                            }}
+                            isDisabled={submitting || examSettingForm.allowed_attempts <= 1}
+                            className="min-w-8 h-8"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            </svg>
+                          </Button>
+                          <Input
+                            type="number"
+                            placeholder="1"
+                            min={1}
+                            value={examSettingForm.allowed_attempts.toString()}
+                            onChange={(e) => setExamSettingForm({
+                              ...examSettingForm,
+                              allowed_attempts: Math.max(1, parseInt(e.target.value) || 1)
+                            })}
+                            isDisabled={submitting}
+                            className="flex-1"
+                            classNames={{
+                              input: "text-center"
+                            }}
+                          />
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="bordered"
+                            onPress={() => {
+                              const newValue = Math.min(10, examSettingForm.allowed_attempts + 1);
+                              setExamSettingForm({
+                                ...examSettingForm,
+                                allowed_attempts: newValue
+                              });
+                            }}
+                            isDisabled={submitting || examSettingForm.allowed_attempts >= 10}
+                            className="min-w-8 h-8"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          </Button>
+                        </div>
+                        <p className="text-xs text-default-500">
+                          Number of attempts allowed per student (1-10)
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Score Configuration */}
+                    <div className="space-y-4 mb-4">
+                      <div className="flex items-center justify-between p-3 bg-default-100 rounded-xl">
+                        <div>
+                          <h4 className="font-medium text-sm">Manual Score Override</h4>
+                          <p className="text-xs text-default-500">
+                            {enableManualScore 
+                              ? "Set a custom total score for this exam"
+                              : `Auto-calculated from selected questions: ${selectedQuestions.reduce((total, q) => total + q.score, 0)} points`
+                            }
+                          </p>
+                        </div>
+                        <Switch
+                          color="secondary"
+                          isSelected={enableManualScore}
+                          onValueChange={(value) => {
+                            setEnableManualScore(value)
+                            if (value && manualTotalScore === 0) {
+                              // Initialize with auto-calculated score
+                              setManualTotalScore(selectedQuestions.reduce((total, q) => total + q.score, 0))
+                            }
+                          }}
+                          isDisabled={submitting || selectedQuestions.length === 0}
+                        />
+                      </div>
+
+                      {enableManualScore && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-foreground">
+                              Total Score <span className="text-danger">*</span>
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="bordered"
+                                onPress={() => {
+                                  const newValue = Math.max(1, manualTotalScore - 1);
+                                  setManualTotalScore(newValue);
+                                }}
+                                isDisabled={submitting || manualTotalScore <= 1}
+                                className="min-w-8 h-8"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                                </svg>
+                              </Button>
+                              <div className="flex-1 relative">
+                                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none z-10">
+                                  <span className="text-default-400 text-small">📊</span>
+                                </div>
+                                <Input
+                                  type="number"
+                                  placeholder="Enter total score"
+                                  min={1}
+                                  value={manualTotalScore.toString()}
+                                  onChange={(e) => setManualTotalScore(Math.max(1, parseInt(e.target.value) || 1))}
+                                  isRequired={enableManualScore}
+                                  isDisabled={submitting}
+                                  classNames={{
+                                    input: "text-center pl-8"
+                                  }}
+                                />
+                              </div>
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="bordered"
+                                onPress={() => {
+                                  const newValue = Math.min(1000, manualTotalScore + 1);
+                                  setManualTotalScore(newValue);
+                                }}
+                                isDisabled={submitting || manualTotalScore >= 1000}
+                                className="min-w-8 h-8"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                              </Button>
+                            </div>
+                            <p className="text-xs text-default-500">
+                              Custom total score for this exam schedule (1-1000)
+                            </p>
+                          </div>
+                          <div className="flex flex-col justify-center">
+                            <div className="text-sm text-default-600 mb-2">
+                              Score Comparison:
+                            </div>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex justify-between">
+                                <span>Auto-calculated:</span>
+                                <span className="font-medium">{selectedQuestions.reduce((total, q) => total + q.score, 0)} pts</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Manual override:</span>
+                                <span className="font-medium text-primary">{manualTotalScore} pts</span>
+                              </div>
+                              <div className="flex justify-between border-t pt-1">
+                                <span>Difference:</span>
+                                <span className={`font-medium ${
+                                  manualTotalScore > selectedQuestions.reduce((total, q) => total + q.score, 0) 
+                                    ? 'text-success' 
+                                    : manualTotalScore < selectedQuestions.reduce((total, q) => total + q.score, 0)
+                                    ? 'text-danger'
+                                    : 'text-default-500'
+                                }`}>
+                                  {manualTotalScore > selectedQuestions.reduce((total, q) => total + q.score, 0) ? '+' : ''}
+                                  {manualTotalScore - selectedQuestions.reduce((total, q) => total + q.score, 0)} pts
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {!enableManualScore && selectedQuestions.length > 0 && (
+                        <div className="p-3 bg-success-50 border border-success-200 rounded-lg">
+                          <p className="text-sm text-success-700">
+                            📊 <strong>Auto-calculated Score:</strong> Total score will be automatically calculated from selected questions ({selectedQuestions.reduce((total, q) => total + q.score, 0)} points).
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-4">
@@ -1403,7 +1767,7 @@ export default function CreateSchedulePage() {
                       isLoading={submitting}
                       isDisabled={submitting || selectedQuestions.length === 0 || selectedGroups.length === 0}
                     >
-                      Create Schedule
+                      {isEditMode ? 'Update Schedule' : 'Create Schedule'}
                     </Button>
                   </div>
                 </form>

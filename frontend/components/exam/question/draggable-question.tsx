@@ -1,7 +1,7 @@
-import { CarbonTextLongParagraph, HealthiconsIExamMultipleChoice, MdiDrag, PajamasFalsePositive, UilParagraph } from "@/components/icons/icons"
+import { CarbonTextLongParagraph, HealthiconsIExamMultipleChoice, MdiDrag, PajamasFalsePositive, UilParagraph, FeEdit } from "@/components/icons/icons"
 import { useDndContext } from "@dnd-kit/core"
 import { useSortable } from "@dnd-kit/sortable"
-import { Accordion, AccordionItem, Card, CardBody, CardHeader, Divider, Spinner, Checkbox, Button, Textarea, CardFooter, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react"
+import { Accordion, AccordionItem, Card, CardBody, CardHeader, Divider, Spinner, Checkbox, Button, Textarea, CardFooter, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Tooltip } from "@nextui-org/react"
 import { CSS } from "@dnd-kit/utilities"
 import { extractHtml } from "@/utils/extract-html"
 import { useState } from "react"
@@ -11,9 +11,10 @@ interface DraggableQuestionProps {
     question: QuestionForm
     id: number
     disableDrag?: boolean
+    onEdit?: (question: QuestionWithIdentifier<QuestionForm>) => void
 }
 
-const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps) => {
+const DraggableQuestion = ({ id, question, disableDrag, onEdit }: DraggableQuestionProps) => {
     const {
         attributes,
         listeners,
@@ -85,9 +86,24 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
                                 <p className="text-tiny text-default-500">Score: {question.score}</p>
                             </div>
                         </div>
-                        <Button onPress={() => setIsOpen(!isOpen)} variant="flat" color="secondary" size="sm">
-                            {isOpen ? "Hide" : "Show"}
-                        </Button>
+                        <div className="flex gap-2">
+                            {onEdit && (
+                                <Tooltip content="Edit question">
+                                    <Button 
+                                        onPress={() => onEdit(question as QuestionWithIdentifier<QuestionForm>)} 
+                                        variant="flat" 
+                                        color="primary" 
+                                        size="sm"
+                                        isIconOnly
+                                    >
+                                        <FeEdit fontSize={14} />
+                                    </Button>
+                                </Tooltip>
+                            )}
+                            <Button onPress={() => setIsOpen(!isOpen)} variant="flat" color="secondary" size="sm">
+                                {isOpen ? "Hide" : "Show"}
+                            </Button>
+                        </div>
                     </div>
                 </CardHeader>
                 {isOpen && <Divider />}
@@ -111,8 +127,19 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
                     {(question.type === 'ses' || question.type === 'les') && (
                         <div className="mt-4">
                             <div>
-                                <p className="text-tiny text-default-500">Expected Answer: </p>
-                                <p dangerouslySetInnerHTML={{ __html: question.expectedAnswer! }}></p>
+                                <p className="text-tiny text-default-500">Expected Answers: </p>
+                                {question.expectedAnswers && question.expectedAnswers.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {question.expectedAnswers.map((answer, index) => (
+                                            <div key={index} className="border-l-2 border-primary/30 pl-3">
+                                                <p className="text-xs text-default-600">Answer {index + 1}:</p>
+                                                <p dangerouslySetInnerHTML={{ __html: answer }}></p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-tiny text-default-400">No expected answers set</p>
+                                )}
                             </div>
                             
                             {question.type === 'les' && (
@@ -143,7 +170,18 @@ const DraggableQuestion = ({ id, question, disableDrag }: DraggableQuestionProps
                                         )}
                                         {(subQuestion.type === 'ses' || subQuestion.type === 'les') && (
                                             <div className="mt-2">
-                                                <p className="text-xs">Expected Answer: {extractHtml(subQuestion.expectedAnswer || '')}</p>
+                                                <p className="text-xs">Expected Answers: </p>
+                                                {subQuestion.expectedAnswers && subQuestion.expectedAnswers.length > 0 ? (
+                                                    <div className="space-y-1">
+                                                        {subQuestion.expectedAnswers.map((answer, answerIndex) => (
+                                                            <p key={answerIndex} className="text-xs text-gray-600">
+                                                                {answerIndex + 1}. {extractHtml(answer)}
+                                                            </p>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs text-gray-400">No expected answers set</p>
+                                                )}
                                                 {subQuestion.type === 'les' && (
                                                     <p className="text-xs text-gray-500">Max Words: {subQuestion.maxWords}</p>
                                                 )}

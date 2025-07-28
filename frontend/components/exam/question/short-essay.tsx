@@ -1,11 +1,18 @@
 import { useFormikContext } from 'formik'
 import { Button, Card, CardBody, CardHeader } from '@nextui-org/react'
 import TextEditor from '../../text-editor'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const ShortEssayForm = () => {
     const { setFieldValue, values } = useFormikContext<QuestionForm>()
     const [editorKeys, setEditorKeys] = useState<number[]>([0])
+
+    // Initialize expectedAnswers if it doesn't exist
+    useEffect(() => {
+        if (!values.expectedAnswers || values.expectedAnswers.length === 0) {
+            setFieldValue('expectedAnswers', [''])
+        }
+    }, [])
 
     const addExpectedAnswer = () => {
         const currentAnswers = values.expectedAnswers || ['']

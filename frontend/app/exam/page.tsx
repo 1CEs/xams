@@ -22,13 +22,12 @@ interface Question {
     isCorrect: boolean
     score: number
   }[]
-  isMultiAnswer?: boolean
   isTrue?: boolean
   expectedAnswer?: string
   maxWords?: number
   score: number
   isRandomChoices?: boolean
-  questions?: Question[] // For nested questions
+  questions?: Question[]
 }
 
 interface ExamResponse {

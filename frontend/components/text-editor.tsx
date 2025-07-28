@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState } from 'react'
+import React, { ChangeEvent, useState, useEffect } from 'react'
 import { EditorProvider, ReactNodeViewRenderer, useCurrentEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Button, cn, Dropdown, DropdownItem, DropdownMenu, DropdownSection, DropdownTrigger, Input, Select, SelectItem } from '@nextui-org/react'
@@ -198,8 +198,33 @@ type Props = {
 const TextEditor = (props: Props) => {
     type matchType<T> = T extends 'nested' ? NestedQuestionForm : QuestionForm
     const { values, setFieldValue } = useFormikContext<matchType<Props['type']>>()
+    const [lastExternalContent, setLastExternalContent] = useState('')
+    const [editorKey, setEditorKey] = useState(0)
+    
+    // Get the current content from Formik values - handle nested properties
+    const getNestedValue = (obj: any, path: string) => {
+        return path.split('.').reduce((current, key) => {
+            return current && current[key] !== undefined ? current[key] : ''
+        }, obj)
+    }
+    
+    const currentContent = getNestedValue(values, props.name) || ''
+    
+    // Detect when content changes from external source (like editing a question)
+    useEffect(() => {
+        // Only update if the content is significantly different (not just user typing)
+        if (currentContent !== lastExternalContent && 
+            (currentContent === '' || lastExternalContent === '' || 
+             Math.abs(currentContent.length - lastExternalContent.length) > 10)) {
+            setLastExternalContent(currentContent)
+            setEditorKey(prev => prev + 1)
+        }
+    }, [currentContent, lastExternalContent])
+    
     return (
         <EditorProvider
+            key={`${props.name}-${editorKey}`}
+            content={currentContent}
             editorProps={{
                 attributes: {
                     textValue: '',
@@ -213,6 +238,7 @@ const TextEditor = (props: Props) => {
             onUpdate={({ editor }) => {
                 const html = editor.getHTML()
                 setFieldValue(props.name, html)
+                setLastExternalContent(html)
             }}
             extensions={[StarterKit, Underline, ListItem, OrderedList, TextAlign.configure({
                 types: ['heading', 'paragraph'],

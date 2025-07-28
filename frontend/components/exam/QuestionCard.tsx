@@ -18,7 +18,6 @@ interface Question {
   maxWords?: number
   score: number
   questions?: Question[] // For nested questions
-  isMultiAnswer?: boolean // Add this property
 }
 
 interface Answer {
@@ -206,6 +205,10 @@ const QuestionCard = memo(({
       ? randomizedChoices
       : q.choices
 
+    // Calculate if this is a multi-answer question based on number of correct choices
+    const correctChoicesCount = displayChoices?.filter(choice => choice.isCorrect).length || 0
+    const isMultiAnswer = correctChoicesCount > 1
+
     // Find the current answer for this question
     const currentAnswer = answers.find(a => a.questionId === q._id);
     
@@ -226,8 +229,9 @@ const QuestionCard = memo(({
 
         {q.type === 'mc' && (
           <div className="flex flex-col space-y-2">
-            {!q.isMultiAnswer ? (
+            {!isMultiAnswer ? (
               <RadioGroup
+                color="secondary"
                 value={currentAnswer?.answers[0] || ''}
                 onValueChange={(value) => handleCheckboxChange(q._id, value, true)}
                 className="flex flex-col space-y-2"
@@ -250,6 +254,7 @@ const QuestionCard = memo(({
                     {String.fromCharCode(65 + choiceIndex)}
                   </div>
                   <Checkbox
+                    color="secondary"
                     isSelected={currentAnswer?.answers.includes(choice.content) || false}
                     onValueChange={() => handleCheckboxChange(q._id, choice.content, false)}
                     className="flex-grow p-3"
@@ -272,7 +277,7 @@ const QuestionCard = memo(({
                 <Checkbox
                   isSelected={answers.find(a => a.questionId === q._id)?.answers.includes(option.toLowerCase()) || false}
                   onValueChange={() => handleTrueFalseChange(q._id, option === 'True')}
-                  className="flex-grow p-3 rounded-lg border border-default-200"
+                  className="flex-grow p-3 rounded-lg"
                 >
                   {option}
                 </Checkbox>

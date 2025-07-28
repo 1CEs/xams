@@ -8,6 +8,19 @@ import { ArrowLeft, FileDocument, Clock, CheckCircle, CloseCircle } from '@/comp
 import { useUserStore } from '@/stores/user.store'
 import { toast } from 'react-toastify'
 
+// Inline ChevronDown icon component
+const ChevronDown = ({ className, isRotated }: { className?: string; isRotated?: boolean }) => (
+  <svg 
+    className={`transition-transform duration-200 ${isRotated ? 'rotate-180' : ''} ${className || ''}`}
+    xmlns="http://www.w3.org/2000/svg" 
+    width="1em" 
+    height="1em" 
+    viewBox="0 0 24 24"
+  >
+    <path fill="currentColor" d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6l-6-6z"/>
+  </svg>
+)
+
 interface SubmittedAnswer {
   question_id: string
   submitted_question: string
@@ -80,6 +93,17 @@ const SubmissionHistoryPage = () => {
 
   // Question type filter state
   const [questionTypeFilter, setQuestionTypeFilter] = useState<string>('all')
+  
+  // Collapse/expand state for submission cards
+  const [expandedSubmissions, setExpandedSubmissions] = useState<{[submissionId: string]: boolean}>({})
+  
+  // Toggle submission card expand/collapse
+  const toggleSubmissionExpanded = (submissionId: string) => {
+    setExpandedSubmissions(prev => ({
+      ...prev,
+      [submissionId]: !prev[submissionId]
+    }))
+  }
 
   // Validate access and fetch data
   useEffect(() => {
@@ -110,8 +134,14 @@ const SubmissionHistoryPage = () => {
           // Filter submissions for the specific student
           const studentSubmissions = submissionsResponse.data.data.filter(
             (submission: ExamSubmission) => submission.student_id === student_id
-          )
-          setSubmissions(studentSubmissions.sort((a: ExamSubmission, b: ExamSubmission) => b.attempt_number - a.attempt_number))
+          ).sort((a: ExamSubmission, b: ExamSubmission) => b.attempt_number - a.attempt_number)
+          
+          setSubmissions(studentSubmissions)
+          
+          // Expand the first submission by default
+          if (studentSubmissions.length > 0) {
+            setExpandedSubmissions({ [studentSubmissions[0]._id]: true })
+          }
         }
       } catch (error) {
         console.error('Error fetching submission history:', error)
@@ -492,7 +522,11 @@ const SubmissionHistoryPage = () => {
               const gradedDateTime = submission.graded_at ? formatDateTime(submission.graded_at) : null
               
               return (
-                <Card key={submission._id} className="hover:shadow-md transition-shadow">
+                <Card key={submission._id} className={`hover:shadow-md transition-all duration-200 ${
+                  expandedSubmissions[submission._id] 
+                    ? 'shadow-md border-primary/20' 
+                    : 'hover:border-primary/10'
+                }`}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-3">
@@ -514,11 +548,50 @@ const SubmissionHistoryPage = () => {
                         >
                           {submission.status.toUpperCase()}
                         </Chip>
-                        {/* Questions are now displayed inline below */}
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => toggleSubmissionExpanded(submission._id)}
+                          className="text-default-600 hover:text-primary"
+                        >
+                          <ChevronDown 
+                            className="w-4 h-4" 
+                            isRotated={expandedSubmissions[submission._id]} 
+                          />
+                        </Button>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardBody className="pt-0">
+                  
+                  {/* Always visible summary */}
+                  { !expandedSubmissions[submission._id] && <div className="px-6 pb-3">
+                    <div className="flex items-center justify-between text-sm text-default-600">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {formatTimeTaken(submission.time_taken)}
+                        </span>
+                        <span>{submission.submitted_answers.length} questions</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {submission.is_graded ? (
+                          <span className={`font-medium ${
+                            submission.percentage_score && submission.percentage_score >= 70 
+                              ? 'text-success' 
+                              : 'text-danger'
+                          }`}>
+                            {submission.total_score}/{submission.max_possible_score} ({submission.percentage_score?.toFixed(1)}%)
+                          </span>
+                        ) : (
+                          <span className="text-warning font-medium">Pending</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>}
+                  
+                  {expandedSubmissions[submission._id] && (
+                    <CardBody className="pt-0">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
                         <p className="text-sm text-default-600">Time Taken</p>
@@ -1055,7 +1128,8 @@ const SubmissionHistoryPage = () => {
                         )}
                       </div>
                     )}
-                  </CardBody>
+                    </CardBody>
+                  )}
                 </Card>
               )
             })

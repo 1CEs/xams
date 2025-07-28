@@ -5,4 +5,5 @@ export interface IExaminationScheduleRepository extends IBaseRepository<Examinat
     getExaminationScheduleByExamId(exam_id: string): Promise<ExaminationScheduleDocument | null>;
     getExaminationScheduleById(schedule_id: string): Promise<ExaminationScheduleDocument | null>;
     createExaminationSchedule(examIds: string[], instructorId: string, questionCount?: number, scheduleName?: string, examSettings?: any, selectedQuestions?: any[]): Promise<ExaminationScheduleDocument | null>;
+    updateExaminationSchedule(id: string, updateData: any): Promise<ExaminationScheduleDocument | null>;
 }

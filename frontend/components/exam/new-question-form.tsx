@@ -24,13 +24,16 @@ export const HeadLine = ({ number, content, isOptional }: { number: number, cont
 
 type Props = {
     examination_id: string
+    editingQuestion?: QuestionWithIdentifier<QuestionForm> | null
+    onEditComplete?: () => void
 }
 
-const NewQuestionForm = ({ examination_id }: Props) => {
+const NewQuestionForm = ({ examination_id, editingQuestion, onEditComplete }: Props) => {
     const { trigger, setTrigger } = useTrigger()
     const [formKey, setFormKey] = useState<number>(0)
     const [validationError, setValidationError] = useState<string>('')
     const [showValidationModal, setShowValidationModal] = useState<boolean>(false)
+    const isEditing = !!editingQuestion
     const formRenderer = {
         mc: {
             form: <MultipleChoiceForm />,
@@ -59,18 +62,18 @@ const NewQuestionForm = ({ examination_id }: Props) => {
             <Formik
                 key={formKey}
                 initialValues={{
-                    question: '',
-                    type: 'mc',
-                    isRandomChoices: true,
-                    choices: [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
-                    isTrue: false,
-                    expectedAnswers: [''],
-                    maxWords: 0,
-                    score: 1
+                    question: editingQuestion?.question || '',
+                    type: editingQuestion?.type || 'mc',
+                    isRandomChoices: editingQuestion?.isRandomChoices ?? true,
+                    choices: editingQuestion?.choices || [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
+                    isTrue: editingQuestion?.isTrue ?? false,
+                    expectedAnswers: editingQuestion?.expectedAnswers || [''],
+                    maxWords: editingQuestion?.maxWords || 0,
+                    score: editingQuestion?.score || 1
                 }}
                 onSubmit={async (
-                    values: QuestionForm,
-                    formikHelpers: FormikHelpers<QuestionForm>
+                    values,
+                    formikHelpers
                 ) => {
                     try {
                         // Validate multiple choice questions have at least one correct answer
@@ -85,22 +88,33 @@ const NewQuestionForm = ({ examination_id }: Props) => {
                         }
                         
                         formikHelpers.setSubmitting(false)
-                        const res = await clientAPI.post(`exam/question/${examination_id}`, {...values, score: Number(values.score)})
-                        toast.success(res.data.message)
-                        setTrigger(!trigger)
-                        // Reset the form by incrementing the key to force a complete re-render
-                        setFormKey(prevKey => prevKey + 1)
-                        formikHelpers.resetForm({
-                            values: {
-                                question: '',
-                                type: 'mc',
-                                choices: [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
-                                isTrue: false,
-                                expectedAnswers: [''],
-                                maxWords: 0,
-                                score: 1
-                            }
-                        })
+                        
+                        if (isEditing && editingQuestion?._id) {
+                            // Update existing question
+                            const res = await clientAPI.put(`exam/question/${examination_id}/${editingQuestion._id}`, {...values, score: Number(values.score)})
+                            toast.success('Question updated successfully')
+                            setTrigger(!trigger)
+                            onEditComplete?.()
+                        } else {
+                            // Create new question
+                            const res = await clientAPI.post(`exam/question/${examination_id}`, {...values, score: Number(values.score)})
+                            toast.success(res.data.message)
+                            setTrigger(!trigger)
+                            // Reset the form by incrementing the key to force a complete re-render
+                            setFormKey(prevKey => prevKey + 1)
+                            formikHelpers.resetForm({
+                                values: {
+                                    question: '',
+                                    type: 'mc',
+                                    isRandomChoices: true,
+                                    choices: [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
+                                    isTrue: false,
+                                    expectedAnswers: [''],
+                                    maxWords: 0,
+                                    score: 1
+                                }
+                            })
+                        }
                     } catch (error) {
                         errorHandler(error)
                     }
@@ -124,11 +138,27 @@ const NewQuestionForm = ({ examination_id }: Props) => {
 
                 return (
                     <form className="col-span-2 pl-32" onSubmit={handleSubmit}>
+                        {isEditing && (
+                            <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                                <p className="text-sm text-primary font-medium">
+                                    📝 Editing Question: {editingQuestion?.question?.substring(0, 50)}...
+                                </p>
+                            </div>
+                        )}
                         <Card>
                             <CardHeader className="justify-between">
                                 <div className='flex gap-x-4'>
-                                    <Button size="sm" color="success" type='submit'>Save</Button>
-                                    <Button size="sm">Save and add new question</Button>
+                                    <Button size="sm" color="success" type='submit'>
+                                        {isEditing ? 'Update Question' : 'Save'}
+                                    </Button>
+                                    {!isEditing && (
+                                        <Button size="sm">Save and add new question</Button>
+                                    )}
+                                    {isEditing && (
+                                        <Button size="sm" color="warning" onPress={onEditComplete}>
+                                            Cancel Edit
+                                        </Button>
+                                    )}
                                 </div>
 
                                 <Input

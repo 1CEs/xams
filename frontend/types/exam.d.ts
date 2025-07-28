@@ -45,7 +45,6 @@ type Question = {
         isCorrect: boolean
         score: number
     }[]
-    isMultiAnswer?: boolean
     isTrue?: boolean
     expectedAnswers?: string[]
     maxWords?: number

@@ -73,6 +73,10 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
     // Exam setting routes
     .post('/:id/group/:groupName/exam-setting', catchAsync(async ({ params, body, controller }: CourseContext & { params: { id: string, groupName: string }, body: ExamSettingBody }) => {
         // Convert date strings to Date objects and pass all exam setting data
+        console.log('=== EXAM SETTING CREATION DEBUG ===');
+        console.log('Received total_score from frontend:', body.total_score);
+        console.log('Body keys:', Object.keys(body));
+        
         const examSettingData = {
             exam_ids: body.exam_ids,
             schedule_name: body.schedule_name,
@@ -86,9 +90,41 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
             randomize_question: body.randomize_question,
             randomize_choice: body.randomize_choice,
             question_count: body.question_count,
+            total_score: body.total_score,
             selected_questions: body.selected_questions
         };
+        
+        console.log('Passing total_score to controller:', examSettingData.total_score);
         return await controller.addGroupExamSetting(params.id, params.groupName, examSettingData);
+    }), {
+        body: ExamSettingSchema
+    })
+    .put('/:id/group/:groupName/exam-setting/:scheduleId', catchAsync(async ({ params, body, controller }: CourseContext & { params: { id: string, groupName: string, scheduleId: string }, body: ExamSettingBody }) => {
+        // Convert date strings to Date objects and pass all exam setting data
+        console.log('=== EXAM SETTING UPDATE DEBUG ===');
+        console.log('Received schedule ID:', params.scheduleId);
+        console.log('Received total_score from frontend:', body.total_score);
+        console.log('Body keys:', Object.keys(body));
+        
+        const examSettingData = {
+            exam_ids: body.exam_ids,
+            schedule_name: body.schedule_name,
+            open_time: body.open_time ? new Date(body.open_time) : undefined,
+            close_time: body.close_time ? new Date(body.close_time) : undefined,
+            ip_range: body.ip_range || '',
+            exam_code: body.exam_code || '',
+            allowed_attempts: body.allowed_attempts,
+            allowed_review: body.allowed_review,
+            show_answer: body.show_answer,
+            randomize_question: body.randomize_question,
+            randomize_choice: body.randomize_choice,
+            question_count: body.question_count,
+            total_score: body.total_score,
+            selected_questions: body.selected_questions
+        };
+        
+        console.log('Passing total_score to controller:', examSettingData.total_score);
+        return await controller.updateGroupExamSetting(params.id, params.groupName, params.scheduleId, examSettingData);
     }), {
         body: ExamSettingSchema
     })

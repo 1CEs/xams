@@ -57,5 +57,6 @@ export const ExamSettingSchema = t.Object({
     randomize_question: t.Boolean({ description: 'Randomize question is required' }),
     randomize_choice: t.Boolean({ description: 'Randomize choice is required' }),
     question_count: t.Number({ description: 'Number of questions to include is required' }),
+    total_score: t.Optional(t.Number({ description: 'Total score for the exam schedule (optional, calculated from questions)' })),
     selected_questions: t.Optional(t.Array(t.Any(), { description: 'Selected questions from frontend (optional)' }))
 })

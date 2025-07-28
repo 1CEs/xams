@@ -117,6 +117,11 @@ export class ExaminationScheduleRepository
         }
         console.log('=== END DEBUG ===');
 
+        // Debug logging for total_score in repository
+        console.log('=== REPOSITORY DEBUG ===');
+        console.log('examSettings received:', examSettings);
+        console.log('examSettings.total_score:', examSettings?.total_score);
+        
         // Create a new examination schedule with the selected questions and exam settings
         const examinationSchedule = new ExaminationScheduleModel({
             exam_ids: examIds,
@@ -126,24 +131,60 @@ export class ExaminationScheduleRepository
             questions: JSON.parse(JSON.stringify(questionsToUse)), // Deep copy of selected questions
             created_at: new Date(),
             
-            // Include exam settings if provided
-            ...(examSettings && {
-                open_time: examSettings.open_time,
-                close_time: examSettings.close_time,
-                ip_range: examSettings.ip_range,
-                exam_code: examSettings.exam_code,
-                allowed_attempts: examSettings.allowed_attempts,
-                allowed_review: examSettings.allowed_review,
-                show_answer: examSettings.show_answer,
-                randomize_question: examSettings.randomize_question,
-                randomize_choice: examSettings.randomize_choice,
-                question_count: questionCount
-            })
+            // Always include basic exam settings
+            open_time: examSettings?.open_time,
+            close_time: examSettings?.close_time,
+            ip_range: examSettings?.ip_range || '',
+            exam_code: examSettings?.exam_code || '',
+            allowed_attempts: examSettings?.allowed_attempts || 1,
+            allowed_review: examSettings?.allowed_review || false,
+            show_answer: examSettings?.show_answer || false,
+            randomize_question: examSettings?.randomize_question || false,
+            randomize_choice: examSettings?.randomize_choice || false,
+            question_count: questionCount,
+            total_score: examSettings?.total_score // Always include total_score, even if undefined
         });
 
         // Save the examination schedule
         const result = await examinationSchedule.save();
         return result;
+    }
+
+    async updateExaminationSchedule(id: string, updateData: any): Promise<any | null> {
+        console.log('=== UPDATE EXAMINATION SCHEDULE DEBUG ===');
+        console.log('Schedule ID:', id);
+        console.log('Update Data:', updateData);
+        
+        try {
+            const result = await this._model.findByIdAndUpdate(
+                id,
+                {
+                    $set: {
+                        title: updateData.title,
+                        open_time: updateData.open_time,
+                        close_time: updateData.close_time,
+                        ip_range: updateData.ip_range,
+                        exam_code: updateData.exam_code,
+                        allowed_attempts: updateData.allowed_attempts,
+                        allowed_review: updateData.allowed_review,
+                        show_answer: updateData.show_answer,
+                        randomize_question: updateData.randomize_question,
+                        randomize_choice: updateData.randomize_choice,
+                        question_count: updateData.question_count,
+                        total_score: updateData.total_score,
+                        exam_ids: updateData.exam_ids,
+                        selected_questions: updateData.selected_questions
+                    }
+                },
+                { new: true } // Return the updated document
+            ).exec();
+            
+            console.log('✅ Successfully updated examination schedule:', result);
+            return result;
+        } catch (error) {
+            console.error('❌ Error updating examination schedule:', error);
+            throw error;
+        }
     }
 
     /**

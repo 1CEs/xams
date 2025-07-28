@@ -38,7 +38,7 @@ const ExploreCourseCard: React.FC<ExploreCourseCardProps> = ({ id, title, descri
   const totalStudentCount = groups.reduce((total, group) => total + group.students.length, 0)
 
   return (
-    <Card {...props} className={'transition duration-500 hover:-translate-y-2 max-w-[250px]'}>
+    <Card {...props} className={`${props.className} transition duration-500 hover:-translate-y-2 max-w-[250px]`}>
       <CardHeader className='p-0 rounded-b-none'>
         <Card isFooterBlurred className="border-none" radius="lg">
           <Image

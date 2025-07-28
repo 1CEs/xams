@@ -1,5 +1,5 @@
 import { Button, Checkbox, Chip, Tooltip, useDisclosure, Card, CardBody, CardHeader, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input } from "@nextui-org/react"
-import { MdiBin, MdiPaper, UisSchedule, PhEyeDuotone, MaterialSymbolsListAlt } from "@/components/icons/icons"
+import { MdiBin, MdiPaper, UisSchedule, PhEyeDuotone, MaterialSymbolsListAlt, FluentSettings16Filled } from "@/components/icons/icons"
 import { useRouter } from "nextjs-toploader/app"
 import { useFetch } from "@/hooks/use-fetch"
 import { useMemo, useState } from "react"
@@ -41,6 +41,7 @@ interface ExamScheduleCardProps {
   groupName: string
   isStudent?: boolean
   onDelete?: (groupName: string, examSettingIndex: number) => void
+  onEdit?: (scheduleId: string, courseId: string, groupName: string) => void
   // Selection props for bulk operations
   isSelected?: boolean
   onSelectionChange?: () => void
@@ -55,6 +56,7 @@ export default function ExamScheduleCard({
   groupName, 
   isStudent = false, 
   onDelete,
+  onEdit,
   isSelected = false,
   onSelectionChange,
   showCheckbox = false
@@ -330,6 +332,19 @@ export default function ExamScheduleCard({
                     <MaterialSymbolsListAlt className="h-4 w-4" />
                   </Button>
                 </Tooltip>
+                {onEdit && (
+                  <Tooltip content="Edit exam schedule">
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      color="warning"
+                      onPress={() => onEdit(setting.schedule_id, courseId, groupName)}
+                    >
+                      <FluentSettings16Filled className="h-4 w-4" />
+                    </Button>
+                  </Tooltip>
+                )}
                 <Tooltip content="Delete exam schedule">
                   <Button
                     isIconOnly

@@ -412,22 +412,25 @@ export default function CoursePage() {
                                                     {group.schedule_ids.map((scheduleId, idx) => {
                                                         const selectionKey = `${group.group_name}-${idx}-${scheduleId}`
                                                         return (
-                                                            <ExamScheduleCard
-                                                                courseId={_id as string}
-                                                                key={idx}
-                                                                groupId={group._id}
-                                                                setting={{
-                                                                    _id: scheduleId,
-                                                                    schedule_id: scheduleId
-                                                                }}
-                                                                index={idx}
-                                                                groupName={group.group_name}
-                                                                onDelete={openDeleteExamConfirmation}
-                                                                // Selection props
-                                                                isSelected={selectedExamSchedules.has(selectionKey)}
-                                                                onSelectionChange={() => handleExamScheduleSelect(scheduleId, group.group_name, idx)}
-                                                                showCheckbox={true}
-                                                            />
+                                                             <ExamScheduleCard
+                                                                 courseId={_id as string}
+                                                                 key={idx}
+                                                                 groupId={group._id}
+                                                                 setting={{
+                                                                     _id: scheduleId,
+                                                                     schedule_id: scheduleId
+                                                                 }}
+                                                                 index={idx}
+                                                                 groupName={group.group_name}
+                                                                 onDelete={openDeleteExamConfirmation}
+                                                                 onEdit={(scheduleId, courseId, groupName) => {
+                                                                     router.push(`/overview/create/schedule?courseId=${courseId}&groupId=${encodeURIComponent(groupName)}&scheduleId=${scheduleId}&mode=edit`)
+                                                                 }}
+                                                                 // Selection props
+                                                                 isSelected={selectedExamSchedules.has(selectionKey)}
+                                                                 onSelectionChange={() => handleExamScheduleSelect(scheduleId, group.group_name, idx)}
+                                                                 showCheckbox={true}
+                                                             />
                                                         )
                                                     })}
                                                 </div>

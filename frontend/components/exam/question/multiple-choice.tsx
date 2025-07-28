@@ -13,17 +13,18 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number, correctCount }) => {
     const { setFieldValue, values } = useFormikContext<QuestionForm>()
     const [requiredInput, setRequiredInput] = useState<string>('')
     const [stateColor, setStateColor] = useState<'default' | 'danger' | 'warning' | 'secondary'>('default')
+    
+    // Get current choices with fallback
+    const currentChoices = values.choices || []
 
     const convertToAlphabet = (num: number) => String.fromCharCode(num + 'A'.charCodeAt(0))
 
     const handleRemoveChoice = () => {
-        if (!values.choices) return
-        setFieldValue('choices', values.choices.filter((_, i) => i !== number))
+        setFieldValue('choices', currentChoices.filter((_: any, i: number) => i !== number))
     }
 
     const handleToggleCorrectAnswer = (isSelected: boolean) => {
-        if (!values.choices) return
-        const choice = values.choices[number]
+        const choice = currentChoices[number]
 
         if (!choice.content.trim()) {
             setRequiredInput('You must enter a choice first')
@@ -31,15 +32,30 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number, correctCount }) => {
             return
         }
 
-        const isDupeChoice = new Set(values.choices.map(c => c.content)).size !== values.choices.length
+        const isDupeChoice = new Set(currentChoices.map((c: any) => c.content)).size !== currentChoices.length
         if (isDupeChoice) {
             setRequiredInput('You must have unique choices')
             setStateColor('warning')
             return
         }
 
-        const newChoices = [...values.choices]
+        const newChoices = [...currentChoices]
         newChoices[number] = { ...choice, isCorrect: isSelected }
+        
+        // Calculate new correct count after this change
+        const newCorrectCount = newChoices.filter(c => c.isCorrect).length
+        
+        // Update scores for all choices based on new correct count
+        if (newCorrectCount > 0) {
+            newChoices.forEach((c, index) => {
+                if (c.isCorrect) {
+                    newChoices[index] = { ...c, score: values.score / newCorrectCount }
+                } else {
+                    newChoices[index] = { ...c, score: (values.score / newCorrectCount) * -1 }
+                }
+            })
+        }
+        
         setFieldValue('choices', newChoices)
         setStateColor(isSelected ? 'secondary' : 'default')
         setRequiredInput('')
@@ -48,7 +64,7 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number, correctCount }) => {
     return (
         <div className="flex gap-x-6 w-full">
             <Chip
-                color={values.choices?.[number]?.isCorrect ? 'secondary' : stateColor}
+                color={currentChoices[number]?.isCorrect ? 'secondary' : stateColor}
                 variant="dot"
             >
                 <span className='text-sm'>
@@ -61,7 +77,7 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number, correctCount }) => {
                         <Checkbox
                             name={`choices.${number}.isCorrect`}
                             color="secondary"
-                            isSelected={values.choices?.[number]?.isCorrect}
+                            isSelected={currentChoices[number]?.isCorrect}
                             onValueChange={(isSelected) => handleToggleCorrectAnswer(isSelected)}
                             size="lg"
                         >
@@ -79,10 +95,11 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number, correctCount }) => {
                                 type="number"
                                 size='sm'
                                 value={
-                                    values.choices?.[number]?.isCorrect ?
-                                        (values.score / correctCount).toFixed(5).toString()
+                                    (currentChoices[number]?.isCorrect) ?
+                                        (correctCount > 0 ? (values.score / correctCount).toFixed(2) : '0')
                                         :
-                                        ((values.score / correctCount) * -1).toFixed(5).toString()}
+                                        (correctCount > 0 ? ((values.score / correctCount) * -1).toFixed(2) : '0')
+                                }
                                 onChange={(e) => setFieldValue(`choices.${number}.score`, e.target.value)}
                             />
                         }
@@ -95,7 +112,7 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number, correctCount }) => {
                             color="danger"
                             isIconOnly
                             onPress={handleRemoveChoice}
-                            isDisabled={number !== (values.choices?.length ?? 0) - 1}
+                            isDisabled={number !== currentChoices.length - 1}
                             startContent={<MdiBin />}
                         />
                     )}
@@ -116,15 +133,26 @@ const MultipleChoiceForm: React.FC<MultipleChoiceFormProps> = () => {
     const { setFieldValue, values } = useFormikContext<QuestionForm>()
     const [correctCount, setCorrectCount] = useState<number>(0)
 
+    // Initialize choices array if it doesn't exist
     useEffect(() => {
-        const correctCount = values.choices?.filter(choice => choice.isCorrect).length ?? 0
+        if (!values.choices || values.choices.length === 0) {
+            setFieldValue('choices', [
+                { content: '', isCorrect: false, score: 0 },
+                { content: '', isCorrect: false, score: 0 }
+            ])
+        }
+    }, [])
+
+    useEffect(() => {
+        const currentChoices = values.choices || []
+        const correctCount = currentChoices.filter((choice: any) => choice.isCorrect).length
         setCorrectCount(correctCount)
-        console.log(correctCount)
+        console.log('Correct count updated:', correctCount)
     }, [values.choices])
 
     const handleAddChoice = () => {
-        if (!values.choices) return
-        setFieldValue('choices', [...values.choices, { content: '', isCorrect: false, score: 0 }])
+        const currentChoices = values.choices || []
+        setFieldValue('choices', [...currentChoices, { content: '', isCorrect: false, score: 0 }])
     }
 
     return (
@@ -133,7 +161,7 @@ const MultipleChoiceForm: React.FC<MultipleChoiceFormProps> = () => {
                 <span className='text-danger'>* </span>
                 <span>You can select multiple correct answers, but wrong choices will deduct points.</span>
             </p>
-            {values.choices?.map((_, idx) => (
+            {(values.choices || []).map((_: any, idx: number) => (
                 <ChoiceBox correctCount={correctCount} key={idx} number={idx} />
             ))}
             <div className='flex justify-between items-center'>

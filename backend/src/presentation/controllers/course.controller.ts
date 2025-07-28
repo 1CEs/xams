@@ -217,8 +217,13 @@ export class CourseController implements ICourseController {
         }
 
         try {
-            // Create an examination schedule to snapshot the questions
-            const examSchedule = await this._examScheduleService.createExaminationSchedule(
+        // Debug logging for total_score
+        console.log('=== CONTROLLER DEBUG ===');
+        console.log('examSettingData.total_score:', examSettingData.total_score);
+        console.log('examSettingData keys:', Object.keys(examSettingData));
+        
+        // Create an examination schedule to snapshot the questions
+        const examSchedule = await this._examScheduleService.createExaminationSchedule(
                 examSettingData.exam_ids,
                 course.instructor_id,
                 examSettingData.question_count,
@@ -232,7 +237,8 @@ export class CourseController implements ICourseController {
                     allowed_review: examSettingData.allowed_review,
                     show_answer: examSettingData.show_answer,
                     randomize_question: examSettingData.randomize_question,
-                    randomize_choice: examSettingData.randomize_choice
+                    randomize_choice: examSettingData.randomize_choice,
+                    total_score: examSettingData.total_score
                 },
                 examSettingData.selected_questions // Pass the selected questions from frontend
             );
@@ -307,6 +313,41 @@ export class CourseController implements ICourseController {
         const updated = await this._service.updateCourse(courseId, { groups: course.groups })
         
         return this._response('Exam setting deleted successfully', 200, updated)
+    }
+
+    async updateGroupExamSetting(courseId: string, groupName: string, scheduleId: string, examSettingData: any) {
+        try {
+            console.log('=== UPDATE GROUP EXAM SETTING DEBUG ===');
+            console.log('Course ID:', courseId);
+            console.log('Group Name:', groupName);
+            console.log('Schedule ID:', scheduleId);
+            console.log('Exam Setting Data:', examSettingData);
+            
+            // Update the examination schedule directly
+            const updatedSchedule = await this._examScheduleService.updateExaminationSchedule(scheduleId, {
+                title: examSettingData.schedule_name,
+                open_time: examSettingData.open_time,
+                close_time: examSettingData.close_time,
+                ip_range: examSettingData.ip_range,
+                exam_code: examSettingData.exam_code,
+                allowed_attempts: examSettingData.allowed_attempts,
+                allowed_review: examSettingData.allowed_review,
+                show_answer: examSettingData.show_answer,
+                randomize_question: examSettingData.randomize_question,
+                randomize_choice: examSettingData.randomize_choice,
+                question_count: examSettingData.question_count,
+                total_score: examSettingData.total_score,
+                exam_ids: examSettingData.exam_ids,
+                selected_questions: examSettingData.selected_questions
+            });
+            
+            console.log('✅ Successfully updated examination schedule:', updatedSchedule);
+            
+            return this._response('Exam setting updated successfully', 200, updatedSchedule)
+        } catch (error: any) {
+            console.error('❌ Error updating examination schedule:', error)
+            throw error
+        }
     }
 
     async getSetting(course_id: string, group_id: string, setting_id: string) {

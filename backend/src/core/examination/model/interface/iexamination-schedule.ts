@@ -21,4 +21,5 @@ export interface IExaminationSchedule {
     randomize_question?: boolean;
     randomize_choice?: boolean;
     question_count?: number;
+    total_score?: number; // Total score for the exam schedule
 }

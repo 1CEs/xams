@@ -1,11 +1,18 @@
 import { Input, Button, Card, CardBody, CardHeader } from '@nextui-org/react'
 import { useFormikContext } from 'formik'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import TextEditor from '../../text-editor'
 
 const LongEssayForm = () => {
     const { setFieldValue, values } = useFormikContext<QuestionForm>()
     const [editorKeys, setEditorKeys] = useState<number[]>([0])
+
+    // Initialize expectedAnswers if it doesn't exist
+    useEffect(() => {
+        if (!values.expectedAnswers || values.expectedAnswers.length === 0) {
+            setFieldValue('expectedAnswers', [''])
+        }
+    }, [])
 
     const addExpectedAnswer = () => {
         const currentAnswers = values.expectedAnswers || ['']

@@ -31,14 +31,20 @@ import { useTrigger } from "@/stores/trigger.store"
 // Add these type definitions for your question types
 export type QuestionSelector = "tf" | "les" | "mc" | "ses";
 
+interface Choice {
+  content: string
+  isCorrect: boolean
+  score: number
+}
+
 export interface QuestionForm {
     id: number;
     question: string;
     type: QuestionSelector;
     score: number;
-    choices?: Array<string>;
+    choices?: Choice[];
     isTrue?: boolean;
-    expectedAnswer?: string;
+    expectedAnswers?: string[];
     maxWords?: number;
 }
 

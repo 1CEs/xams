@@ -49,6 +49,7 @@ export default function CreateExaminationPage() {
     const [activeId, setActiveId] = useState<number | null>(null)
     const { trigger, setTrigger } = useTrigger()
     const [isEditing, setIsEditing] = useState<boolean>(false)
+    const [editingQuestion, setEditingQuestion] = useState<QuestionWithIdentifier<QuestionForm> | null>(null)
     const [formValues, setFormValues] = useState({
         title: '',
         description: ''
@@ -215,6 +216,31 @@ export default function CreateExaminationPage() {
         }
     }
 
+    const handleDeleteAllQuestions = async () => {
+        try {
+            const res = await clientAPI.delete(`exam/question/all/${_id}`)
+            toast.success(res.data.message)
+            setTrigger(!trigger)
+            setDeleteAllModal({ isOpen: false })
+            setSelectedQuestions(new Set())
+            setSelectAll(false)
+        } catch (error) {
+            console.log(error)
+            errorHandler(error)
+        }
+    }
+
+    const handleEditQuestion = (question: QuestionWithIdentifier<QuestionForm>) => {
+        setEditingQuestion(question)
+        setIsNewQuestion(true)
+        setIsNestedQuestion(false)
+    }
+
+    const handleCancelEdit = () => {
+        setEditingQuestion(null)
+        setIsNewQuestion(false)
+    }
+
     // Add pagination logic
     const indexOfLastQuestion = currentPage * questionsPerPage
     const indexOfFirstQuestion = indexOfLastQuestion - questionsPerPage
@@ -271,27 +297,7 @@ export default function CreateExaminationPage() {
         }
     }
 
-    const handleDeleteAllQuestions = async () => {
-        try {
-            // Use bulk delete API for better performance
-            const allQuestionIds = questionList.map(question => question._id!)
-            await clientAPI.delete('exam/questions/bulk', {
-                data: {
-                    examination_id: _id!,
-                    question_ids: allQuestionIds
-                }
-            })
-            
-            toast.success('All questions deleted successfully')
-            setSelectedQuestions(new Set())
-            setSelectAll(false)
-            setDeleteAllModal({ isOpen: false })
-            setTrigger(!trigger)
-        } catch (error) {
-            console.error('Error deleting all questions:', error)
-            errorHandler(error)
-        }
-    }
+
 
     if (exam) {
         return (
@@ -494,7 +500,11 @@ export default function CreateExaminationPage() {
                                                 size="sm"
                                                 className="mt-2"
                                             />
-                                            <DraggableQuestion question={question} id={question.id} />
+                                            <DraggableQuestion 
+                                                question={question} 
+                                                id={question.id} 
+                                                onEdit={handleEditQuestion}
+                                            />
                                             <Tooltip content="Delete question">
                                                 <Button
                                                     size="sm"
@@ -568,7 +578,11 @@ export default function CreateExaminationPage() {
                             </div>}
                     </div>
                     {isNewQuestion ?
-                        <NewQuestionForm examination_id={_id!} />
+                        <NewQuestionForm 
+                            examination_id={_id!} 
+                            editingQuestion={editingQuestion}
+                            onEditComplete={handleCancelEdit}
+                        />
                         : null
                     }
                     {isNestedQuestion ?
