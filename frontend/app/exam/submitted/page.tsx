@@ -21,6 +21,24 @@ interface ExamSchedule {
   created_at: string
 }
 
+interface CourseData {
+  _id: string
+  course_name: string
+  groups: {
+    _id: string
+    group_name: string
+    students: string[]
+    schedule_ids: string[]
+  }[]
+}
+
+interface StudentData {
+  _id: string
+  username: string
+  email: string
+  profile_url?: string
+}
+
 interface SubmissionData {
   _id: string
   student_id: string
@@ -51,6 +69,9 @@ export default function SubmittedExamPage() {
   const [isLoadingSubmissions, setIsLoadingSubmissions] = useState(false)
   const [aiResults, setAiResults] = useState<any[]>([])
   const [showResults, setShowResults] = useState(false)
+  const [allStudents, setAllStudents] = useState<StudentData[]>([])
+  const [courseData, setCourseData] = useState<CourseData | null>(null)
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false)
 
   // Redirect if no schedule ID
   useEffect(() => {
@@ -75,21 +96,133 @@ export default function SubmittedExamPage() {
     scheduleId ? `/submission/schedule/${scheduleId}` : ''
   )
 
-  useEffect(() => {
-    if (submissionsData?.data) {
-      setSubmissions(submissionsData.data.map((submission) => ({
-        _id: submission._id,
-        student_id: submission.student_id,
-        username: submission.student_info?.username || 'Unknown Student',
-        email: submission.student_info?.email || 'No email',
-        status: submission.status as 'submitted' | 'graded' | 'late',
-        score: submission.total_score ?? null,
-        submissionDate: new Date(submission.submission_time).toLocaleString(),
-        role: 'Student',
-        profile_url: submission.student_info?.profile_url || `https://i.pravatar.cc/150?u=${submission.student_id}`,
-      })))
+  // Function to find course containing the schedule
+  const findCourseWithSchedule = async (scheduleId: string): Promise<CourseData | null> => {
+    try {
+      // Get all courses
+      const coursesResponse = await clientAPI.get<{ data: CourseData[] }>('/course')
+      const courses = coursesResponse.data.data
+      
+      // Find course that contains this schedule_id in any of its groups
+      for (const course of courses) {
+        for (const group of course.groups) {
+          if (group.schedule_ids.includes(scheduleId)) {
+            return course
+          }
+        }
+      }
+      return null
+    } catch (error) {
+      console.error('Error finding course with schedule:', error)
+      return null
     }
-  }, [submissionsData])
+  }
+
+  // Function to fetch all students in the course
+  const fetchAllStudents = async (course: CourseData): Promise<StudentData[]> => {
+    try {
+      // Get all unique student IDs from all groups
+      const allStudentIds = new Set<string>()
+      course.groups.forEach(group => {
+        group.students.forEach(studentId => allStudentIds.add(studentId))
+      })
+
+      // Fetch student details
+      const studentPromises = Array.from(allStudentIds).map(async (studentId) => {
+        try {
+          const response = await clientAPI.get<{ data: StudentData }>(`/user/${studentId}`)
+          return response.data.data
+        } catch (error) {
+          console.error(`Error fetching student ${studentId}:`, error)
+          return null
+        }
+      })
+
+      const students = await Promise.all(studentPromises)
+      return students.filter((student): student is StudentData => student !== null)
+    } catch (error) {
+      console.error('Error fetching students:', error)
+      return []
+    }
+  }
+
+  // Load course and students data
+  useEffect(() => {
+    const loadCourseAndStudents = async () => {
+      if (!scheduleId) return
+      
+      setIsLoadingStudents(true)
+      try {
+        // Find the course containing this schedule
+        const course = await findCourseWithSchedule(scheduleId)
+        if (course) {
+          setCourseData(course)
+          
+          // Fetch all students in the course
+          const students = await fetchAllStudents(course)
+          setAllStudents(students)
+        } else {
+          toast.error('Could not find course for this exam schedule')
+        }
+      } catch (error) {
+        console.error('Error loading course and students:', error)
+        toast.error('Failed to load student data')
+      } finally {
+        setIsLoadingStudents(false)
+      }
+    }
+
+    loadCourseAndStudents()
+  }, [scheduleId])
+
+  // Combine submissions with all students
+  useEffect(() => {
+    if (allStudents.length > 0) {
+      const submissionMap = new Map<string, SubmissionData>()
+      
+      // Create a map of submissions by student_id
+      if (submissionsData?.data) {
+        submissionsData.data.forEach(submission => {
+          submissionMap.set(submission.student_id, submission)
+        })
+      }
+
+      // Create submission entries for all students
+      const allSubmissions: Submission[] = allStudents.map(student => {
+        const submission = submissionMap.get(student._id)
+        
+        if (submission) {
+          // Student has submitted
+          return {
+            _id: submission._id,
+            student_id: student._id,
+            username: student.username,
+            email: student.email,
+            status: submission.status as 'submitted' | 'graded' | 'late',
+            score: submission.total_score ?? null,
+            submissionDate: new Date(submission.submission_time).toLocaleString(),
+            role: 'Student',
+            profile_url: student.profile_url || `https://i.pravatar.cc/150?u=${student._id}`,
+          }
+        } else {
+          // Student has not submitted
+          return {
+            _id: `unsubmitted-${student._id}`,
+            student_id: student._id,
+            username: student.username,
+            email: student.email,
+            status: 'unsubmitted' as any,
+            score: null,
+            submissionDate: 'Not submitted',
+            role: 'Student',
+            profile_url: student.profile_url || `https://i.pravatar.cc/150?u=${student._id}`,
+          }
+        }
+      })
+
+      setSubmissions(allSubmissions)
+    }
+  }, [allStudents, submissionsData])
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -124,12 +257,20 @@ export default function SubmittedExamPage() {
     setIsLoadingSubmissions(true);
     
     try {
-      // Filter submissions based on scope
-      let targetSubmissions = submissions;
+      // Filter submissions based on scope, excluding unsubmitted students
+      let targetSubmissions = submissions.filter(s => s.status !== 'unsubmitted');
+      
       if (scope === 'selected') {
-        targetSubmissions = submissions.filter(s => selectedLearners.has(s._id));
+        targetSubmissions = targetSubmissions.filter(s => selectedLearners.has(s._id));
       } else if (scope === 'ungraded') {
-        targetSubmissions = submissions.filter(s => s.status !== 'graded');
+        targetSubmissions = targetSubmissions.filter(s => s.status !== 'graded');
+      }
+      
+      // Check if there are any valid submissions to process
+      if (targetSubmissions.length === 0) {
+        toast.error('No submitted exams found to process');
+        setIsLoadingSubmissions(false);
+        return;
       }
       
       // Get detailed submission data for AI processing
@@ -219,8 +360,9 @@ export default function SubmittedExamPage() {
   };
 
   const handleSelectLearners = () => {
-    if (submissions.length === 0) {
-      toast.error('No learners available');
+    const submittedStudents = submissions.filter(s => s.status !== 'unsubmitted');
+    if (submittedStudents.length === 0) {
+      toast.error('No students have submitted exams yet');
       return;
     }
     setIsSelectingLearners(true);
@@ -247,12 +389,16 @@ export default function SubmittedExamPage() {
   };
 
   // Loading state
-  if (isLoadingSchedule || isLoadingSubmissionsData) {
+  if (isLoadingSchedule || isLoadingSubmissionsData || isLoadingStudents) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
-          <Spinner size="lg" color="secondary" />
-          <p className="mt-4 text-default-600">Loading exam submissions...</p>
+          <Spinner size="lg" />
+          <p className="mt-4 text-default-500">
+            {isLoadingSchedule && "Loading exam schedule..."}
+            {isLoadingSubmissionsData && "Loading submissions..."}
+            {isLoadingStudents && "Loading student data..."}
+          </p>
         </div>
       </div>
     )
@@ -310,22 +456,30 @@ export default function SubmittedExamPage() {
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Button
-          isIconOnly
           variant="light"
-          color="default"
+          startContent={<ArrowLeft />}
           onPress={() => router.back()}
         >
-          <ArrowLeft className="h-4 w-4" />
+          Back
         </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Exam Submissions
-          </h1>
-          <p className="text-default-600">{examSchedule.data.title}</p>
+        <div>
+          <h1 className="text-2xl font-bold">{examSchedule?.data?.title}</h1>
+          <p className="text-default-500">
+            All Students ({submissions.length} total)
+            {courseData && ` - ${courseData.course_name}`}
+          </p>
         </div>
-        <div className="text-right">
+        <div className="text-right flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Chip color="success" variant="flat" size="sm">
+              {submissions.filter(s => s.status !== 'unsubmitted').length} Submitted
+            </Chip>
+            <Chip color="default" variant="flat" size="sm">
+              {submissions.filter(s => s.status === 'unsubmitted').length} Not Submitted
+            </Chip>
+          </div>
           <Chip color="secondary" variant="flat">
-            {submissions.length} Submissions
+            {submissions.length} Total Students
           </Chip>
         </div>
       </div>
@@ -397,8 +551,13 @@ export default function SubmittedExamPage() {
           <ModalBody>
             {isSelectingLearners ? (
               <div className="max-h-[60vh] overflow-y-auto">
+                <div className="mb-4 p-3 bg-primary-50 rounded-lg border border-primary-200">
+                  <p className="text-sm text-primary-700">
+                    💡 Only students who have submitted their exams are shown below.
+                  </p>
+                </div>
                 <div className="flex flex-col gap-2">
-                  {submissions.map((learner) => (
+                  {submissions.filter(learner => learner.status !== 'unsubmitted').map((learner) => (
                     <div key={learner._id} className="flex items-center gap-4 p-2 hover:bg-default-100 rounded-lg">
                       <Checkbox
                         color="secondary"
@@ -415,10 +574,24 @@ export default function SubmittedExamPage() {
                         <div>
                           <p className="font-medium">{learner.username}</p>
                           <p className="text-xs text-gray-500">{learner.email}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Chip 
+                              size="sm" 
+                              color={learner.status === 'graded' ? 'success' : 'warning'}
+                              variant="flat"
+                            >
+                              {learner.status}
+                            </Chip>
+                          </div>
                         </div>
                       </div>
                     </div>
                   ))}
+                  {submissions.filter(learner => learner.status !== 'unsubmitted').length === 0 && (
+                    <div className="text-center py-8 text-default-500">
+                      <p>No students have submitted their exams yet.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

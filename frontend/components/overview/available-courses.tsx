@@ -213,7 +213,7 @@ const AvailableCourses = (props: Props) => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="flex flex-wrap gap-4">
             {processedCourses.map((course: CourseResponse, idx: number) => (
               <div key={course._id} className="transform transition-all duration-300 hover:scale-105">
                 <CourseCard

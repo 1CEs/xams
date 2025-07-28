@@ -1,7 +1,7 @@
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button } from "@nextui-org/react";
 
 // Types
-export type SubmissionStatus = 'submitted' | 'graded' | 'late';
+export type SubmissionStatus = 'submitted' | 'graded' | 'late' | 'unsubmitted';
 
 export interface Submission {
   _id: string;
@@ -24,7 +24,9 @@ interface SubmittedTableProps {
 const statusColorMap = {
   submitted: 'warning',
   graded: 'success',
-  late: 'danger',} as const;
+  late: 'danger',
+  unsubmitted: 'default',
+} as const;
 
 export const SubmittedTable = ({ submissions, onView, onGrade }: SubmittedTableProps) => {
   const columns = [
@@ -63,8 +65,20 @@ export const SubmittedTable = ({ submissions, onView, onGrade }: SubmittedTableP
           </Chip>
         );
       case 'score':
+        if (submission.status === 'unsubmitted') {
+          return (
+            <span className="text-default-400 italic">No submission</span>
+          );
+        }
         return submission.score ? `${submission.score}/100` : 'Not graded';
       case 'actions':
+        if (submission.status === 'unsubmitted') {
+          return (
+            <div className="flex gap-2">
+              <span className="text-sm text-default-400 italic px-3 py-1">No actions available</span>
+            </div>
+          );
+        }
         return (
           <div className="flex gap-2">
             <Button 

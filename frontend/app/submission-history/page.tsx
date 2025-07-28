@@ -635,14 +635,18 @@ const SubmissionHistoryPage = () => {
                     </div>
                     
                     {/* Questions and Answers Section */}
-                    {((examSchedule?.show_answer && submission.is_graded) || user?.role === 'instructor') && (
+                    {(examSchedule?.allowed_review && submission.is_graded) && (
                       <div className="mt-6">
                         <Divider className="mb-4" />
                         <div className="flex items-center justify-between mb-4">
                           <h4 className="font-semibold text-lg">
-                            {user?.role === 'instructor' ? 'Student Submission Review' : 'Answer Review'}
+                            Your Submission Review
                           </h4>
-                          
+                        </div>
+                      
+                        
+                        <div className="flex items-center justify-between mb-4">
+                          <div></div>
                           {/* Question Type Filter */}
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-default-600">Filter by type:</span>
@@ -804,7 +808,7 @@ const SubmissionHistoryPage = () => {
                                                   title={
                                                     <div className="flex items-center gap-2">
                                                       <span className="text-sm font-medium">
-                                                        {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
+                                                        Your answer: 
                                                       </span>
                                                       <span className="text-sm font-semibold text-primary">
                                                         {answer.submitted_choices?.join(', ') || 'No answer selected'}
@@ -823,6 +827,7 @@ const SubmissionHistoryPage = () => {
                                                       {answer.original_choices.map((choice, choiceIndex) => {
                                                         const isSelected = answer.submitted_choices?.includes(choice.content)
                                                         const isCorrect = choice.isCorrect
+                                                        const showCorrectAnswers = examSchedule?.show_answer && examSchedule?.allowed_review
                                                         
                                                         return (
                                                           <Radio
@@ -830,12 +835,16 @@ const SubmissionHistoryPage = () => {
                                                             value={choice.content}
                                                             classNames={{
                                                               base: `max-w-full m-0 p-3 rounded-lg border-2 transition-colors ${
-                                                                isSelected 
-                                                                  ? isCorrect 
-                                                                    ? 'border-success bg-success/10' 
-                                                                    : 'border-danger bg-danger/10'
-                                                                  : isCorrect
-                                                                    ? 'border-success/30 bg-success/5'
+                                                                showCorrectAnswers
+                                                                  ? isSelected 
+                                                                    ? isCorrect 
+                                                                      ? 'border-success bg-success/10' 
+                                                                      : 'border-danger bg-danger/10'
+                                                                    : isCorrect
+                                                                      ? 'border-success/30 bg-success/5'
+                                                                      : 'border-default-200 bg-default-50'
+                                                                  : isSelected
+                                                                    ? 'border-blue-400 bg-blue-400/10'
                                                                     : 'border-default-200 bg-default-50'
                                                               }`,
                                                               wrapper: "hidden",
@@ -846,11 +855,11 @@ const SubmissionHistoryPage = () => {
                                                               <span className="text-sm">{choice.content}</span>
                                                               <div className="flex items-center gap-2">
                                                                 {isSelected && (
-                                                                  <Chip size="sm" color="primary" variant="flat">
+                                                                  <Chip size="sm" className='bg-blue-400/40' variant="flat">
                                                                     Selected
                                                                   </Chip>
                                                                 )}
-                                                                {isCorrect && (
+                                                                {showCorrectAnswers && isCorrect && (
                                                                   <Chip size="sm" color="success" variant="flat">
                                                                     Correct
                                                                   </Chip>
@@ -869,51 +878,13 @@ const SubmissionHistoryPage = () => {
                                               <div className="space-y-3">
                                                 <div className="text-sm rounded-md p-3 border border-default-200">
                                                   <span className="text-default-600 font-medium">
-                                                    {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
+                                                    Your answer: 
                                                   </span>
                                                   <span className="font-medium text-default-800">
                                                     {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
                                                     {(answer.question_type === 'ses' || answer.question_type === 'les') && answer.submitted_answer}
                                                   </span>
                                                 </div>
-                                                
-                                                {/* Manual grading section for essay questions */}
-                                                {user?.role === 'instructor' && (answer.question_type === 'ses' || answer.question_type === 'les') && (
-                                                  <div className="bg-default-50 rounded-lg p-3 border border-default-200">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                      <span className="text-sm font-medium text-default-700">
-                                                        Manual Grading
-                                                      </span>
-                                                      {answer.score_obtained !== undefined ? (
-                                                        <Chip 
-                                                          size="sm" 
-                                                          color={answer.is_correct ? "success" : "danger"}
-                                                          variant="flat"
-                                                        >
-                                                          {answer.is_correct ? "✓ Graded" : "✗ Graded"}
-                                                        </Chip>
-                                                      ) : (
-                                                        <Chip size="sm" color="warning" variant="flat">
-                                                          📝 Ungraded
-                                                        </Chip>
-                                                      )}
-                                                    </div>
-                                                    
-                                                    <div className="flex items-center gap-3">
-                                                      <span className="text-sm text-default-600">
-                                                        Score: {answer.score_obtained ?? 0} / {answer.max_score}
-                                                      </span>
-                                                      <Button
-                                                        size="sm"
-                                                        color="secondary"
-                                                        variant="bordered"
-                                                        onPress={() => handleOpenGradingModal(submission._id, answer.question_id, answer)}
-                                                      >
-                                                        {answer.score_obtained !== undefined ? 'Update Grade' : 'Grade Question'}
-                                                      </Button>
-                                                    </div>
-                                                  </div>
-                                                )}
                                               </div>
                                             )}
                                           </div>
@@ -1009,7 +980,7 @@ const SubmissionHistoryPage = () => {
                                       title={
                                         <div className="flex items-center gap-2">
                                           <span className="text-sm font-medium">
-                                            {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
+                                            Your answer: 
                                           </span>
                                           <span className="text-sm font-semibold text-primary">
                                             {answer.submitted_choices?.join(', ') || 'No answer selected'}
@@ -1028,6 +999,7 @@ const SubmissionHistoryPage = () => {
                                           {answer.original_choices.map((choice, choiceIndex) => {
                                             const isSelected = answer.submitted_choices?.includes(choice.content)
                                             const isCorrect = choice.isCorrect
+                                            const showCorrectAnswers = examSchedule?.show_answer && examSchedule?.allowed_review
                                             
                                             return (
                                               <Radio
@@ -1035,12 +1007,16 @@ const SubmissionHistoryPage = () => {
                                                 value={choice.content}
                                                 classNames={{
                                                   base: `max-w-full m-0 p-3 rounded-lg border-2 transition-colors ${
-                                                    isSelected 
-                                                      ? isCorrect 
-                                                        ? 'border-success bg-success/10' 
-                                                        : 'border-danger bg-danger/10'
-                                                      : isCorrect
-                                                        ? 'border-success/30 bg-success/5'
+                                                    showCorrectAnswers
+                                                      ? isSelected 
+                                                        ? isCorrect 
+                                                          ? 'border-success bg-success/10' 
+                                                          : 'border-danger bg-danger/10'
+                                                        : isCorrect
+                                                          ? 'border-success/30 bg-success/5'
+                                                          : 'border-default-200 bg-default-50'
+                                                      : isSelected
+                                                        ? 'border-blue-400 bg-blue-400/10'
                                                         : 'border-default-200 bg-default-50'
                                                   }`,
                                                   wrapper: "hidden",
@@ -1051,11 +1027,11 @@ const SubmissionHistoryPage = () => {
                                                   <span className="text-sm">{choice.content}</span>
                                                   <div className="flex items-center gap-2">
                                                     {isSelected && (
-                                                      <Chip size="sm" color="primary" variant="flat">
+                                                      <Chip size="sm" className='bg-blue-400/40' variant="flat">
                                                         Selected
                                                       </Chip>
                                                     )}
-                                                    {isCorrect && (
+                                                    {showCorrectAnswers && isCorrect && (
                                                       <Chip size="sm" color="success" variant="flat">
                                                         Correct
                                                       </Chip>
@@ -1074,51 +1050,13 @@ const SubmissionHistoryPage = () => {
                                   <div className="space-y-3">
                                     <div className="text-sm rounded-md p-3 border border-default-200">
                                       <span className="text-default-600 font-medium">
-                                        {user?.role === 'instructor' ? 'Student answer: ' : 'Your answer: '}
+                                        Your answer: 
                                       </span>
                                       <span className="font-medium text-default-800">
                                         {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
                                         {(answer.question_type === 'ses' || answer.question_type === 'les') && answer.submitted_answer}
                                       </span>
                                     </div>
-                                    
-                                    {/* Manual grading section for essay questions */}
-                                    {user?.role === 'instructor' && (answer.question_type === 'ses' || answer.question_type === 'les') && (
-                                      <div className="bg-default-50 rounded-lg p-3 border border-default-200">
-                                        <div className="flex items-center justify-between mb-2">
-                                          <span className="text-sm font-medium text-default-700">
-                                            Manual Grading
-                                          </span>
-                                          {answer.score_obtained !== undefined ? (
-                                            <Chip 
-                                              size="sm" 
-                                              color={answer.is_correct ? "success" : "danger"}
-                                              variant="flat"
-                                            >
-                                              {answer.is_correct ? "✓ Graded" : "✗ Graded"}
-                                            </Chip>
-                                          ) : (
-                                            <Chip size="sm" color="warning" variant="flat">
-                                              📝 Ungraded
-                                            </Chip>
-                                          )}
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-3">
-                                          <span className="text-sm text-default-600">
-                                            Score: {answer.score_obtained ?? 0} / {answer.max_score}
-                                          </span>
-                                          <Button
-                                            size="sm"
-                                            color="secondary"
-                                            variant="bordered"
-                                            onPress={() => handleOpenGradingModal(submission._id, answer.question_id, answer)}
-                                          >
-                                            {answer.score_obtained !== undefined ? 'Update Grade' : 'Grade Question'}
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    )}
                                   </div>
                                 )}
                               </div>
