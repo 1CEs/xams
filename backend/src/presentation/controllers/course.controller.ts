@@ -238,7 +238,8 @@ export class CourseController implements ICourseController {
                     show_answer: examSettingData.show_answer,
                     randomize_question: examSettingData.randomize_question,
                     randomize_choice: examSettingData.randomize_choice,
-                    total_score: examSettingData.total_score
+                    total_score: examSettingData.total_score,
+                    assistant_grading: examSettingData.assistant_grading
                 },
                 examSettingData.selected_questions // Pass the selected questions from frontend
             );

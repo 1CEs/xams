@@ -121,6 +121,7 @@ export class ExaminationScheduleRepository
         console.log('=== REPOSITORY DEBUG ===');
         console.log('examSettings received:', examSettings);
         console.log('examSettings.total_score:', examSettings?.total_score);
+        console.log('examSettings.assistant_grading:', examSettings?.assistant_grading);
         
         // Create a new examination schedule with the selected questions and exam settings
         const examinationSchedule = new ExaminationScheduleModel({
@@ -141,6 +142,7 @@ export class ExaminationScheduleRepository
             show_answer: examSettings?.show_answer || false,
             randomize_question: examSettings?.randomize_question || false,
             randomize_choice: examSettings?.randomize_choice || false,
+            assistant_grading: examSettings?.assistant_grading || false,
             question_count: questionCount,
             total_score: examSettings?.total_score // Always include total_score, even if undefined
         });
@@ -170,6 +172,7 @@ export class ExaminationScheduleRepository
                         show_answer: updateData.show_answer,
                         randomize_question: updateData.randomize_question,
                         randomize_choice: updateData.randomize_choice,
+                        assistant_grading: updateData.assistant_grading,
                         question_count: updateData.question_count,
                         total_score: updateData.total_score,
                         exam_ids: updateData.exam_ids,

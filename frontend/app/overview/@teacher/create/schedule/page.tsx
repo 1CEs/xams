@@ -6,12 +6,10 @@ import {
   Card,
   CardBody,
   CardHeader,
-  Divider,
   Input,
   Select,
   SelectItem,
   Switch,
-  Breadcrumbs,
   BreadcrumbItem,
   Spinner,
   Checkbox,
@@ -460,6 +458,7 @@ export default function CreateSchedulePage() {
     show_answer: false,
     randomize_question: true,
     randomize_choice: true,
+    assistant_grading: true,  // Enable AI assistant grading
     question_count: 0  // Number of questions to randomly select
   })
 
@@ -579,6 +578,7 @@ export default function CreateSchedulePage() {
           show_answer: schedule.show_answer ?? false,
           randomize_question: schedule.randomize_question ?? true,
           randomize_choice: schedule.randomize_choice ?? true,
+          assistant_grading: schedule.assistant_grading,
           question_count: schedule.question_count || 0
         })
         
@@ -602,9 +602,6 @@ export default function CreateSchedulePage() {
           setSelectedExams(schedule.exam_ids)
           await fetchExamQuestions(schedule.exam_ids)
         }
-        
-        // Set selected questions from the existing schedule
-        // The schedule stores questions directly in the 'questions' field
         if (schedule.questions && schedule.questions.length > 0) {
           console.log('Loading questions from schedule:', schedule.questions.length)
           
@@ -898,6 +895,7 @@ export default function CreateSchedulePage() {
         show_answer: formattedForm.show_answer,
         randomize_question: formattedForm.randomize_question,
         randomize_choice: formattedForm.randomize_choice,
+        assistant_grading: formattedForm.assistant_grading,
         question_count: selectedQuestions.length,
         total_score: enableManualScore ? manualTotalScore : selectedQuestions.reduce((total, q) => total + q.score, 0),
 
@@ -950,6 +948,7 @@ export default function CreateSchedulePage() {
         total_questions: selectedQuestions.length,
         total_exams: selectedExams.length,
         total_score: enhancedData.total_score,
+        assistant_grading: enhancedData.assistant_grading,
         enable_manual_score: enableManualScore,
         manual_total_score: manualTotalScore,
         auto_calculated_score: selectedQuestions.reduce((total, q) => total + q.score, 0),
@@ -1747,6 +1746,15 @@ export default function CreateSchedulePage() {
                         isDisabled={submitting}
                       >
                         Randomize answer choices
+                      </Switch>
+
+                      <Switch
+                        color="secondary"
+                        isSelected={examSettingForm.assistant_grading}
+                        onValueChange={(value) => setExamSettingForm({ ...examSettingForm, assistant_grading: value })}
+                        isDisabled={submitting}
+                      >
+                        Enable AI assistant grading
                       </Switch>
                     </div>
                   </div>

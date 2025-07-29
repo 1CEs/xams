@@ -22,4 +22,5 @@ export interface IExaminationSchedule {
     randomize_choice?: boolean;
     question_count?: number;
     total_score?: number; // Total score for the exam schedule
+    assistant_grading?: boolean; // Enable AI assistant grading
 }

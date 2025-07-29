@@ -75,6 +75,7 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
         // Convert date strings to Date objects and pass all exam setting data
         console.log('=== EXAM SETTING CREATION DEBUG ===');
         console.log('Received total_score from frontend:', body.total_score);
+        console.log('Received assistant_grading from frontend:', body.assistant_grading);
         console.log('Body keys:', Object.keys(body));
         
         const examSettingData = {
@@ -91,10 +92,13 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
             randomize_choice: body.randomize_choice,
             question_count: body.question_count,
             total_score: body.total_score,
+            assistant_grading: body.assistant_grading,
             selected_questions: body.selected_questions
         };
         
         console.log('Passing total_score to controller:', examSettingData.total_score);
+        console.log('Passing assistant_grading to controller:', examSettingData.assistant_grading);
+        console.log('Full examSettingData object:', JSON.stringify(examSettingData, null, 2));
         return await controller.addGroupExamSetting(params.id, params.groupName, examSettingData);
     }), {
         body: ExamSettingSchema
@@ -120,6 +124,7 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
             randomize_choice: body.randomize_choice,
             question_count: body.question_count,
             total_score: body.total_score,
+            assistant_grading: body.assistant_grading,
             selected_questions: body.selected_questions
         };
         
