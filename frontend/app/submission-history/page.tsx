@@ -887,6 +887,34 @@ const SubmissionHistoryPage = () => {
                                                 </div>
                                               </div>
                                             )}
+                                            
+                                            {/* Manual Grading Section for Instructors */}
+                                            {user?.role === 'instructor' && (answer.question_type === 'ses' || answer.question_type === 'les') && (
+                                              <div className="bg-default-50 rounded-lg p-3 border border-default-200 mt-3">
+                                                <div className="flex items-center justify-between">
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-medium text-default-700">Manual Grading:</span>
+                                                    {answer.score_obtained !== undefined ? (
+                                                      <Chip size="sm" color="success" variant="flat">
+                                                        ✓ Graded ({answer.score_obtained}/{answer.max_score})
+                                                      </Chip>
+                                                    ) : (
+                                                      <Chip size="sm" color="warning" variant="flat">
+                                                        📝 Ungraded
+                                                      </Chip>
+                                                    )}
+                                                  </div>
+                                                  <Button
+                                                    size="sm"
+                                                    color={answer.score_obtained !== undefined ? "secondary" : "primary"}
+                                                    variant="bordered"
+                                                    onPress={() => handleOpenGradingModal(submission._id, answer.question_id, answer)}
+                                                  >
+                                                    {answer.score_obtained !== undefined ? "Update Grade" : "Grade Question"}
+                                                  </Button>
+                                                </div>
+                                              </div>
+                                            )}
                                           </div>
                                         )
                                       })}
@@ -1057,6 +1085,33 @@ const SubmissionHistoryPage = () => {
                                         {(answer.question_type === 'ses' || answer.question_type === 'les') && answer.submitted_answer}
                                       </span>
                                     </div>
+                                    {/* Manual Grading Section for Instructors */}
+                                    {user?.role === 'instructor' && (answer.question_type === 'ses' || answer.question_type === 'les') && (
+                                      <div className="bg-default-50 rounded-lg p-3 border border-default-200 mt-3">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-sm font-medium text-default-700">Manual Grading:</span>
+                                            {answer.score_obtained !== undefined ? (
+                                              <Chip size="sm" color="success" variant="flat">
+                                                ✓ Graded ({answer.score_obtained}/{answer.max_score})
+                                              </Chip>
+                                            ) : (
+                                              <Chip size="sm" color="warning" variant="flat">
+                                                📝 Ungraded
+                                              </Chip>
+                                            )}
+                                          </div>
+                                          <Button
+                                            size="sm"
+                                            color={answer.score_obtained !== undefined ? "secondary" : "primary"}
+                                            variant="bordered"
+                                            onPress={() => handleOpenGradingModal(submission._id, answer.question_id, answer)}
+                                          >
+                                            {answer.score_obtained !== undefined ? "Update Grade" : "Grade Question"}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
