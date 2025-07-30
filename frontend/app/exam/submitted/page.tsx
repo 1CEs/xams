@@ -3,6 +3,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Checkbox, Divider, Spinner, Chip } from "@nextui-org/react"
 import { Card, CardBody, CardHeader } from "@nextui-org/card"
 import { SubmittedTable, type Submission } from "@/components/exam/submitted-table"
+import { QuestionTable, type Question } from "@/components/exam/question-table"
 import { MdiRobot, ArrowLeft } from "@/components/icons/icons"
 import { useState, useEffect } from "react"
 import { useFetch } from "@/hooks/use-fetch"
@@ -72,6 +73,7 @@ export default function SubmittedExamPage() {
   const [allStudents, setAllStudents] = useState<StudentData[]>([])
   const [courseData, setCourseData] = useState<CourseData | null>(null)
   const [isLoadingStudents, setIsLoadingStudents] = useState(false)
+  const [viewMode, setViewMode] = useState<'students' | 'questions'>('students')
 
   // Redirect if no schedule ID
   useEffect(() => {
@@ -87,7 +89,7 @@ export default function SubmittedExamPage() {
   }, [scheduleId, router])
 
   // Fetch exam schedule data
-  const { data: examSchedule, isLoading: isLoadingSchedule, error: scheduleError } = useFetch<{ data: ExamSchedule }>(
+  const { data: examSchedule, isLoading: isLoadingSchedule, error: scheduleError } = useFetch<{ data: ExamSchedule & { questions: Question[] } }>(
     scheduleId ? `/exam-schedule/${scheduleId}` : ''
   )
 
@@ -482,6 +484,7 @@ export default function SubmittedExamPage() {
             {submissions.length} Total Students
           </Chip>
         </div>
+
       </div>
 
       {/* Exam Info Card */}
@@ -509,22 +512,45 @@ export default function SubmittedExamPage() {
       {/* Submissions Table */}
       <Card>
         <CardHeader>
-          <h3 className="text-lg font-semibold">Student Submissions</h3>
+          <div className="flex justify-between items-center w-full">
+            <h3 className="text-lg font-semibold">Student Submissions</h3>
+            <Button
+              onPress={() => setViewMode(viewMode === 'students' ? 'questions' : 'students')}
+              variant="bordered"
+              color="secondary"
+              size="sm"
+            >
+              {viewMode === 'students' ? 'Question View' : 'Student View'}
+            </Button>
+          </div>
         </CardHeader>
         <CardBody>
-          {submissions.length > 0 ? (
-            <SubmittedTable 
-              submissions={submissions}
-              onView={handleView}
-              onGrade={handleGrade}
-            />
+          {viewMode === 'students' ? (
+            submissions.length > 0 ? (
+              <SubmittedTable 
+                submissions={submissions}
+                onView={handleView}
+                onGrade={handleGrade}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-default-600 mb-4">No submissions found for this exam</p>
+                <p className="text-sm text-default-500">
+                  Students haven't submitted any attempts yet.
+                </p>
+              </div>
+            )
           ) : (
-            <div className="text-center py-8">
-              <p className="text-default-600 mb-4">No submissions found for this exam</p>
-              <p className="text-sm text-default-500">
-                Students haven't submitted any attempts yet.
-              </p>
-            </div>
+            examSchedule?.data?.questions ? (
+              <QuestionTable 
+                questions={examSchedule.data.questions} 
+                scheduleId={scheduleId!}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No questions found for this exam schedule.</p>
+              </div>
+            )
           )}
         </CardBody>
       </Card>

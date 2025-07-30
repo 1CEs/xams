@@ -18,6 +18,26 @@ export class AIAssistantService {
         return_full_text: false,
     };
 
+    /**
+     * Strip HTML tags from text for fair comparison
+     * @param text Text that may contain HTML tags
+     * @returns Clean text without HTML tags
+     */
+    private stripHtmlTags(text: string): string {
+        if (!text) return '';
+        
+        // Remove HTML tags using regex
+        return text
+            .replace(/<[^>]*>/g, '') // Remove all HTML tags
+            .replace(/&nbsp;/g, ' ') // Replace non-breaking spaces
+            .replace(/&amp;/g, '&')   // Replace HTML entities
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .trim(); // Remove leading/trailing whitespace
+    }
+
     constructor() {
         this.hf = new InferenceClient(process.env.HUGGING_FACE_API_KEY);
     }
@@ -49,18 +69,28 @@ export class AIAssistantService {
                 };
             }
 
-            // Create model answer from expected answers
+            // Strip HTML tags for clean comparison
+            const cleanStudentAnswer = this.stripHtmlTags(studentAnswer);
+            const cleanQuestionText = this.stripHtmlTags(questionText);
             const modelAnswer = expectedAnswers.length > 0 
-                ? expectedAnswers.join(' OR ') 
-                : 'No specific expected answer provided';
+                ? expectedAnswers.map(answer => this.stripHtmlTags(answer)).join(' OR ') 
+                : '';
+                
+            console.log('AI Grading - Clean texts:');
+            console.log('Student answer:', cleanStudentAnswer);
+            console.log('Expected answer:', modelAnswer);
 
-            // Generate grading prompt
+            // For questions without expected answers, use a more lenient evaluation approach
+            const hasExpectedAnswers = expectedAnswers.length > 0;
+            
+            // Generate grading prompt with clean text
             const gradingPrompt = EssayGradingAssistantPrompt(
-                questionText,
+                cleanQuestionText,
                 modelAnswer,
-                studentAnswer,
+                cleanStudentAnswer,
                 maxScore,
-                questionType
+                questionType,
+                hasExpectedAnswers
             );
 
             // Call Hugging Face API
@@ -82,12 +112,19 @@ export class AIAssistantService {
             });
 
             const suggestion = (result as any).generated_text || 'Unable to provide grading suggestion.';
+            console.log('AI Response:', suggestion);
 
-            // Parse AI response to extract score and correctness
-            const gradingResult = this.parseAIGradingResponse(suggestion, maxScore);
+            // Simply trust the AI's assessment and extract the percentage/score
+            const gradingResult = this.parseAIGradingResponse(suggestion, maxScore, hasExpectedAnswers);
+            
+            console.log('Final grading result:', {
+                scoreObtained: gradingResult.scoreObtained,
+                maxScore,
+                percentage: Math.round((gradingResult.scoreObtained / maxScore) * 100)
+            });
 
             return {
-                isCorrect: gradingResult.isCorrect,
+                isCorrect: gradingResult.scoreObtained > 0, // Any score > 0 is considered "correct"
                 scoreObtained: gradingResult.scoreObtained,
                 suggestion: suggestion,
                 confidence: gradingResult.confidence
@@ -96,13 +133,13 @@ export class AIAssistantService {
         } catch (error) {
             console.error('Error in AI essay grading:', error);
             
-            // Fallback: Try basic keyword matching if AI fails
-            const fallbackResult = this.fallbackGrading(studentAnswer, expectedAnswers, maxScore);
+            // Simple fallback: give 50% credit if AI fails
+            const fallbackScore = maxScore * 0.5;
             
             return {
-                isCorrect: fallbackResult.isCorrect,
-                scoreObtained: fallbackResult.scoreObtained,
-                suggestion: `AI grading failed. Fallback result: ${fallbackResult.isCorrect ? 'Correct' : 'Incorrect'}. Manual review recommended.`,
+                isCorrect: true,
+                scoreObtained: fallbackScore,
+                suggestion: `AI grading failed. Assigned 50% credit (${fallbackScore}/${maxScore}). Manual review recommended.`,
                 confidence: 0.3
             };
         }
@@ -111,7 +148,7 @@ export class AIAssistantService {
     /**
      * Parse AI grading response to extract score and correctness
      */
-    private parseAIGradingResponse(response: string, maxScore: number): {
+    private parseAIGradingResponse(response: string, maxScore: number, hasExpectedAnswers: boolean = true): {
         isCorrect: boolean;
         scoreObtained: number;
         confidence: number;
@@ -124,11 +161,13 @@ export class AIAssistantService {
             /(\d+(?:\.\d+)?)\s*\/\s*(\d+)\s*points?/i,
             /(\d+(?:\.\d+)?)\s*out\s*of\s*(\d+)/i,
             /grade[:\s]*(\d+(?:\.\d+)?)/i,
-            /points?[:\s]*(\d+(?:\.\d+)?)/i
+            /points?[:\s]*(\d+(?:\.\d+)?)/i,
+            /(\d+)%/i // percentage pattern
         ];
 
         let extractedScore = 0;
         let confidence = 0.7;
+        let scoreFound = false;
 
         // Try to extract numerical score
         for (const pattern of scorePatterns) {
@@ -142,43 +181,130 @@ export class AIAssistantService {
                         // Normalize to actual max score
                         extractedScore = (extractedScore / detectedMaxScore) * maxScore;
                     }
+                } else if (pattern.source.includes('%')) {
+                    // Format: percentage
+                    const percentage = parseFloat(match[1]);
+                    extractedScore = (percentage / 100) * maxScore;
                 } else {
                     // Format: just score
                     extractedScore = parseFloat(match[1]);
                 }
                 confidence = 0.8;
+                scoreFound = true;
                 break;
             }
         }
 
-        // If no numerical score found, use keyword analysis
-        if (extractedScore === 0) {
-            if (lowerResponse.includes('correct') || lowerResponse.includes('good') || 
-                lowerResponse.includes('excellent') || lowerResponse.includes('accurate')) {
-                extractedScore = maxScore * 0.8; // Give 80% if positive keywords
+        // If no numerical score found, use generous keyword analysis
+        if (!scoreFound) {
+            // Check for strong positive indicators
+            if (lowerResponse.includes('excellent') || lowerResponse.includes('perfect') || 
+                lowerResponse.includes('outstanding') || lowerResponse.includes('comprehensive')) {
+                extractedScore = maxScore * 0.9; // Give 90% for excellent
+                confidence = 0.8;
+            } else if (lowerResponse.includes('good') || lowerResponse.includes('correct') || 
+                      lowerResponse.includes('accurate') || lowerResponse.includes('well') ||
+                      lowerResponse.includes('solid') || lowerResponse.includes('satisfactory')) {
+                extractedScore = maxScore * 0.75; // Give 75% for good
+                confidence = 0.7;
+            } else if (lowerResponse.includes('partial') || lowerResponse.includes('somewhat') ||
+                      lowerResponse.includes('adequate') || lowerResponse.includes('basic') ||
+                      lowerResponse.includes('fair') || lowerResponse.includes('reasonable')) {
+                extractedScore = maxScore * 0.5; // Give 50% for partial (more generous)
                 confidence = 0.6;
-            } else if (lowerResponse.includes('partial') || lowerResponse.includes('somewhat')) {
-                extractedScore = maxScore * 0.5; // Give 50% if partial
-                confidence = 0.5;
             } else if (lowerResponse.includes('incorrect') || lowerResponse.includes('wrong') || 
-                      lowerResponse.includes('poor') || lowerResponse.includes('inadequate')) {
-                extractedScore = 0;
-                confidence = 0.6;
+                      lowerResponse.includes('poor') || lowerResponse.includes('inadequate') ||
+                      lowerResponse.includes('nonsensical') || lowerResponse.includes('irrelevant') ||
+                      lowerResponse.includes('meaningless') || lowerResponse.includes('gibberish') ||
+                      lowerResponse.includes('random') || lowerResponse.includes('unrelated')) {
+                extractedScore = 0; // Give 0 for clearly wrong answers
+                confidence = 0.8;
             } else {
-                // Default to half score if unclear
-                extractedScore = maxScore * 0.5;
-                confidence = 0.3;
+                // If unclear, be more generous - assume AI sees some merit
+                extractedScore = maxScore * 0.6; // Give 60% for unclear responses (trust AI judgment)
+                confidence = 0.5;
             }
+        }
+
+        // Additional check: if the response suggests the answer is nonsensical or random
+        if (lowerResponse.includes('does not make sense') || 
+            lowerResponse.includes('not relevant') ||
+            lowerResponse.includes('appears to be random') ||
+            lowerResponse.includes('gibberish') ||
+            lowerResponse.includes('meaningless')) {
+            extractedScore = 0;
+            confidence = 0.9;
         }
 
         // Ensure score is within bounds
         extractedScore = Math.max(0, Math.min(extractedScore, maxScore));
         
         return {
-            isCorrect: extractedScore >= (maxScore * 0.6), // Consider correct if >= 60%
+            isCorrect: extractedScore >= (maxScore * 0.4), // More generous threshold - 40% is considered correct
             scoreObtained: Math.round(extractedScore * 100) / 100, // Round to 2 decimal places
             confidence
         };
+    }
+
+    /**
+     * Check if the student answer appears to be valid or nonsensical
+     */
+    private checkAnswerQuality(studentAnswer: string): { isValid: boolean; reason: string } {
+        const answer = studentAnswer.trim();
+        
+        // Check minimum length
+        if (answer.length < 3) {
+            return { isValid: false, reason: 'Answer too short' };
+        }
+        
+        // Check if answer is mostly random characters or keyboard mashing
+        const randomPatterns = [
+            /^[a-z]{1,2}[a-z]{1,2}[a-z]{1,2}[a-z]{1,2}[a-z]{1,2}[a-z]{1,2}$/i, // patterns like "gsdfdsfsdxcxcv"
+            /^[xz]{3,}/i, // patterns starting with multiple x's or z's
+            /^[qwerty]{5,}/i, // keyboard row patterns
+            /^[asdf]{4,}/i, // keyboard row patterns
+            /^[zxcv]{4,}/i, // keyboard row patterns
+            /^(.)\1{3,}/i, // repeated characters
+            /^(.)\1{4,}/, // any character repeated 5+ times
+        ];
+        
+        for (const pattern of randomPatterns) {
+            if (pattern.test(answer)) {
+                return { isValid: false, reason: 'Appears to be random characters or keyboard mashing' };
+            }
+        }
+        
+        // Check if answer contains mostly consonants (sign of random typing)
+        const consonantRatio = (answer.match(/[bcdfghjklmnpqrstvwxyz]/gi) || []).length / answer.length;
+        if (consonantRatio > 0.8 && answer.length > 5) {
+            return { isValid: false, reason: 'Unusually high consonant ratio suggesting random typing' };
+        }
+        
+        // Check for common nonsensical patterns
+        const nonsensicalPatterns = [
+            /^[a-z]{2,3}[a-z]{2,3}[a-z]{2,3}[a-z]{2,3}$/i, // patterns like "xcvcxvsdfsdf"
+            /^[a-z]+[0-9]+[a-z]+$/i, // mixed letters and numbers randomly
+            /^[^\s]{8,}$/, // long string without spaces (likely random)
+        ];
+        
+        for (const pattern of nonsensicalPatterns) {
+            if (pattern.test(answer) && answer.length > 8) {
+                return { isValid: false, reason: 'Matches nonsensical pattern' };
+            }
+        }
+        
+        // Check if answer has reasonable word structure
+        const words = answer.split(/\s+/);
+        const validWords = words.filter(word => {
+            // A valid word should have vowels and reasonable length
+            return word.length >= 2 && /[aeiou]/i.test(word);
+        });
+        
+        if (validWords.length === 0 && answer.length > 5) {
+            return { isValid: false, reason: 'No recognizable words found' };
+        }
+        
+        return { isValid: true, reason: 'Answer appears to be valid' };
     }
 
     /**
@@ -193,15 +319,24 @@ export class AIAssistantService {
             return { isCorrect: false, scoreObtained: 0 };
         }
 
-        const submittedText = studentAnswer.toLowerCase().trim();
+        // Strip HTML tags from student answer for fair comparison
+        const submittedText = this.stripHtmlTags(studentAnswer).toLowerCase().trim();
         
         // Check for exact match or partial match
         const isCorrect = expectedAnswers.some((expectedAnswer: string) => {
-            const expectedText = expectedAnswer.toLowerCase().trim();
+            // Strip HTML tags from expected answer for fair comparison
+            const expectedText = this.stripHtmlTags(expectedAnswer).toLowerCase().trim();
+            
+            console.log('Comparing answers:');
+            console.log('Student (clean):', submittedText);
+            console.log('Expected (clean):', expectedText);
+            
             return submittedText === expectedText || 
                    (expectedText.length > 10 && submittedText.includes(expectedText)) ||
                    (submittedText.length > 10 && expectedText.includes(submittedText));
         });
+
+        console.log('Fallback grading result:', { isCorrect, scoreObtained: isCorrect ? maxScore : 0 });
 
         return {
             isCorrect,
