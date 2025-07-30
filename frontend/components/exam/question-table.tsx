@@ -183,14 +183,7 @@ export const QuestionTable = ({ questions, scheduleId }: QuestionTableProps) => 
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Questions Overview</h3>
-          <p className="text-sm text-default-600">
-            {questions.length} questions • Total score: {questions.reduce((sum, q) => sum + q.score, 0)} points
-          </p>
-        </div>
-      </div>
+      
 
       <Table aria-label="Questions table" className="w-full">
         <TableHeader columns={columns}>

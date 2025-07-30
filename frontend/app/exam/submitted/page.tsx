@@ -19,6 +19,7 @@ interface ExamSchedule {
   instructor_id: string
   allowed_attempts: number
   question_count: number
+  total_score?: number
   created_at: string
 }
 
@@ -531,6 +532,7 @@ export default function SubmittedExamPage() {
                 submissions={submissions}
                 onView={handleView}
                 onGrade={handleGrade}
+                totalScore={examSchedule.data.total_score || 100}
               />
             ) : (
               <div className="text-center py-8">

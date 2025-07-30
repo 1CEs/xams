@@ -19,6 +19,7 @@ interface SubmittedTableProps {
   submissions: Submission[];
   onView: (id: string) => void;
   onGrade: (id: string) => void;
+  totalScore?: number;
 }
 
 const statusColorMap = {
@@ -28,7 +29,7 @@ const statusColorMap = {
   unsubmitted: 'default',
 } as const;
 
-export const SubmittedTable = ({ submissions, onView, onGrade }: SubmittedTableProps) => {
+export const SubmittedTable = ({ submissions, onView, onGrade, totalScore = 100 }: SubmittedTableProps) => {
   const columns = [
     { name: 'STUDENT', uid: 'name' },
     { name: 'STATUS', uid: 'status' },
@@ -70,7 +71,7 @@ export const SubmittedTable = ({ submissions, onView, onGrade }: SubmittedTableP
             <span className="text-default-400 italic">No submission</span>
           );
         }
-        return submission.score ? `${submission.score}/100` : 'Not graded';
+        return submission.score !== null ? `${submission.score}/${totalScore}` : 'Not graded';
       case 'actions':
         if (submission.status === 'unsubmitted') {
           return (

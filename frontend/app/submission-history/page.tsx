@@ -93,6 +93,7 @@ const SubmissionHistoryPage = () => {
   const [submissions, setSubmissions] = useState<ExamSubmission[]>([])
   const [examSchedule, setExamSchedule] = useState<ExamSchedule | null>(null)
   const [loading, setLoading] = useState(true)
+  const [userLoaded, setUserLoaded] = useState(false)
   const [currentQuestionPage, setCurrentQuestionPage] = useState<{ [submissionId: string]: number }>({})
   const questionsPerPage = 5
 
@@ -141,8 +142,23 @@ const SubmissionHistoryPage = () => {
     return null
   }
 
+  // Check if user is loaded from localStorage
+  useEffect(() => {
+    // Wait a bit for Zustand to rehydrate from localStorage
+    const timer = setTimeout(() => {
+      setUserLoaded(true)
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [])
+
   // Validate access and fetch data
   useEffect(() => {
+    // Don't run validation until user is loaded
+    if (!userLoaded) {
+      return
+    }
+
     const fetchData = async () => {
       if (!schedule_id || !user) {
         toast.error('Missing required parameters')
@@ -242,7 +258,7 @@ const SubmissionHistoryPage = () => {
     }
 
     fetchData()
-  }, [schedule_id, student_id, question_id, user, router])
+  }, [schedule_id, student_id, question_id, user, router, userLoaded])
 
   // Question navigation helpers
   const getCurrentQuestionPage = (submissionId: string) => {
@@ -552,14 +568,16 @@ const SubmissionHistoryPage = () => {
     }
   }, [submissions])
 
-  if (loading) {
+  if (loading || !userLoaded) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-default-50 to-primary/10 p-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <Spinner size="lg" color="primary" />
-              <p className="mt-4 text-default-600">Loading submission history...</p>
+              <p className="mt-4 text-default-600">
+                {!userLoaded ? 'Loading user data...' : 'Loading submission history...'}
+              </p>
             </div>
           </div>
         </div>

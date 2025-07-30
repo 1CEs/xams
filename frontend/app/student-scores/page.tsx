@@ -53,6 +53,7 @@ interface ExamSchedule {
   _id: string
   title: string
   description: string
+  total_score?: number
   created_at: Date
 }
 
@@ -106,11 +107,17 @@ const StudentScoresPage = () => {
 
       // Fetch exam schedules for this course
       const uniqueScheduleIds = Array.from(new Set(allExamSettings.map(setting => setting.schedule_id)))
-      const schedulePromises = uniqueScheduleIds.map((scheduleId: string) => 
-        clientAPI.get(`/exam-schedule/${scheduleId}`)
-      )
+      const schedulePromises = uniqueScheduleIds.map(async (scheduleId: string) => {
+        try {
+          const response = await clientAPI.get(`/exam-schedule/${scheduleId}`)
+          return response.data.data
+        } catch (error) {
+          console.error(`Failed to fetch schedule ${scheduleId}:`, error)
+          return null // Return null for failed requests
+        }
+      })
       const scheduleResponses = await Promise.all(schedulePromises)
-      const schedules = scheduleResponses.map(res => res.data.data)
+      const schedules = scheduleResponses.filter(schedule => schedule && schedule.title) // Filter out null schedules and schedules without title
       setExamSchedules(schedules)
 
       // Fetch student data and submissions
@@ -238,11 +245,13 @@ const StudentScoresPage = () => {
     ]
     
     // Add columns for each exam schedule
-    const examColumns = examSchedules.map(schedule => ({
-      name: schedule.title.toUpperCase(),
-      uid: `exam_${schedule._id}`,
-      scheduleId: schedule._id
-    }))
+    const examColumns = examSchedules
+      .filter(schedule => schedule && schedule.title) // Filter out null/undefined schedules or schedules without title
+      .map(schedule => ({
+        name: schedule.title.toUpperCase(),
+        uid: `exam_${schedule._id}`,
+        scheduleId: schedule._id
+      }))
     
     const endColumns = [
       { name: "TOTAL SCORE", uid: "total" },
@@ -255,7 +264,7 @@ const StudentScoresPage = () => {
   const exportToExcel = () => {
     try {
       // Define column headers in the desired order
-      const headers = ['Student Name', ...examSchedules.map(schedule => schedule.title), 'Total Score']
+      const headers = ['Student Name', ...examSchedules.filter(schedule => schedule && schedule.title).map(schedule => schedule.title), 'Total Score']
       
       // Prepare data for export with explicit column order
       const exportData = filteredStudentScores.map(student => {
@@ -265,7 +274,7 @@ const StudentScoresPage = () => {
         row.push(student.student_name)
         
         // Add scores for each exam in order
-        examSchedules.forEach(schedule => {
+        examSchedules.filter(schedule => schedule && schedule.title).forEach(schedule => {
           const examSubmissions = student.submissions.filter(sub => sub.schedule_id === schedule._id)
           if (examSubmissions.length > 0) {
             const bestSubmission = examSubmissions.reduce((best, current) => {
@@ -403,7 +412,10 @@ const StudentScoresPage = () => {
                     </span>
                   </div>
                   <p className="text-xs text-default-400">
-                    {bestSubmission.total_score}/{bestSubmission.max_possible_score}
+                    {bestSubmission.total_score}/{(() => {
+                      const schedule = examSchedules.find(s => s._id === scheduleId)
+                      return schedule?.total_score || bestSubmission.max_possible_score
+                    })()}
                   </p>
                 </>
               ) : (

@@ -67,6 +67,7 @@ const ExaminationPage = () => {
   const [setting, setSetting] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
   const [validatingAccess, setValidatingAccess] = useState(true)
+  const [userLoaded, setUserLoaded] = useState(false)
   const [answers, setAnswers] = useState<Answer[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -85,6 +86,16 @@ const ExaminationPage = () => {
     const diffInSeconds = Math.floor((closeTime.getTime() - now.getTime()) / 1000);
     return Math.max(diffInSeconds, 0); // Ensure non-negative time
   }, [setting?.close_time]);
+
+  // Check if user is loaded from localStorage
+  useEffect(() => {
+    // Wait a bit for Zustand to rehydrate from localStorage
+    const timer = setTimeout(() => {
+      setUserLoaded(true)
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [])
 
   // Load saved answers and current page from localStorage on component mount
   useEffect(() => {
@@ -249,6 +260,11 @@ const ExaminationPage = () => {
   )
 
   useEffect(() => {
+    // Don't run validation until user is loaded
+    if (!userLoaded) {
+      return
+    }
+
     const fetchExam = async () => {
       try {
         // First validate student access
@@ -368,7 +384,7 @@ const ExaminationPage = () => {
     if (schedule_id && !examLoaded) {
       fetchExam()
     }
-  }, [schedule_id, examLoaded, router, validateStudentAccess, validateAttemptEligibility])
+  }, [schedule_id, examLoaded, router, validateStudentAccess, validateAttemptEligibility, userLoaded])
 
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true)
@@ -560,13 +576,13 @@ const ExaminationPage = () => {
     return number
   }, [])
 
-  if (loading || validatingAccess) {
+  if (loading || validatingAccess || !userLoaded) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="flex flex-col items-center gap-4">
           <Spinner size="lg" />
           <p className="text-foreground/70">
-            {validatingAccess ? 'Validating access permissions...' : 'Loading examination...'}
+            {!userLoaded ? 'Loading user data...' : validatingAccess ? 'Validating access permissions...' : 'Loading examination...'}
           </p>
         </div>
       </div>
