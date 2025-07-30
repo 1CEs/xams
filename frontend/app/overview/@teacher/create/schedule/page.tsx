@@ -1235,6 +1235,30 @@ export default function CreateSchedulePage() {
                             >
                               Modify Selection
                             </Button>
+                            <Button
+                              size="sm"
+                              color="danger"
+                              variant="bordered"
+                              startContent={<SolarRefreshLineDuotone className="w-4 h-4" />}
+                              onPress={() => {
+                                // Clear all selections and restart
+                                setSelectedQuestions([]);
+                                setSelectedExams([]);
+                                setExamSettingForm(prev => ({
+                                  ...prev,
+                                  exam_ids: [],
+                                  question_count: 0
+                                }));
+                                setExamQuestions({});
+                                setExamSelectionMethods({});
+                                setExamRandomCounts({});
+                                setCurrentStep('exam');
+                                toast.success('Selection cleared! You can now start over.');
+                              }}
+                              isDisabled={submitting}
+                            >
+                              Clear All & Restart
+                            </Button>
                           </>
                         </div>
                       </div>
@@ -2190,6 +2214,18 @@ export default function CreateSchedulePage() {
                 <Button
                   variant="light"
                   onPress={() => {
+                    // Clear selections when going back to exam selection
+                    setSelectedQuestions([]);
+                    setSelectedExams([]);
+                    setExamSettingForm(prev => ({
+                      ...prev,
+                      exam_ids: [],
+                      question_count: 0
+                    }));
+                    setExamQuestions({});
+                    setExamSelectionMethods({});
+                    setExamRandomCounts({});
+                    
                     setIsQuestionModalOpen(false);
                     setIsExamModalOpen(true);
                     setCurrentStep('exam');

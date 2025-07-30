@@ -1,5 +1,6 @@
 import { Card, CardBody, Checkbox, Radio, RadioGroup, Textarea, Tooltip } from '@nextui-org/react'
 import { useCallback, memo, useMemo, useState, useEffect } from 'react'
+import { useUserStore } from '@/stores/user.store'
 
 interface Choice {
   content: string
@@ -88,6 +89,9 @@ const QuestionCard = memo(({
   isNested = false,
   code
 }: QuestionCardProps) => {
+  // Get user from store to check role
+  const { user } = useUserStore();
+  
   // Add state to store randomized choices
   const [randomizedChoices, setRandomizedChoices] = useState<Choice[] | null>(null);
 
@@ -275,6 +279,7 @@ const QuestionCard = memo(({
                   {String.fromCharCode(65 + index)}
                 </div>
                 <Checkbox
+                  color="secondary"
                   isSelected={answers.find(a => a.questionId === q._id)?.answers.includes(option.toLowerCase()) || false}
                   onValueChange={() => handleTrueFalseChange(q._id, option === 'True')}
                   className="flex-grow p-3 rounded-lg"
@@ -288,8 +293,8 @@ const QuestionCard = memo(({
 
         {(q.type === 'ses' || q.type === 'les') && (
           <div className="space-y-4">
-            {/* Display Expected Answers */}
-            {q.expectedAnswers && q.expectedAnswers.length > 0 && (
+            {/* Display Expected Answers - Only for Instructors */}
+            {user?.role === 'instructor' && q.expectedAnswers && q.expectedAnswers.length > 0 && (
               <div className="bg-default-50 rounded-lg p-4 border border-default-200">
                 <h4 className="text-sm font-semibold text-foreground/80 mb-3">
                   📝 Expected Answer{q.expectedAnswers.length > 1 ? 's' : ''} ({q.expectedAnswers.length})
@@ -310,7 +315,7 @@ const QuestionCard = memo(({
                   ))}
                 </div>
                 <p className="text-xs text-foreground/60 mt-3">
-                  💡 Your answer should match one of the expected answers above or demonstrate similar understanding.
+                  💡 Expected answers for reference during exam review.
                 </p>
               </div>
             )}

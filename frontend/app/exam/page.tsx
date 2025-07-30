@@ -12,6 +12,7 @@ import ExamResultsModal from '@/components/exam/ExamResultsModal'
 import ExamTimer from '@/components/exam/ExamTimer'
 import { useUserStore } from '@/stores/user.store'
 import { toast } from 'react-toastify'
+import { getClientIP, parseIPRange, isIPAllowed, getIPBlockMessage } from '@/utils/ip-validation'
 
 interface Question {
   _id: string
@@ -76,6 +77,8 @@ const ExaminationPage = () => {
   const [isResultsModalOpen, setIsResultsModalOpen] = useState(false)
   const [examResult, setExamResult] = useState<ExamResult | null>(null)
   const [examLoaded, setExamLoaded] = useState(false)
+  const [ipValidating, setIpValidating] = useState(false)
+  const [clientIP, setClientIP] = useState<string | null>(null)
   const questionsPerPage = 5
 
   // Calculate initial time based on exam settings
@@ -206,6 +209,58 @@ const ExaminationPage = () => {
     }
   }, [user, schedule_id, router])
 
+  // Validate IP access for exam
+  const validateIPAccess = useCallback(async (ipRange: string): Promise<boolean> => {
+    if (!ipRange || ipRange.trim() === '') {
+      console.log('No IP restrictions configured for this exam')
+      return true // No IP restrictions
+    }
+
+    setIpValidating(true)
+    
+    try {
+      // Get client IP address
+      let currentClientIP = clientIP
+      if (!currentClientIP) {
+        console.log('Getting client IP address...')
+        currentClientIP = await getClientIP()
+        setClientIP(currentClientIP)
+      }
+
+      if (!currentClientIP) {
+        toast.error('Unable to determine your IP address. Please check your network connection and try again.')
+        router.push('/overview')
+        return false
+      }
+
+      // Parse allowed IP ranges
+      const allowedRanges = parseIPRange(ipRange)
+      console.log('Allowed IP ranges:', allowedRanges)
+      console.log('Client IP:', currentClientIP)
+
+      // Check if client IP is allowed
+      const isAllowed = isIPAllowed(currentClientIP, allowedRanges)
+      
+      if (!isAllowed) {
+        const errorMessage = getIPBlockMessage(currentClientIP, allowedRanges)
+        toast.error(errorMessage)
+        console.error('IP access denied:', errorMessage)
+        router.push('/overview')
+        return false
+      }
+
+      console.log('IP access granted for:', currentClientIP)
+      return true
+    } catch (error) {
+      console.error('Error validating IP access:', error)
+      toast.error('Failed to validate IP access. Please try again.')
+      router.push('/overview')
+      return false
+    } finally {
+      setIpValidating(false)
+    }
+  }, [clientIP, router])
+
   // Clear localStorage after successful submission
   const clearSavedAnswers = useCallback(() => {
     if (exam?._id) {
@@ -301,6 +356,13 @@ const ExaminationPage = () => {
             return
           }
           
+          // Validate IP access for exam
+          const hasIPAccess = await validateIPAccess(scheduleData.ip_range || '')
+          if (!hasIPAccess) {
+            setLoading(false)
+            return
+          }
+          
           // The scheduleData is now the exam schedule directly
           examData = scheduleData
         }
@@ -386,6 +448,22 @@ const ExaminationPage = () => {
     }
   }, [schedule_id, examLoaded, router, validateStudentAccess, validateAttemptEligibility, userLoaded])
 
+  // Helper function to find a question by ID, including nested questions
+  const findQuestionById = useCallback((questionId: string, questions: Question[]): Question | null => {
+    for (const question of questions) {
+      if (question._id === questionId) {
+        return question
+      }
+      if (question.type === 'nested' && question.questions) {
+        const nestedQuestion = findQuestionById(questionId, question.questions)
+        if (nestedQuestion) {
+          return nestedQuestion
+        }
+      }
+    }
+    return null
+  }, [])
+
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true)
     try {
@@ -395,7 +473,7 @@ const ExaminationPage = () => {
 
       // Transform answers to the new submission format
       const submittedAnswers = answers.map(answer => {
-        const question = exam.questions.find(q => q._id === answer.questionId)
+        const question = findQuestionById(answer.questionId, exam.questions)
         if (!question) {
           throw new Error(`Question not found: ${answer.questionId}`)
         }
@@ -479,7 +557,7 @@ const ExaminationPage = () => {
     } finally {
       setIsSubmitting(false)
     }
-  }, [answers, exam, setting, user, schedule_id, clearSavedAnswers])
+  }, [answers, exam, setting, user, schedule_id, clearSavedAnswers, findQuestionById])
 
   const handleQuestionNavigation = useCallback((questionIndex: number, questionId: string) => {
     const targetPage = Math.ceil((questionIndex + 1) / questionsPerPage)
@@ -576,13 +654,16 @@ const ExaminationPage = () => {
     return number
   }, [])
 
-  if (loading || validatingAccess || !userLoaded) {
+  if (loading || validatingAccess || !userLoaded || ipValidating) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="flex flex-col items-center gap-4">
           <Spinner size="lg" />
           <p className="text-foreground/70">
-            {!userLoaded ? 'Loading user data...' : validatingAccess ? 'Validating access permissions...' : 'Loading examination...'}
+            {!userLoaded ? 'Loading user data...' : 
+             validatingAccess ? 'Validating access permissions...' : 
+             ipValidating ? 'Validating IP access...' : 
+             'Loading examination...'}
           </p>
         </div>
       </div>

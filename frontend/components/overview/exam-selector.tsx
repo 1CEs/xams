@@ -448,7 +448,13 @@ const ExamSelectorModal: React.FC<ExamSelectorModalProps> = ({
                         <Button 
                             color="danger" 
                             variant="light" 
-                            onPress={onClose}
+                            onPress={() => {
+                                // Clear selections when cancelling
+                                if (onExamSelectionChange) {
+                                    onExamSelectionChange([]);
+                                }
+                                onClose();
+                            }}
                         >
                             Cancel
                         </Button>
