@@ -155,14 +155,21 @@ export class AIAssistantService {
     } {
         const lowerResponse = response.toLowerCase();
         
-        // Look for score patterns in the response
+        console.log('Parsing AI response:', response);
+        
+        // Enhanced score patterns to match new structured format
         const scorePatterns = [
+            // New structured format: SCORE: X/Y (Z%)
+            /score[:\s]*(\d+(?:\.\d+)?)\s*\/\s*(\d+)\s*\((\d+(?:\.\d+)?)%\)/i,
             /score[:\s]*(\d+(?:\.\d+)?)\s*\/\s*(\d+)/i,
+            // Percentage patterns
+            /\((\d+(?:\.\d+)?)%\)/i,
+            /(\d+(?:\.\d+)?)%/i,
+            // Traditional patterns
             /(\d+(?:\.\d+)?)\s*\/\s*(\d+)\s*points?/i,
             /(\d+(?:\.\d+)?)\s*out\s*of\s*(\d+)/i,
             /grade[:\s]*(\d+(?:\.\d+)?)/i,
-            /points?[:\s]*(\d+(?:\.\d+)?)/i,
-            /(\d+)%/i // percentage pattern
+            /points?[:\s]*(\d+(?:\.\d+)?)/i
         ];
 
         let extractedScore = 0;
@@ -173,7 +180,14 @@ export class AIAssistantService {
         for (const pattern of scorePatterns) {
             const match = response.match(pattern);
             if (match) {
-                if (match[2]) {
+                console.log('Score pattern matched:', match);
+                
+                if (match[3]) {
+                    // Format: SCORE: X/Y (Z%) - use percentage
+                    const percentage = parseFloat(match[3]);
+                    extractedScore = (percentage / 100) * maxScore;
+                    console.log('Using percentage from structured format:', percentage + '%');
+                } else if (match[2]) {
                     // Format: score/maxScore
                     extractedScore = parseFloat(match[1]);
                     const detectedMaxScore = parseFloat(match[2]);
@@ -181,47 +195,75 @@ export class AIAssistantService {
                         // Normalize to actual max score
                         extractedScore = (extractedScore / detectedMaxScore) * maxScore;
                     }
+                    console.log('Using score/maxScore format:', extractedScore + '/' + maxScore);
                 } else if (pattern.source.includes('%')) {
-                    // Format: percentage
+                    // Format: percentage only
                     const percentage = parseFloat(match[1]);
                     extractedScore = (percentage / 100) * maxScore;
+                    console.log('Using percentage format:', percentage + '%');
                 } else {
                     // Format: just score
                     extractedScore = parseFloat(match[1]);
+                    console.log('Using raw score format:', extractedScore);
                 }
-                confidence = 0.8;
+                confidence = 0.9; // Higher confidence for structured format
                 scoreFound = true;
                 break;
             }
         }
 
-        // If no numerical score found, use generous keyword analysis
+        // Enhanced keyword analysis for better score recognition
         if (!scoreFound) {
-            // Check for strong positive indicators
-            if (lowerResponse.includes('excellent') || lowerResponse.includes('perfect') || 
-                lowerResponse.includes('outstanding') || lowerResponse.includes('comprehensive')) {
-                extractedScore = maxScore * 0.9; // Give 90% for excellent
-                confidence = 0.8;
-            } else if (lowerResponse.includes('good') || lowerResponse.includes('correct') || 
+            console.log('No numerical score found, using keyword analysis');
+            
+            // Look for Thai keywords from the new prompt
+            if (lowerResponse.includes('ตรงกับเฉลย') || lowerResponse.includes('เดียวกัน') ||
+                lowerResponse.includes('ยอดเยี่ยม') || lowerResponse.includes('ครบถ้วน') ||
+                lowerResponse.includes('excellent') || lowerResponse.includes('perfect') || 
+                lowerResponse.includes('outstanding') || lowerResponse.includes('comprehensive') ||
+                lowerResponse.includes('matches') || lowerResponse.includes('identical')) {
+                extractedScore = maxScore * 0.95; // Give 95% for excellent/matching answers
+                confidence = 0.85;
+                console.log('Excellent/matching answer detected, giving 95%');
+            } else if (lowerResponse.includes('ถูกต้องส่วนใหญ่') || lowerResponse.includes('ครอบคลุมประเด็นหลัก') ||
+                      lowerResponse.includes('good') || lowerResponse.includes('correct') || 
                       lowerResponse.includes('accurate') || lowerResponse.includes('well') ||
-                      lowerResponse.includes('solid') || lowerResponse.includes('satisfactory')) {
-                extractedScore = maxScore * 0.75; // Give 75% for good
-                confidence = 0.7;
-            } else if (lowerResponse.includes('partial') || lowerResponse.includes('somewhat') ||
+                      lowerResponse.includes('solid') || lowerResponse.includes('satisfactory') ||
+                      lowerResponse.includes('mostly correct') || lowerResponse.includes('covers main points')) {
+                extractedScore = maxScore * 0.82; // Give 82% for good answers
+                confidence = 0.8;
+                console.log('Good answer detected, giving 82%');
+            } else if (lowerResponse.includes('ถูกต้องพอสมควร') || lowerResponse.includes('พอใช้') ||
+                      lowerResponse.includes('partial') || lowerResponse.includes('somewhat') ||
                       lowerResponse.includes('adequate') || lowerResponse.includes('basic') ||
                       lowerResponse.includes('fair') || lowerResponse.includes('reasonable')) {
-                extractedScore = maxScore * 0.5; // Give 50% for partial (more generous)
+                extractedScore = maxScore * 0.65; // Give 65% for partial answers
+                confidence = 0.7;
+                console.log('Partial answer detected, giving 65%');
+            } else if (lowerResponse.includes('ความพยายาม') || lowerResponse.includes('เข้าใจผิด') ||
+                      lowerResponse.includes('attempt') || lowerResponse.includes('tries') ||
+                      lowerResponse.includes('effort') || lowerResponse.includes('some understanding')) {
+                extractedScore = maxScore * 0.35; // Give 35% for attempts
                 confidence = 0.6;
-            } else if (lowerResponse.includes('incorrect') || lowerResponse.includes('wrong') || 
+                console.log('Attempt detected, giving 35%');
+            } else if (lowerResponse.includes('ไม่เกี่ยวข้อง') || lowerResponse.includes('ตัวอักษรสุ่ม') ||
+                      lowerResponse.includes('incorrect') || lowerResponse.includes('wrong') || 
                       lowerResponse.includes('poor') || lowerResponse.includes('inadequate') ||
                       lowerResponse.includes('nonsensical') || lowerResponse.includes('irrelevant') ||
                       lowerResponse.includes('meaningless') || lowerResponse.includes('gibberish') ||
                       lowerResponse.includes('random') || lowerResponse.includes('unrelated')) {
                 extractedScore = 0; // Give 0 for clearly wrong answers
-                confidence = 0.8;
+                confidence = 0.9;
+                console.log('Wrong/irrelevant answer detected, giving 0%');
             } else {
-                // If unclear, be more generous - assume AI sees some merit
-                extractedScore = maxScore * 0.6; // Give 60% for unclear responses (trust AI judgment)
+                // For unclear responses, be more generous with expected answers
+                if (hasExpectedAnswers) {
+                    extractedScore = maxScore * 0.7; // Give 70% for unclear responses with expected answers
+                    console.log('Unclear response with expected answers, giving 70%');
+                } else {
+                    extractedScore = maxScore * 0.75; // Give 75% for unclear responses in open questions
+                    console.log('Unclear response in open question, giving 75%');
+                }
                 confidence = 0.5;
             }
         }
@@ -231,17 +273,25 @@ export class AIAssistantService {
             lowerResponse.includes('not relevant') ||
             lowerResponse.includes('appears to be random') ||
             lowerResponse.includes('gibberish') ||
-            lowerResponse.includes('meaningless')) {
+            lowerResponse.includes('meaningless') ||
+            lowerResponse.includes('ไม่มีความหมาย') ||
+            lowerResponse.includes('ไม่เกี่ยวข้อง')) {
             extractedScore = 0;
-            confidence = 0.9;
+            confidence = 0.95;
+            console.log('Nonsensical answer override, giving 0%');
         }
 
         // Ensure score is within bounds
         extractedScore = Math.max(0, Math.min(extractedScore, maxScore));
         
+        const finalScore = Math.round(extractedScore * 100) / 100;
+        const isCorrect = extractedScore >= (maxScore * 0.5); // 50% threshold for correctness
+        
+        console.log('Final parsed score:', finalScore + '/' + maxScore, '(' + Math.round((finalScore/maxScore)*100) + '%)', 'Correct:', isCorrect);
+        
         return {
-            isCorrect: extractedScore >= (maxScore * 0.4), // More generous threshold - 40% is considered correct
-            scoreObtained: Math.round(extractedScore * 100) / 100, // Round to 2 decimal places
+            isCorrect,
+            scoreObtained: finalScore,
             confidence
         };
     }

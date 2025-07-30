@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientAPI } from '@/config/axios.config'
-import { Accordion, AccordionItem, Button, Card, CardBody, CardHeader, Chip, Divider, Radio, RadioGroup, Spinner, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem } from '@nextui-org/react'
+import { Accordion, AccordionItem, Button, Card, CardBody, CardHeader, Chip, Divider, Radio, RadioGroup, Spinner, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, user } from '@nextui-org/react'
 import { ArrowLeft, FileDocument, Clock, CheckCircle, CloseCircle } from '@/components/icons/icons'
 import { useUserStore } from '@/stores/user.store'
 import { toast } from 'react-toastify'
@@ -975,7 +975,7 @@ const SubmissionHistoryPage = () => {
                                                     title={
                                                       <div className="flex items-center gap-2">
                                                         <span className="text-sm font-medium">
-                                                          Your answer:
+                                                          {user?.role === 'instructor' ? "Student answer:" : "Your answer:"}
                                                         </span>
                                                         <span className="text-sm font-semibold text-primary">
                                                           {answer.submitted_choices?.join(', ') || 'No answer selected'}
@@ -1044,7 +1044,7 @@ const SubmissionHistoryPage = () => {
                                                 <div className="space-y-3">
                                                   <div className="text-sm rounded-md p-3 border border-default-200">
                                                     <span className="text-default-600 font-medium">
-                                                      Your answer:
+                                                    {user?.role === 'instructor' ? "Student answer:" : "Your answer:"}
                                                     </span>
                                                     <span className="font-medium text-default-800">
                                                       {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
@@ -1211,7 +1211,7 @@ const SubmissionHistoryPage = () => {
                                           title={
                                             <div className="flex items-center gap-2">
                                               <span className="text-sm font-medium">
-                                                Your answer:
+                                                {user?.role === 'instructor' ? "Student answer:" : "Your answer:"}
                                               </span>
                                               <span className="text-sm font-semibold text-primary">
                                                 {answer.submitted_choices?.join(', ') || 'No answer selected'}
@@ -1280,7 +1280,7 @@ const SubmissionHistoryPage = () => {
                                       <div className="space-y-3">
                                         <div className="text-sm rounded-md p-3 border border-default-200">
                                           <span className="text-default-600 font-medium">
-                                            Your answer:
+                                            {user?.role === 'instructor' ? "Student answer:" : "Your answer:"}
                                           </span>
                                           <span className="font-medium text-default-800">
                                             {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}

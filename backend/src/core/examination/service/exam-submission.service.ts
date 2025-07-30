@@ -381,4 +381,8 @@ export class ExamSubmissionService implements IExamSubmissionService {
     async deleteSubmission(id: string): Promise<boolean> {
         return await this._submissionRepository.deleteSubmission(id);
     }
+
+    async deleteSubmissionsByScheduleId(scheduleId: string): Promise<boolean> {
+        return await this._submissionRepository.deleteSubmissionsByScheduleId(scheduleId);
+    }
 }

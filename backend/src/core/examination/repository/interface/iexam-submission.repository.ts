@@ -8,6 +8,7 @@ export interface IExamSubmissionRepository {
     getSubmissionByScheduleAndStudent(scheduleId: string, studentId: string, attemptNumber?: number): Promise<IExamSubmission | null>;
     updateSubmission(id: string, updates: Partial<IExamSubmission>): Promise<IExamSubmission | null>;
     deleteSubmission(id: string): Promise<boolean>;
+    deleteSubmissionsByScheduleId(scheduleId: string): Promise<boolean>;
     getStudentAttemptCount(scheduleId: string, studentId: string): Promise<number>;
     getSubmissionsByStatus(status: 'submitted' | 'graded' | 'reviewed'): Promise<IExamSubmission[]>;
 }

@@ -51,11 +51,6 @@ const EnrollmentModal = ({
       return;
     }
 
-    if (!joinCode) {
-      setError("Please enter the join code");
-      return;
-    }
-
     // Find the selected group
     const group = groups.find(g => g.group_name === selectedGroup);
     
@@ -64,9 +59,15 @@ const EnrollmentModal = ({
       return;
     }
 
-    // Verify join code
-    if (group.join_code !== joinCode) {
+    // Verify join code only if the group has one
+    if (group.join_code && group.join_code !== joinCode) {
       setError("Invalid join code");
+      return;
+    }
+
+    // If group has join code but user didn't provide one
+    if (group.join_code && !joinCode) {
+      setError("Please enter the join code");
       return;
     }
 
@@ -95,7 +96,7 @@ const EnrollmentModal = ({
             </ModalHeader>
             <ModalBody>
               <p className="text-sm text-default-500 mb-4">
-                To enroll in this course, please select a group and enter the join code provided by your instructor.
+                To enroll in this course, please select a group{selectedGroup && groups.find(g => g.group_name === selectedGroup)?.join_code ? " and enter the join code provided by your instructor" : ""}.
               </p>
               
               {error && (
@@ -117,15 +118,23 @@ const EnrollmentModal = ({
                 ))}
               </Select>
               
-              <Input
-                label="Join Code"
-                placeholder="Enter the join code"
-                value={joinCode}
-                onChange={(e) => {
-                  setJoinCode(e.target.value);
-                  setError("");
-                }}
-              />
+              {selectedGroup && groups.find(g => g.group_name === selectedGroup)?.join_code && (
+                <Input
+                  label="Join Code"
+                  placeholder="Enter the join code"
+                  value={joinCode}
+                  onChange={(e) => {
+                    setJoinCode(e.target.value);
+                    setError("");
+                  }}
+                />
+              )}
+              
+              {selectedGroup && !groups.find(g => g.group_name === selectedGroup)?.join_code && (
+                <div className="text-sm text-success bg-success-50 p-3 rounded-lg">
+                  ✓ This group has open access - no join code required!
+                </div>
+              )}
             </ModalBody>
             <ModalFooter>
               <Button color="danger" variant="light" onPress={onClose}>

@@ -145,7 +145,7 @@ export default function CreateExaminationPage() {
                     formData.append('file', file)
 
                     try {
-                        toast.info('Uploading questions...')
+                        toast.info('Processing Aiken file...')
                         const res = await clientAPI.post('/upload/aiken', formData, {
                             headers: {
                                 "Content-Type": "multipart/form-data",
@@ -159,24 +159,64 @@ export default function CreateExaminationPage() {
                             return
                         }
 
-                        // Upload each question to the exam
+                        // Get existing questions from current exam to check for duplicates
+                        const existingQuestions = questionList.map(q => q.question?.trim().toLowerCase())
+                        
+                        // Filter out duplicate questions by comparing question content
+                        const uniqueQuestions = data.filter((newQuestion: any) => {
+                            const newQuestionText = newQuestion.question?.trim().toLowerCase()
+                            const isDuplicate = existingQuestions.includes(newQuestionText)
+                            
+                            if (isDuplicate) {
+                                console.log(`Skipping duplicate question: "${newQuestion.question}"`)
+                            }
+                            
+                            return !isDuplicate
+                        })
+
+                        if (uniqueQuestions.length === 0) {
+                            toast.warning('All questions from the Aiken file already exist in this exam. No new questions were added.')
+                            return
+                        }
+
+                        if (uniqueQuestions.length < data.length) {
+                            const duplicateCount = data.length - uniqueQuestions.length
+                            toast.info(`Found ${duplicateCount} duplicate question(s) that will be skipped. Importing ${uniqueQuestions.length} new questions...`)
+                        } else {
+                            toast.info(`Importing ${uniqueQuestions.length} questions...`)
+                        }
+
+                        // Upload each unique question to the exam
                         let successCount = 0
-                        for (let i = 0; i < data.length; i++) {
+                        let failedCount = 0
+                        
+                        for (let i = 0; i < uniqueQuestions.length; i++) {
                             try {
-                                const update = await clientAPI.post(`exam/question/${_id}`, data[i])
+                                const update = await clientAPI.post(`exam/question/${_id}`, uniqueQuestions[i])
                                 if (update.data.code === 200) {
                                     successCount++
+                                } else {
+                                    failedCount++
+                                    console.error(`Failed to add question ${i + 1}:`, update.data.message)
                                 }
                             } catch (error) {
+                                failedCount++
                                 console.error(`Failed to add question ${i + 1}:`, error)
                             }
                         }
 
-                        if (successCount > 0) {
-                            toast.success(`Successfully imported ${successCount} questions`)
-                            setTrigger(!trigger)
+                        // Show appropriate success/error messages
+                        if (successCount > 0 && failedCount === 0) {
+                            toast.success(`Successfully imported ${successCount} new questions`)
+                        } else if (successCount > 0 && failedCount > 0) {
+                            toast.warning(`Successfully imported ${successCount} questions, but ${failedCount} failed to import`)
                         } else {
-                            toast.error('Failed to add any questions to the exam')
+                            toast.error('Failed to import any questions. Please check the file format and try again.')
+                        }
+
+                        // Refresh the question list if any questions were added
+                        if (successCount > 0) {
+                            setTrigger(!trigger)
                         }
 
                     } catch (error) {

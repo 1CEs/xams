@@ -10,7 +10,7 @@ export const GroupSchema = new Schema<IGroup>({
     },
     join_code: {
         type: Schema.Types.String,
-        required: true
+        required: false
     },
     students: {
         type: [Schema.Types.String],

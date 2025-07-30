@@ -316,9 +316,15 @@ export default function CoursePage() {
                                         <div>
                                             <h2 className="text-xl font-bold">{group.group_name}</h2>
                                             <div className="flex gap-2 mt-1">
-                                                <span className="text-xs bg-secondary/20 px-2 py-1 rounded-full">
-                                                    Join Code: {group.join_code}
-                                                </span>
+                                                {group.join_code ? (
+                                                    <span className="text-xs bg-secondary/20 px-2 py-1 rounded-full">
+                                                        Join Code: {group.join_code}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs bg-success/20 px-2 py-1 rounded-full">
+                                                        Open Access
+                                                    </span>
+                                                )}
                                                 <span className="text-xs bg-primary/20 px-2 py-1 rounded-full">
                                                     {group.students.length} students
                                                 </span>
@@ -365,10 +371,17 @@ export default function CoursePage() {
                                             ) : (
                                                 <div className="flex flex-col items-center justify-center p-8 border border-dashed border-gray-300 rounded-lg">
                                                     <p className="text-gray-500 mb-4">No students have joined this group yet</p>
-                                                    <div className="flex items-center gap-2 bg-secondary/10 px-4 py-2 rounded-lg">
-                                                        <span className="font-medium">Share join code:</span>
-                                                        <span className="font-bold">{group.join_code}</span>
-                                                    </div>
+                                                    {group.join_code ? (
+                                                        <div className="flex items-center gap-2 bg-secondary/10 px-4 py-2 rounded-lg">
+                                                            <span className="font-medium">Share join code:</span>
+                                                            <span className="font-bold">{group.join_code}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2 bg-success/10 px-4 py-2 rounded-lg">
+                                                            <span className="font-medium text-success">✓ Open Access Group</span>
+                                                            <span className="text-sm text-success/80">Students can join without a code</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

@@ -100,9 +100,15 @@ export default function StudentCoursePage() {
                                     <div className="mb-6">
                                         <h2 className="text-xl font-bold mb-2">{group.group_name}</h2>
                                         <div className="flex gap-2">
-                                            <span className="text-sm bg-secondary/20 px-2 py-1 rounded-full">
-                                                Join Code: {group.join_code}
-                                            </span>
+                                            {group.join_code ? (
+                                                <span className="text-sm bg-secondary/20 px-2 py-1 rounded-full">
+                                                    Join Code: {group.join_code}
+                                                </span>
+                                            ) : (
+                                                <span className="text-sm bg-success/20 px-2 py-1 rounded-full">
+                                                    Open Access
+                                                </span>
+                                            )}
                                             <span className="text-sm bg-primary/20 px-2 py-1 rounded-full">
                                                 {group.students.length} students
                                             </span>
@@ -168,7 +174,9 @@ export default function StudentCoursePage() {
                             {studentGroups.map((group: IGroup) => (
                                 <div key={group._id} className="p-2 bg-content2 rounded-md">
                                     <p className="font-medium">{group.group_name}</p>
-                                    <p className="text-xs text-foreground/60">Code: {group.join_code}</p>
+                                    <p className="text-xs text-foreground/60">
+                                        {group.join_code ? `Code: ${group.join_code}` : "Open Access"}
+                                    </p>
                                 </div>
                             ))}
                         </div>

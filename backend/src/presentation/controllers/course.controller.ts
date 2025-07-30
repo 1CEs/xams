@@ -4,6 +4,8 @@ import { CourseService } from "../../core/course/service/course.service";
 import { ICourseService } from "../../core/course/service/interface/icourse.service";
 import { ExaminationScheduleService } from "../../core/examination/service/exam-schedule.service";
 import { IExaminationScheduleService } from "../../core/examination/service/interface/iexam-schedule.service";
+import { ExamSubmissionService } from "../../core/examination/service/exam-submission.service";
+import { IExamSubmissionService } from "../../core/examination/service/interface/iexam-submission.service";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
 import { InstructorService } from "../../core/user/service/instructor.service";
 import { StudentService } from "../../core/user/service/student.service";
@@ -14,10 +16,12 @@ import { ICourseController } from "./interface/icourse.controller";
 export class CourseController implements ICourseController {
     private _service: ICourseService
     private _examScheduleService: IExaminationScheduleService
+    private _submissionService: IExamSubmissionService
 
     constructor() {
         this._service = new CourseService()
         this._examScheduleService = new ExaminationScheduleService()
+        this._submissionService = new ExamSubmissionService()
     }
 
     private _response<T>(message: string, code: number, data: T) {
@@ -297,13 +301,22 @@ export class CourseController implements ICourseController {
         const scheduleIdToDelete = course.groups[groupIndex].schedule_ids[examSettingIndex]
         
         try {
-            // Delete the examination schedule from the database
+            // First, delete all related submissions for this schedule
             if (scheduleIdToDelete) {
+                console.log(`🗑️ Deleting submissions for schedule: ${scheduleIdToDelete}`)
+                await this._submissionService.deleteSubmissionsByScheduleId(scheduleIdToDelete)
+                console.log(`✅ Successfully deleted submissions for schedule: ${scheduleIdToDelete}`)
+            }
+            
+            // Then delete the examination schedule from the database
+            if (scheduleIdToDelete) {
+                console.log(`🗑️ Deleting examination schedule: ${scheduleIdToDelete}`)
                 await this._examScheduleService.deleteExaminationSchedule(scheduleIdToDelete)
+                console.log(`✅ Successfully deleted examination schedule: ${scheduleIdToDelete}`)
             }
         } catch (error: any) {
-            console.error('Error deleting examination schedule:', error)
-            // Continue with deleting the exam setting even if schedule deletion fails
+            console.error('Error deleting examination schedule and related submissions:', error)
+            // Continue with deleting the exam setting even if schedule/submission deletion fails
             // This prevents orphaned exam settings in case the schedule was already deleted
         }
 

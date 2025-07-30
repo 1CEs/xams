@@ -123,6 +123,18 @@ export class ExamSubmissionRepository implements IExamSubmissionRepository {
         }
     }
 
+    async deleteSubmissionsByScheduleId(scheduleId: string): Promise<boolean> {
+        try {
+            console.log(`🗑️ Deleting all submissions for schedule ID: ${scheduleId}`);
+            const result = await ExamSubmissionModel.deleteMany({ schedule_id: scheduleId });
+            console.log(`✅ Deleted ${result.deletedCount} submissions for schedule ${scheduleId}`);
+            return result.deletedCount !== undefined && result.deletedCount >= 0;
+        } catch (error) {
+            console.error('Error deleting submissions by schedule ID:', error);
+            throw new Error('Failed to delete submissions by schedule ID');
+        }
+    }
+
     async getStudentAttemptCount(scheduleId: string, studentId: string): Promise<number> {
         try {
             const count = await ExamSubmissionModel.countDocuments({

@@ -23,4 +23,5 @@ export interface IExamSubmissionService {
     canStudentAttemptExam(scheduleId: string, studentId: string, allowedAttempts: number): Promise<boolean>;
     
     deleteSubmission(id: string): Promise<boolean>;
+    deleteSubmissionsByScheduleId(scheduleId: string): Promise<boolean>;
 }

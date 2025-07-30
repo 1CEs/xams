@@ -99,18 +99,18 @@ export default function SubmittedExamPage() {
     scheduleId ? `/submission/schedule/${scheduleId}` : ''
   )
 
-  // Function to find course containing the schedule
-  const findCourseWithSchedule = async (scheduleId: string): Promise<CourseData | null> => {
+  // Function to find course and group containing the schedule
+  const findCourseAndGroupWithSchedule = async (scheduleId: string): Promise<{ course: CourseData; group: CourseData['groups'][0] } | null> => {
     try {
       // Get all courses
       const coursesResponse = await clientAPI.get<{ data: CourseData[] }>('/course')
       const courses = coursesResponse.data.data
       
-      // Find course that contains this schedule_id in any of its groups
+      // Find course and group that contains this schedule_id
       for (const course of courses) {
         for (const group of course.groups) {
           if (group.schedule_ids.includes(scheduleId)) {
-            return course
+            return { course, group }
           }
         }
       }
@@ -121,17 +121,14 @@ export default function SubmittedExamPage() {
     }
   }
 
-  // Function to fetch all students in the course
-  const fetchAllStudents = async (course: CourseData): Promise<StudentData[]> => {
+  // Function to fetch students from specific group
+  const fetchGroupStudents = async (group: CourseData['groups'][0]): Promise<StudentData[]> => {
     try {
-      // Get all unique student IDs from all groups
-      const allStudentIds = new Set<string>()
-      course.groups.forEach(group => {
-        group.students.forEach(studentId => allStudentIds.add(studentId))
-      })
+      // Get student IDs from the specific group only
+      const groupStudentIds = group.students
 
       // Fetch student details
-      const studentPromises = Array.from(allStudentIds).map(async (studentId) => {
+      const studentPromises = groupStudentIds.map(async (studentId) => {
         try {
           const response = await clientAPI.get<{ data: StudentData }>(`/user/${studentId}`)
           return response.data.data
@@ -144,7 +141,7 @@ export default function SubmittedExamPage() {
       const students = await Promise.all(studentPromises)
       return students.filter((student): student is StudentData => student !== null)
     } catch (error) {
-      console.error('Error fetching students:', error)
+      console.error('Error fetching group students:', error)
       return []
     }
   }
@@ -156,14 +153,17 @@ export default function SubmittedExamPage() {
       
       setIsLoadingStudents(true)
       try {
-        // Find the course containing this schedule
-        const course = await findCourseWithSchedule(scheduleId)
-        if (course) {
+        // Find the course and group containing this schedule
+        const result = await findCourseAndGroupWithSchedule(scheduleId)
+        if (result) {
+          const { course, group } = result
           setCourseData(course)
           
-          // Fetch all students in the course
-          const students = await fetchAllStudents(course)
+          // Fetch students from the specific group only
+          const students = await fetchGroupStudents(group)
           setAllStudents(students)
+          
+          console.log(`Loaded ${students.length} students from group: ${group.group_name}`)
         } else {
           toast.error('Could not find course for this exam schedule')
         }

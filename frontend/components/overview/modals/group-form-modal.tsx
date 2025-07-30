@@ -13,7 +13,7 @@ const GroupFormModal = ({ courseId }: Props) => {
   const { trigger, setTrigger } = useTrigger()
   const [groupForm, setGroupForm] = useState<{
     group_name: string
-    join_code: string
+    join_code?: string
   }>({
     group_name: "",
     join_code: "",
@@ -107,12 +107,11 @@ const GroupFormModal = ({ courseId }: Props) => {
               value={groupForm.join_code}
               onValueChange={(join_code: string) => 
                 setGroupForm(prev => ({ ...prev, join_code }))}
-              isDisabled={isGeneratingCode}
-              isRequired 
+              isDisabled={isGeneratingCode} 
             />
             
             <p className="text-sm text-foreground-400">
-              Students will use this code to join the group
+              {groupForm.join_code ? "Students will use this code to join the group" : "Leave empty for open access (no code required)"}
             </p>
           </ModalBody>
           <ModalFooter>
