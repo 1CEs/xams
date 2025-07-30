@@ -5,7 +5,6 @@ type UserSignUpPayload = {
     info: {
         first_name: string
         last_name: string
-        birth: Date
     }
     profile_url: string
     role: string
@@ -19,7 +18,6 @@ type UserResponse = {
     info: {
         first_name: string
         last_name: string
-        birth: Date
     }
     profile_url: string
 }

@@ -12,10 +12,6 @@ const UserInfoSchema = new Schema<IUser['info']>({
     last_name: {
         type: Schema.Types.String,
         required: true
-    },
-    birth: {
-        type: Schema.Types.Date,
-        required: true
     }
 }, {_id: false})
 

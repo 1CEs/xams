@@ -9,8 +9,7 @@ export const updateUserSchema = t.Object({
     info: t.Optional(t.Object(
         {
             first_name: t.String(),
-            last_name: t.String(),
-            birth: t.Date()
+            last_name: t.String()
         }
     ))
 })

@@ -7,6 +7,13 @@ import { IAuthController } from "./interface/iauth.controller"
 import { SetTokenParameters } from "../../types/auth"
 import { IStudent } from "../../core/user/model/interface/istudent"
 import { IInstructor } from "../../core/user/model/interface/iintructor"
+import { 
+    BadRequestError, 
+    UnauthorizedError, 
+    ConflictError, 
+    NotFoundError,
+    ValidationError 
+} from "../../utils/error"
 
 type JWTInstance = {
     sign: (payload: any) => Promise<string>
@@ -19,57 +26,142 @@ export class AuthController implements IAuthController {
         this._factory = new UserServiceFactory()
     }
 
-    private _response<T>(message: string, code: number, data: T ): ControllerResponse<T> {
+    private _response<T>(message: string, code: number, data: T, success: boolean = true, errorType?: string): ControllerResponse<T> {
         return {
             message,
             code,
-            data
+            data,
+            success,
+            errorType
+        }
+    }
+
+    private _errorResponse(message: string, code: number, errorType: string, details?: any): ControllerResponse<null> {
+        return {
+            message,
+            code,
+            data: null,
+            success: false,
+            errorType,
+            details
         }
     }
 
     async signup(payload: SignUpPayload) {
-        console.log("in")
-        const instance = this._factory.createService(payload.body!.role)
-        const user = await instance.register(payload.body!)
-        if (!user) throw new Error('User not found')
-        delete payload.body
-        await this.setToken(String((user as unknown as IUser | IStudent | IInstructor)._id), { ...payload })
+        try {
+            // Validate required fields
+            if (!payload.body?.username || !payload.body?.email || !payload.body?.password) {
+                throw new ValidationError('Username, email, and password are required')
+            }
 
-        return this._response('Sign-up Successfully', 201, user)
+            // Validate email format
+            if (!RegExp(emailRegex).test(payload.body.email)) {
+                throw new ValidationError('Please provide a valid email address')
+            }
+
+            // Validate password strength with detailed requirements
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+            if (!passwordRegex.test(payload.body.password)) {
+                throw new ValidationError('Password must contain at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)')
+            }
+
+            const instance = this._factory.createService(payload.body.role)
+            
+            try {
+                const user = await instance.register(payload.body)
+                
+                if (!user) {
+                    throw new BadRequestError('Failed to create user account')
+                }
+
+                delete payload.body
+                await this.setToken(String((user as unknown as IUser | IStudent | IInstructor)._id), { ...payload })
+
+                return this._response('Account created successfully! Welcome to XAMS!', 201, user)
+            } catch (error: any) {
+                // Handle duplicate key errors (username/email already exists)
+                if (error.message?.includes('E11000') || error.code === 11000) {
+                    if (error.message?.includes('username')) {
+                        throw new ConflictError('This username is already taken. Please choose a different one.')
+                    } else if (error.message?.includes('email')) {
+                        throw new ConflictError('An account with this email already exists. Please use a different email or sign in.')
+                    } else {
+                        throw new ConflictError('Username or email already exists. Please use different credentials.')
+                    }
+                }
+                throw error
+            }
+        } catch (error: any) {
+            console.error('Signup error:', error)
+            throw error
+        }
     }
 
     async signin(payload: SignInPayload) {
-        const instance = this._factory.createService('general')
-        const isEmail = RegExp(emailRegex).test(payload.body!.identifier)
+        try {
+            // Validate required fields
+            if (!payload.body?.identifier || !payload.body?.password) {
+                throw new ValidationError('Username/email and password are required')
+            }
 
-        let user: IUser | null
-        if (isEmail) {
-            user = await instance.getUserByEmail(payload.body!.identifier)
-        } else {
-            user = await instance.getUserByUsername(payload.body!.identifier)
+            const instance = this._factory.createService('general')
+            const isEmail = RegExp(emailRegex).test(payload.body.identifier)
+
+            let user: IUser | null
+            try {
+                if (isEmail) {
+                    user = await instance.getUserByEmail(payload.body.identifier)
+                } else {
+                    user = await instance.getUserByUsername(payload.body.identifier)
+                }
+            } catch (error) {
+                console.error('Database error during user lookup:', error)
+                throw new BadRequestError('Unable to process sign-in request. Please try again.')
+            }
+
+            if (!user) {
+                const identifierType = isEmail ? 'email address' : 'username'
+                throw new UnauthorizedError(`No account found with this ${identifierType}. Please check your credentials or sign up for a new account.`)
+            }
+
+            let passwordIsValid: boolean
+            try {
+                passwordIsValid = await Bun.password.verify(payload.body.password, user.password)
+            } catch (error) {
+                console.error('Password verification error:', error)
+                throw new BadRequestError('Unable to verify password. Please try again.')
+            }
+
+            if (!passwordIsValid) {
+                throw new UnauthorizedError('Incorrect password. Please check your password and try again.')
+            }
+            
+            delete payload.body
+            await this.setToken(String(user._id), { ...payload })
+
+            return this._response<typeof user>(`Welcome back, ${user.username}! Sign-in successful.`, 200, user)
+        } catch (error: any) {
+            console.error('Signin error:', error)
+            throw error
         }
-
-        if (!user) throw new Error('User not found')
-        console.log(user)
-
-        const passwordIsValid = await Bun.password.verify(payload.body!.password, user.password)
-
-        if (!passwordIsValid) throw new Error('Password is invalid')
-        
-        delete payload.body
-        await this.setToken(String(user._id), { ...payload })
-
-        return this._response<typeof user>('Sign-in Successfully', 200, user)
     } 
 
     me(user: IUser) {
+        if (!user) {
+            throw new UnauthorizedError('User session not found. Please sign in again.')
+        }
         return this._response<typeof user>(`Hello ${user.username}`, 200, user)
     }
 
     logout({ accessToken, refreshToken }: Omit<SetTokenParameters, 'jwt'>) {
-        accessToken.remove()
-        refreshToken.remove()
-        return this._response<null>('Logout Successfully', 200, null)
+        try {
+            accessToken.remove()
+            refreshToken.remove()
+            return this._response<null>('You have been signed out successfully. See you next time!', 200, null)
+        } catch (error) {
+            console.error('Logout error:', error)
+            throw new BadRequestError('Unable to complete sign out. Please try again.')
+        }
     }
 
     async setToken(id: string, { jwt, accessToken, refreshToken }: SetTokenParameters) {
@@ -111,12 +203,48 @@ export class AuthController implements IAuthController {
     }
 
     async forgotPassword(email: string, jwt: JWTInstance) {
-        const result = await this._factory.createService('general').forgotPassword(email, jwt)
-        return this._response<typeof result>('Password reset email sent successfully', 200, result)
+        try {
+            if (!email) {
+                throw new ValidationError('Email address is required')
+            }
+
+            if (!RegExp(emailRegex).test(email)) {
+                throw new ValidationError('Please provide a valid email address')
+            }
+
+            const result = await this._factory.createService('general').forgotPassword(email, jwt)
+            return this._response<typeof result>('Password reset instructions have been sent to your email address. Please check your inbox.', 200, result)
+        } catch (error: any) {
+            console.error('Forgot password error:', error)
+            if (error.message?.includes('User not found')) {
+                throw new NotFoundError('No account found with this email address. Please check your email or sign up for a new account.')
+            }
+            throw error
+        }
     }
 
     async resetPassword(token: string, newPassword: string, jwt: JWTInstance) {
-        const result = await this._factory.createService('general').resetPassword(token, newPassword, jwt)
-        return this._response<typeof result>('Password has been reset successfully', 200, result)
+        try {
+            if (!token) {
+                throw new ValidationError('Reset token is required')
+            }
+
+            if (!newPassword) {
+                throw new ValidationError('New password is required')
+            }
+
+            if (newPassword.length < 6) {
+                throw new ValidationError('Password must be at least 6 characters long')
+            }
+
+            const result = await this._factory.createService('general').resetPassword(token, newPassword, jwt)
+            return this._response<typeof result>('Your password has been reset successfully! You can now sign in with your new password.', 200, result)
+        } catch (error: any) {
+            console.error('Reset password error:', error)
+            if (error.message?.includes('Invalid token') || error.message?.includes('Token expired')) {
+                throw new UnauthorizedError('Password reset link is invalid or has expired. Please request a new password reset.')
+            }
+            throw error
+        }
     }
 }

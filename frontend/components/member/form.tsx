@@ -7,6 +7,7 @@ import { useRouter } from 'nextjs-toploader/app'
 import { useCookies } from 'next-client-cookies'
 import { clientAPI } from '@/config/axios.config'
 import { toast } from 'react-toastify'
+import { getAuthErrorMessage, AUTH_ERROR_MESSAGES, isValidEmail, isValidPassword } from '@/utils/auth-errors'
 
 type Props = {
     content: string
@@ -24,12 +25,114 @@ const Form = (props: Props) => {
     const cookies = useCookies()
 
     const onFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
-        console.log('asdasd')
         e.preventDefault()
         setError(null)
         setLoading(true)
+        
+        const formData = new FormData(e.currentTarget)
+        
+        // Client-side validation before API call
+        if (props.isSignUp) {
+            const signUpData = Object.fromEntries(formData.entries())
+            
+            // Validate required fields
+            if (!signUpData.first_name) {
+                const errorMsg = AUTH_ERROR_MESSAGES.SIGNUP.FIRST_NAME_REQUIRED
+                toast.error(errorMsg)
+                setError(errorMsg)
+                setLoading(false)
+                return
+            }
+            
+            if (!signUpData.last_name) {
+                const errorMsg = AUTH_ERROR_MESSAGES.SIGNUP.LAST_NAME_REQUIRED
+                toast.error(errorMsg)
+                setError(errorMsg)
+                setLoading(false)
+                return
+            }
+            
+            if (!signUpData.username) {
+                const errorMsg = AUTH_ERROR_MESSAGES.SIGNUP.USERNAME_REQUIRED
+                toast.error(errorMsg)
+                setError(errorMsg)
+                setLoading(false)
+                return
+            }
+            
+            if (!signUpData.email) {
+                const errorMsg = AUTH_ERROR_MESSAGES.SIGNUP.EMAIL_REQUIRED
+                toast.error(errorMsg)
+                setError(errorMsg)
+                setLoading(false)
+                return
+            }
+            
+            if (!signUpData.password) {
+                const errorMsg = AUTH_ERROR_MESSAGES.SIGNUP.PASSWORD_REQUIRED
+                toast.error(errorMsg)
+                setError(errorMsg)
+                setLoading(false)
+                return
+            }
+            
+            if (!signUpData.confirmPassword) {
+                const errorMsg = AUTH_ERROR_MESSAGES.SIGNUP.CONFIRM_PASSWORD_REQUIRED
+                toast.error(errorMsg)
+                setError(errorMsg)
+                setLoading(false)
+                return
+            }
+            
+            // Validate password match
+            if (signUpData.password !== signUpData.confirmPassword) {
+                const errorMsg = AUTH_ERROR_MESSAGES.SIGNUP.PASSWORDS_NOT_MATCH
+                toast.error(errorMsg)
+                setError(errorMsg)
+                setLoading(false)
+                return
+            }
+            
+            // Validate email format
+            if (!isValidEmail(signUpData.email as string)) {
+                const errorMsg = AUTH_ERROR_MESSAGES.SIGNUP.INVALID_EMAIL
+                toast.error(errorMsg)
+                setError(errorMsg)
+                setLoading(false)
+                return
+            }
+            
+            // Validate password strength
+            if (!isValidPassword(signUpData.password as string)) {
+                const errorMsg = AUTH_ERROR_MESSAGES.SIGNUP.WEAK_PASSWORD
+                toast.error(errorMsg)
+                setError(errorMsg)
+                setLoading(false)
+                return
+            }
+        } else {
+            const signInData = Object.fromEntries(formData.entries())
+            
+            // Validate required fields for sign-in
+            if (!signInData.identifier) {
+                const errorMsg = AUTH_ERROR_MESSAGES.SIGNIN.IDENTIFIER_REQUIRED
+                toast.error(errorMsg)
+                setError(errorMsg)
+                setLoading(false)
+                return
+            }
+            
+            if (!signInData.password) {
+                const errorMsg = AUTH_ERROR_MESSAGES.SIGNIN.PASSWORD_REQUIRED
+                toast.error(errorMsg)
+                setError(errorMsg)
+                setLoading(false)
+                return
+            }
+        }
+        
         try {
-            const formData = new FormData(e.currentTarget)
+            // FormData already created above
             if (props.isSignUp) {
                 const signUpFormEntries = Object.fromEntries(formData.entries())
 
@@ -37,15 +140,13 @@ const Form = (props: Props) => {
                     ...signUpFormEntries,
                     info: {
                         first_name: signUpFormEntries.first_name as string,
-                        last_name: signUpFormEntries.last_name as string,
-                        birth: signUpFormEntries.birth
+                        last_name: signUpFormEntries.last_name as string
                     },
                     profile_url: 'https://miscmedia-9gag-fun.9cache.com/images/thumbnail-facebook/1656473044.0987_Y3UVY8_n.jpg'
                 }
 
                 delete signUpPayload.first_name
                 delete signUpPayload.last_name
-                delete signUpPayload.birth
                 const res = await clientAPI.post('auth/sign-up', signUpPayload)
                 const userData = res.data.data as UserResponse
                 setUser(userData)
@@ -53,7 +154,9 @@ const Form = (props: Props) => {
                 // Set cookie with the user data from the API response
                 const oneDay = 24 * 60 * 60 * 1000
                 cookies.set('user', JSON.stringify(userData), { expires: Date.now() + oneDay})
-                console.log("dadasdxx")
+                
+                // Show success message from backend
+                toast.success(res.data.message || AUTH_ERROR_MESSAGES.SIGNUP.SUCCESS)
 
             } else {
                 const signInFormEntries = Object.fromEntries(formData.entries())
@@ -65,8 +168,8 @@ const Form = (props: Props) => {
                 const oneDay = 24 * 60 * 60 * 1000
                 cookies.set('user', JSON.stringify(userData), { expires: Date.now() + oneDay})
                 
-                // Show success message
-                toast.success('Sign in successful!')
+                // Show success message from backend
+                toast.success(res.data.message || AUTH_ERROR_MESSAGES.SIGNIN.SUCCESS)
             }
             
             // Use replace instead of push to prevent back navigation to login
@@ -76,21 +179,36 @@ const Form = (props: Props) => {
             }, 100)
         } catch (error) {
             if (isAxiosError(error)) {
-                const splitWords = error.response?.data.split(" ")
-                if (splitWords[0] === 'E11000') {
-                    toast.error('Username or Email is already exists')
+                const errorData = error.response?.data
+                let userFriendlyMessage = ''
+                
+                // Use centralized error message handling
+                userFriendlyMessage = getAuthErrorMessage(errorData, props.isSignUp)
+                
+                // Handle legacy string-based errors if no message was found
+                if (userFriendlyMessage === 'An unexpected error occurred') {
+                    const splitWords = errorData?.split?.(" ") || []
+                    if (splitWords[0] === 'E11000') {
+                        userFriendlyMessage = AUTH_ERROR_MESSAGES.SIGNUP.ACCOUNT_EXISTS
+                    } else {
+                        userFriendlyMessage = error.response?.statusText || AUTH_ERROR_MESSAGES.GENERAL.UNEXPECTED_ERROR
+                    }
+                }
+                
+                // Show user-friendly error message
+                if (userFriendlyMessage) {
+                    toast.error(userFriendlyMessage)
+                    setError(userFriendlyMessage)
                 } else {
-                    toast.error(error.response?.statusText)
+                    const errorMsg = AUTH_ERROR_MESSAGES.GENERAL.UNEXPECTED_ERROR
+                    toast.error(errorMsg)
+                    setError(errorMsg)
                 }
-                
-        
-                const { err, errors } = error.response?.data || {};
-                
-                if (err) {
-                    setError(err.message);
-                } else if (errors?.length) {
-                    setError(errors[0].schema.description);
-                }
+            } else {
+                // Handle non-axios errors
+                const errorMessage = AUTH_ERROR_MESSAGES.GENERAL.UNEXPECTED_ERROR
+                toast.error(errorMessage)
+                setError(errorMessage)
             }
 
         } finally {

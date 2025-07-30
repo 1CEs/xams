@@ -3,7 +3,8 @@
 import React, { useState } from 'react'
 import { Button, Card, CardBody, CardFooter, CardHeader, Divider, Input, Link } from '@nextui-org/react'
 import { clientAPI } from '@/config/axios.config'
-import { errorHandler } from '@/utils/error'
+import { isAxiosError } from 'axios'
+import { getAuthErrorMessage, AUTH_ERROR_MESSAGES, isValidEmail } from '@/utils/auth-errors'
 import { toast } from 'react-toastify'
 import { useRouter } from 'nextjs-toploader/app'
 import ResetPassword from '@/public/images/reset-password.png'
@@ -20,12 +21,42 @@ const ForgotPasswordPage = (props: Props) => {
     e.preventDefault()
     setIsLoading(true)
 
+    // Client-side validation
+    if (!email.trim()) {
+      const errorMsg = AUTH_ERROR_MESSAGES.FORGOT_PASSWORD.EMAIL_REQUIRED
+      toast.error(errorMsg)
+      setIsLoading(false)
+      return
+    }
+
+    if (!isValidEmail(email)) {
+      const errorMsg = AUTH_ERROR_MESSAGES.FORGOT_PASSWORD.INVALID_EMAIL
+      toast.error(errorMsg)
+      setIsLoading(false)
+      return
+    }
+
     try {
-      await clientAPI.post('/auth/forgot-password', { email })
-      toast.success('Password reset link has been sent to your email')
+      const response = await clientAPI.post('/auth/forgot-password', { email })
+      toast.success(response.data.message || AUTH_ERROR_MESSAGES.FORGOT_PASSWORD.SUCCESS)
       router.push('/member/sign-in')
     } catch (error) {
-      errorHandler(error)
+      if (isAxiosError(error)) {
+        const errorData = error.response?.data
+        let userFriendlyMessage = ''
+        
+        // Use centralized error message handling
+        userFriendlyMessage = getAuthErrorMessage(errorData, false)
+        
+        // Handle specific forgot password errors
+        if (userFriendlyMessage === 'An unexpected error occurred') {
+          userFriendlyMessage = AUTH_ERROR_MESSAGES.FORGOT_PASSWORD.ERROR
+        }
+        
+        toast.error(userFriendlyMessage)
+      } else {
+        toast.error(AUTH_ERROR_MESSAGES.GENERAL.UNEXPECTED_ERROR)
+      }
     } finally {
       setIsLoading(false)
     }

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useUserStore } from '@/stores/user.store';
 import { clientAPI } from '@/config/axios.config';
 import { Card, CardHeader, CardBody, Input, Button, Switch } from '@nextui-org/react';
-import { DateValue, CalendarDate } from "@internationalized/date";
+
 import { toast } from 'react-toastify';
 
 // Define the UserResponse interface
@@ -17,7 +17,6 @@ interface UserResponse {
   info?: {
     first_name: string;
     last_name: string;
-    birth: Date;
   };
 }
 
@@ -32,8 +31,6 @@ export default function SettingsPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [profileUrl, setProfileUrl] = useState("");
-  const [birthDate, setBirthDate] = useState<CalendarDate | null>(null);
-  const [birthDateString, setBirthDateString] = useState<string>("");
 
   // Initialize form with user data
   useEffect(() => {
@@ -41,13 +38,6 @@ export default function SettingsPage() {
       setName(user.username || "");
       setEmail(user.email || "");
       setProfileUrl(user.profile_url || "");
-      
-      // Set birth date if available
-      if (user.info?.birth) {
-        const date = new Date(user.info.birth);
-        setBirthDate(new CalendarDate(date.getFullYear(), date.getMonth() + 1, date.getDate()));
-        setBirthDateString(date.toLocaleDateString());
-      }
     }
   }, [user]);
 
@@ -70,16 +60,12 @@ export default function SettingsPage() {
       // Ensure we have the required fields for the info object
       payload.info = {
         first_name: user?.info?.first_name || "",
-        last_name: user?.info?.last_name || "",
-        // Always provide a Date object for birth
-        birth: birthDate ? birthDate.toDate('UTC') : new Date(0), // Use a default date if null
+        last_name: user?.info?.last_name || ""
       };
 
       const response = await clientAPI.patch(`/users/${user?._id}`, payload);
 
       if (response.status === 200 && user) {
-        const updatedBirthDate = birthDate ? birthDate.toDate('UTC') : (user.info?.birth || new Date(0));
-        
         setUser({ 
           ...user, 
           username: name, 
@@ -88,13 +74,9 @@ export default function SettingsPage() {
           _id: user._id, 
           role: user.role,
           info: {
-            ...user.info,
-            birth: updatedBirthDate
+            ...user.info
           }
         });
-        
-        // Update the displayed date string
-        setBirthDateString(updatedBirthDate.toLocaleDateString());
         
         toast.success('User updated successfully!');
       } else {
@@ -105,25 +87,6 @@ export default function SettingsPage() {
       toast.error('An error occurred while updating user.');
     } finally {
       setLoading(false);
-    }
-  };
-  const handleManualDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBirthDateString(e.target.value);
-    
-    // Try to parse the date from the string
-    try {
-      const parts = e.target.value.split('/');
-      if (parts.length === 3) {
-        const month = parseInt(parts[0]);
-        const day = parseInt(parts[1]);
-        const year = parseInt(parts[2]);
-        
-        if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
-          setBirthDate(new CalendarDate(year, month, day));
-        }
-      }
-    } catch (error) {
-      console.error("Error parsing date:", error);
     }
   };
 
@@ -171,22 +134,6 @@ export default function SettingsPage() {
               onChange={(e) => setProfileUrl(e.target.value)}
               isDisabled={!isEditing}
             />
-            
-            <div className="mb-4">
-              <Input
-                type="text"
-                label="Birth Date (MM/DD/YYYY)"
-                value={birthDateString}
-                onChange={isEditing ? handleManualDateChange : undefined}
-                isDisabled={!isEditing}
-                placeholder="MM/DD/YYYY"
-              />
-              {isEditing && (
-                <div className="mt-2 text-sm text-gray-500">
-                  Enter date in MM/DD/YYYY format
-                </div>
-              )}
-            </div>
             
             <Button color="secondary" isLoading={loading} type="submit" isDisabled={!isEditing}>
               Update
