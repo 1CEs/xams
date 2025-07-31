@@ -192,6 +192,58 @@ export class CourseController implements ICourseController {
         return this._response('Group deleted successfully', 200, updated)
     }
 
+    async updateGroup(courseId: string, groupName: string, updateData: { group_name: string; join_code?: string }) {
+        const course = await this._service.getCourseById(courseId)
+        
+        if (!course) {
+            return this._response('Course not found', 404, null)
+        }
+
+        // Check if the course has groups
+        if (!course.groups || course.groups.length === 0) {
+            return this._response('No groups found in this course', 404, null)
+        }
+
+        // Find the index of the group with the given name
+        const groupIndex = course.groups.findIndex(group => 
+            group.group_name === groupName
+        )
+
+        // If group not found
+        if (groupIndex === -1) {
+            return this._response('Group not found', 404, null)
+        }
+
+        // Check if the new group name already exists (if it's different from current name)
+        if (updateData.group_name !== groupName) {
+            const existingGroup = course.groups.find(group => 
+                group.group_name === updateData.group_name
+            )
+            
+            if (existingGroup) {
+                return this._response('A group with this name already exists', 400, null)
+            }
+        }
+
+        // Use MongoDB's positional operator to update only the specific group
+        // This preserves all other group data including students and schedule_ids
+        const updateQuery = {
+            [`groups.${groupIndex}.group_name`]: updateData.group_name,
+            [`groups.${groupIndex}.join_code`]: updateData.join_code
+        }
+        
+        console.log('Updating group at index:', groupIndex)
+        console.log('Original group name:', course.groups[groupIndex].group_name)
+        console.log('New group name:', updateData.group_name)
+        console.log('Students count before update:', course.groups[groupIndex].students?.length || 0)
+        console.log('Schedule IDs count before update:', course.groups[groupIndex].schedule_ids?.length || 0)
+        
+        // Update only the specific fields without affecting other group data
+        const updated = await this._service.updateCourse(courseId, updateQuery)
+        
+        return this._response('Group updated successfully', 200, updated)
+    }
+
     // Setting methods
     async addGroupExamSetting(courseId: string, groupName: string, examSettingData: any) {
         const course = await this._service.getCourseById(courseId)

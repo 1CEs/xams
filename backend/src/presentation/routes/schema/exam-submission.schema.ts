@@ -19,8 +19,8 @@ export const SubmittedAnswerSchema = t.Object({
 export const ExamSubmissionSchema = t.Object({
     schedule_id: t.String({ description: 'Schedule ID is required' }),
     student_id: t.String({ description: 'Student ID is required' }),
-    course_id: t.String({ description: 'Course ID is required' }),
-    group_id: t.String({ description: 'Group ID is required' }),
+    course_id: t.Optional(t.String({ description: 'Course ID (optional, can be empty)' })),
+    group_id: t.Optional(t.String({ description: 'Group ID (optional, can be empty)' })),
     submitted_answers: t.Array(SubmittedAnswerSchema, { description: 'Submitted answers are required' }),
     time_taken: t.Optional(t.Number({ description: 'Time taken in seconds' }))
 });

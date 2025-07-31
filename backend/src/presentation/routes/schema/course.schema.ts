@@ -44,6 +44,11 @@ export const AddGroupSchema = t.Object({
     schedule_ids: t.Optional(t.Array(t.String()))
 })
 
+export const UpdateGroupSchema = t.Object({
+    group_name: t.String({ description: 'Group name is required' }),
+    join_code: t.Optional(t.String({ description: 'Join code (optional for open access)' }))
+})
+
 export const ExamSettingSchema = t.Object({
     exam_ids: t.Array(t.String(), { description: 'Examination IDs are required' }),
     schedule_name: t.String({ description: 'Schedule name is required' }),

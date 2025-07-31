@@ -12,6 +12,7 @@ import { toast } from "react-toastify"
 import { useTrigger } from "@/stores/trigger.store"
 
 import GroupFormModal from "@/components/overview/modals/group-form-modal"
+import GroupEditModal from "@/components/overview/modals/group-edit-modal"
 import ExamScheduleModal from "@/components/overview/modals/exam-schedule-modal"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
@@ -95,6 +96,7 @@ export default function CoursePage() {
 
     // State for modals
     const [groupToDelete, setGroupToDelete] = useState<string | null>(null)
+    const [groupToEdit, setGroupToEdit] = useState<{ groupName: string, group_name: string, join_code?: string } | null>(null)
     const [examToDelete, setExamToDelete] = useState<{ groupName: string, examSettingIndex: number } | null>(null)
     
     // State for bulk exam schedule deletion
@@ -107,10 +109,20 @@ export default function CoursePage() {
     const { isOpen: isScheduleModalOpen, onOpen: onScheduleModalOpen, onOpenChange: onScheduleModalOpenChange } = useDisclosure()
     const { isOpen: isDeleteCourseModalOpen, onOpen: onDeleteCourseModalOpen, onOpenChange: onDeleteCourseModalOpenChange } = useDisclosure()
     const { isOpen: isUpdateModalOpen, onOpen: onUpdateModalOpen, onOpenChange: onUpdateModalOpenChange } = useDisclosure()
+    const { isOpen: isEditGroupModalOpen, onOpen: onEditGroupModalOpen, onOpenChange: onEditGroupModalOpenChange } = useDisclosure()
 
     const openDeleteConfirmation = (groupName: string) => {
         setGroupToDelete(groupName)
         onDeleteModalOpen()
+    }
+
+    const openEditGroupModal = (group: IGroup) => {
+        setGroupToEdit({
+            groupName: group.group_name,
+            group_name: group.group_name,
+            join_code: group.join_code
+        })
+        onEditGroupModalOpen()
     }
 
     const openDeleteExamConfirmation = (groupName: string, examSettingIndex: number) => {
@@ -331,6 +343,14 @@ export default function CoursePage() {
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
+                                            <Button
+                                                color="warning"
+                                                variant="light"
+                                                startContent={<FluentSettings16Filled />}
+                                                onPress={() => openEditGroupModal(group)}
+                                            >
+                                                Edit Group
+                                            </Button>
                                             <Button
                                                 color="danger"
                                                 variant="light"
@@ -657,7 +677,22 @@ export default function CoursePage() {
                             initialData={{
                                 course_name: data.data.course_name,
                                 description: data.data.description,
-                                background_src: data.data.background_src
+                                background_src: data.data.background_src,
+                                category: data.data.category
+                            }}
+                        />
+                    )}
+                </Modal>
+
+                {/* Group Edit Modal */}
+                <Modal size="lg" isOpen={isEditGroupModalOpen} onOpenChange={onEditGroupModalOpenChange}>
+                    {groupToEdit && (
+                        <GroupEditModal
+                            courseId={_id as string}
+                            groupName={groupToEdit.groupName}
+                            initialData={{
+                                group_name: groupToEdit.group_name,
+                                join_code: groupToEdit.join_code
                             }}
                         />
                     )}

@@ -15,7 +15,6 @@ export interface Question {
     score: number;
   }[];
   expectedAnswers?: string[];
-  maxWords?: number;
   questions?: Question[]; // For nested questions
 }
 
@@ -82,14 +81,12 @@ export const QuestionTable = ({ questions, scheduleId }: QuestionTableProps) => 
       case 'ses':
         return (
           <div className="text-sm text-default-600">
-            <div>Max words: {question.maxWords || 'Unlimited'}</div>
             <div>{question.expectedAnswers?.length || 0} expected answers</div>
           </div>
         );
       case 'les':
         return (
           <div className="text-sm text-default-600">
-            <div>Max words: {question.maxWords || 'Unlimited'}</div>
             <div>{question.expectedAnswers?.length || 0} expected answers</div>
           </div>
         );

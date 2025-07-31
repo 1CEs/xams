@@ -10,6 +10,11 @@ import { errorHandler } from "@/utils/error"
 import { Button, Card, CardBody, CardFooter, Checkbox, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Modal, ModalContent, ModalHeader, ModalBody, Textarea, Tooltip, useDisclosure } from "@nextui-org/react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { ChangeEvent, useEffect, useState } from "react"
+import { toast } from 'react-toastify'
+import { validateAikenFormat, formatValidationErrors } from '@/utils/aiken-validator'
+import { useQuestionListStore } from "@/stores/question.store/question-list.store"
+import { useNestedQuestionsStore } from "@/stores/question.store/nested-question.store"
+import { useTrigger } from "@/stores/trigger.store"
 import {
     DndContext,
     DragEndEvent,
@@ -27,16 +32,13 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { useQuestionListStore } from "@/stores/question.store/question-list.store"
-import { useNestedQuestionsStore } from "@/stores/question.store/nested-question.store"
-import { useTrigger } from "@/stores/trigger.store"
-import { toast } from "react-toastify"
 
 export default function CreateExaminationPage() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const _id = searchParams.get('id')
     const { isOpen, onOpen, onOpenChange } = useDisclosure()
+    const { isOpen: isAikenModalOpen, onOpen: onAikenModalOpen, onOpenChange: onAikenModalOpenChange } = useDisclosure()
     const [deleteQuestionModal, setDeleteQuestionModal] = useState({ isOpen: false, questionId: '' })
     const [deleteAllModal, setDeleteAllModal] = useState({ isOpen: false })
     const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set())
@@ -141,11 +143,30 @@ export default function CreateExaminationPage() {
                         return
                     }
 
-                    const formData = new FormData()
-                    formData.append('file', file)
-
                     try {
-                        toast.info('Processing Aiken file...')
+                        toast.info('Validating Aiken format...')
+                        
+                        // Read and validate file content first
+                        const fileContent = await file.text()
+                        const validationResult = validateAikenFormat(fileContent)
+                        
+                        if (!validationResult.isValid) {
+                            const errorMessage = formatValidationErrors(validationResult)
+                            console.error('Aiken validation failed:', errorMessage)
+                            toast.error(`Invalid Aiken format detected. Please fix the following issues:\n\n${errorMessage}`)
+                            return
+                        }
+                        
+                        if (validationResult.warnings.length > 0) {
+                            console.warn('Aiken validation warnings:', validationResult.warnings)
+                            toast.warning(`File has ${validationResult.warnings.length} warning(s) but will proceed with import.`)
+                        }
+                        
+                        toast.success(`✅ Valid Aiken format with ${validationResult.questionCount} questions. Processing...`)
+
+                        const formData = new FormData()
+                        formData.append('file', file)
+
                         const res = await clientAPI.post('/upload/aiken', formData, {
                             headers: {
                                 "Content-Type": "multipart/form-data",
@@ -407,6 +428,12 @@ export default function CreateExaminationPage() {
                                     </DropdownMenu>
                                 </Dropdown>
                                 <Button
+                                    variant="flat"
+                                    color='warning'
+                                    size="sm"
+                                    onPress={onAikenModalOpen}
+                                > What's aiken? </Button>
+                                <Button
                                     startContent={<MdiBin fontSize={14} />}
                                     variant="flat"
                                     color='danger'
@@ -662,6 +689,163 @@ export default function CreateExaminationPage() {
                         content="This action cannot be undone. The questions will be permanently deleted."
                         onAction={selectedQuestions.size > 0 ? handleDeleteSelected : handleDeleteAllQuestions}
                     />
+                </Modal>
+
+                {/* Aiken Format Information Modal */}
+                <Modal 
+                    isOpen={isAikenModalOpen} 
+                    onOpenChange={onAikenModalOpenChange}
+                    size="4xl"
+                    scrollBehavior="inside"
+                >
+                    <ModalContent>
+                        {(onClose) => (
+                            <>
+                                <ModalHeader className="flex flex-col gap-1">
+                                    <h2 className="text-2xl font-bold text-primary">What is Aiken Format?</h2>
+                                    <p className="text-sm text-default-500">Learn about the Aiken question format for importing multiple choice questions</p>
+                                </ModalHeader>
+                                <ModalBody className="pb-6">
+                                    <div className="space-y-6">
+                                        {/* Introduction */}
+                                        <div className="bg-primary-50 p-4 rounded-lg border border-primary-200">
+                                            <h3 className="font-semibold text-primary mb-2">📚 Overview</h3>
+                                            <p className="text-sm text-default-700">
+                                                Aiken format is a simple text-based format for creating multiple choice questions. 
+                                                It's widely used in educational systems and can be easily imported into XAMS to quickly 
+                                                create multiple choice questions for your exams.
+                                            </p>
+                                        </div>
+
+                                        {/* Format Structure */}
+                                        <div>
+                                            <h3 className="font-semibold text-lg mb-3">📋 Format Structure</h3>
+                                            <div className="bg-default-100 p-4 rounded-lg">
+                                                <p className="text-sm mb-2">Each question follows this structure:</p>
+                                                <ol className="list-decimal list-inside text-sm space-y-1 text-default-700">
+                                                    <li>Question text (can span multiple lines)</li>
+                                                    <li>Answer choices labeled A, B, C, D, etc.</li>
+                                                    <li>Correct answer indicated by "ANSWER: X" (where X is the correct choice letter)</li>
+                                                    <li>Empty line to separate questions</li>
+                                                </ol>
+                                            </div>
+                                        </div>
+
+                                        {/* Examples */}
+                                        <div>
+                                            <h3 className="font-semibold text-lg mb-3">💡 Examples</h3>
+                                            
+                                            {/* Example 1 */}
+                                            <div className="mb-4">
+                                                <h4 className="font-medium text-primary mb-2">Example 1: Basic Question</h4>
+                                                <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                                                    <pre>{`What is the capital of Thailand?
+A. Bangkok
+B. Chiang Mai
+C. Phuket
+D. Pattaya
+ANSWER: A`}</pre>
+                                                </div>
+                                            </div>
+
+                                            {/* Example 2 */}
+                                            <div className="mb-4">
+                                                <h4 className="font-medium text-primary mb-2">Example 2: Programming Question</h4>
+                                                <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                                                    <pre>{`Which programming language is known for its use in web development?
+A. COBOL
+B. JavaScript
+C. FORTRAN
+D. Assembly
+ANSWER: B`}</pre>
+                                                </div>
+                                            </div>
+
+                                            {/* Example 3 */}
+                                            <div className="mb-4">
+                                                <h4 className="font-medium text-primary mb-2">Example 3: Multiple Questions in One File</h4>
+                                                <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                                                    <pre>{`What is 2 + 2?
+A. 3
+B. 4
+C. 5
+D. 6
+ANSWER: B
+
+Which planet is closest to the Sun?
+A. Venus
+B. Earth
+C. Mercury
+D. Mars
+ANSWER: C
+
+What is the largest mammal?
+A. Elephant
+B. Blue Whale
+C. Giraffe
+D. Hippopotamus
+ANSWER: B`}</pre>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Rules and Tips */}
+                                        <div>
+                                            <h3 className="font-semibold text-lg mb-3">⚠️ Important Rules</h3>
+                                            <div className="bg-warning-50 p-4 rounded-lg border border-warning-200">
+                                                <ul className="list-disc list-inside text-sm space-y-2 text-default-700">
+                                                    <li><strong>Answer choices must start with letters:</strong> A, B, C, D, E, etc.</li>
+                                                    <li><strong>ANSWER line is required:</strong> Must be exactly "ANSWER: X" format</li>
+                                                    <li><strong>Separate questions:</strong> Use empty lines between questions</li>
+                                                    <li><strong>File format:</strong> Save as .txt file with UTF-8 encoding</li>
+                                                    <li><strong>Question limit:</strong> Each question can have up to 6 choices (A-F)</li>
+                                                    <li><strong>No HTML:</strong> Plain text only, HTML tags will be treated as text</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        {/* How to Use */}
+                                        <div>
+                                            <h3 className="font-semibold text-lg mb-3">🚀 How to Import</h3>
+                                            <div className="bg-success-50 p-4 rounded-lg border border-success-200">
+                                                <ol className="list-decimal list-inside text-sm space-y-2 text-default-700">
+                                                    <li>Create your questions in Aiken format using any text editor</li>
+                                                    <li>Save the file with .txt extension</li>
+                                                    <li>Click the "Import Questions" dropdown above</li>
+                                                    <li>Select "Import from Aiken File"</li>
+                                                    <li>Choose your .txt file</li>
+                                                    <li>Questions will be automatically imported and added to your exam</li>
+                                                </ol>
+                                            </div>
+                                        </div>
+
+                                        {/* Benefits */}
+                                        <div>
+                                            <h3 className="font-semibold text-lg mb-3">✨ Benefits</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                                                    <h4 className="font-medium text-blue-800 mb-1">⚡ Fast Import</h4>
+                                                    <p className="text-xs text-blue-700">Import multiple questions at once instead of creating them one by one</p>
+                                                </div>
+                                                <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                                                    <h4 className="font-medium text-green-800 mb-1">📝 Easy to Write</h4>
+                                                    <p className="text-xs text-green-700">Simple text format that anyone can create with basic text editors</p>
+                                                </div>
+                                                <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                                                    <h4 className="font-medium text-purple-800 mb-1">🔄 Reusable</h4>
+                                                    <p className="text-xs text-purple-700">Save question banks as Aiken files for future use</p>
+                                                </div>
+                                                <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                                                    <h4 className="font-medium text-orange-800 mb-1">🌐 Universal</h4>
+                                                    <p className="text-xs text-orange-700">Widely supported format across different educational platforms</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ModalBody>
+                            </>
+                        )}
+                    </ModalContent>
                 </Modal>
 
             </DndContext>

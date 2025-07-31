@@ -120,9 +120,7 @@ export class ExaminationRepository
                 type: q.type,
                 score: q.score,
                 choices: [],
-                isTrue: false,
-                expectedAnswer: '',
-                maxWords: 0
+                isTrue: false
             };
 
             // Add type-specific fields
@@ -131,10 +129,9 @@ export class ExaminationRepository
             } else if (q.type === 'tf') {
                 baseQuestion.isTrue = q.isTrue !== undefined ? q.isTrue : false;
             } else if (q.type === 'ses') {
-                baseQuestion.expectedAnswer = q.expectedAnswer || '';
+                // SES questions use expectedAnswers array
             } else if (q.type === 'les') {
-                baseQuestion.expectedAnswer = q.expectedAnswer || '';
-                baseQuestion.maxWords = q.maxWords || 0;
+                // LES questions use expectedAnswers array
             }
 
             return baseQuestion;
@@ -147,9 +144,7 @@ export class ExaminationRepository
             score: payload.score,
             questions: preparedQuestions,
             choices: [],
-            isTrue: false,
-            expectedAnswer: '',
-            maxWords: 0
+            isTrue: false
         };
 
         // Add the new nested question to the examination
@@ -401,30 +396,39 @@ export class ExaminationRepository
                     break;
 
                 case 'ses': // Short Essay
-                    if (question.expectedAnswer && submittedAnswer.essayAnswer) {
-                        // Simple string comparison for short essays
-                        isCorrect = submittedAnswer.essayAnswer.toLowerCase().trim() === 
-                                  question.expectedAnswer.toLowerCase().trim();
-                        earnedScore = isCorrect ? question.score : 0;
+                    if (submittedAnswer.essayAnswer) {
+                        // Use expectedAnswers array for comparison
+                        if (question.expectedAnswers && question.expectedAnswers.length > 0) {
+                            isCorrect = question.expectedAnswers.some((expectedAnswer: string) => 
+                                submittedAnswer.essayAnswer?.toLowerCase().trim() === expectedAnswer.toLowerCase().trim()
+                            );
+                            earnedScore = isCorrect ? question.score : 0;
+                        } else {
+                            // If no expected answers, give full credit for any non-empty response
+                            earnedScore = submittedAnswer.essayAnswer?.trim() ? question.score : 0;
+                            isCorrect = earnedScore > 0;
+                        }
                     }
                     break;
 
                 case 'les': // Long Essay
-                    if (question.expectedAnswer && submittedAnswer.essayAnswer) {
+                    if (submittedAnswer.essayAnswer) {
                         // For long essays, we might want to implement more sophisticated checking
-                        // This is a basic implementation
-                        const wordCount = submittedAnswer.essayAnswer.split(/\s+/).length;
-                        const meetsWordCount = !question.maxWords || wordCount <= question.maxWords;
-                        
-                        // Basic keyword matching
-                        const keywords = question.expectedAnswer.toLowerCase().split(/\s+/);
-                        const answerWords = submittedAnswer.essayAnswer.toLowerCase().split(/\s+/);
-                        const matchedKeywords = keywords.filter((keyword: string) => 
-                            answerWords.some((word: string) => word.includes(keyword))
-                        );
-                        
-                        const keywordScore = (matchedKeywords.length / keywords.length) * question.score;
-                        earnedScore = meetsWordCount ? keywordScore : 0;
+                        // This is a basic implementation - no word count validation
+                        // Basic keyword matching using expectedAnswers array
+                        if (question.expectedAnswers && question.expectedAnswers.length > 0) {
+                            const allKeywords = question.expectedAnswers.join(' ').toLowerCase().split(/\s+/);
+                            const answerWords = submittedAnswer.essayAnswer.toLowerCase().split(/\s+/);
+                            const matchedKeywords = allKeywords.filter((keyword: string) => 
+                                answerWords.some((word: string) => word.includes(keyword))
+                            );
+                            
+                            const keywordScore = (matchedKeywords.length / allKeywords.length) * question.score;
+                            earnedScore = keywordScore;
+                        } else {
+                            // If no expected answers, give full credit for any non-empty response
+                            earnedScore = submittedAnswer.essayAnswer?.trim() ? question.score : 0;
+                        }
                         isCorrect = earnedScore > 0;
                     }
                     break;
@@ -514,30 +518,38 @@ export class ExaminationRepository
                     break;
 
                 case 'ses': // Short Essay
-                    if (question.expectedAnswer && submittedAnswer.essayAnswer) {
-                        // Simple string comparison for short essays
-                        isCorrect = submittedAnswer.essayAnswer.toLowerCase().trim() === 
-                                  question.expectedAnswer.toLowerCase().trim();
-                        earnedScore = isCorrect ? question.score : 0;
+                    if (submittedAnswer.essayAnswer) {
+                        // Use expectedAnswers array for comparison
+                        if (question.expectedAnswers && question.expectedAnswers.length > 0) {
+                            isCorrect = question.expectedAnswers.some((expectedAnswer: string) => 
+                                submittedAnswer.essayAnswer?.toLowerCase().trim() === expectedAnswer.toLowerCase().trim()
+                            );
+                            earnedScore = isCorrect ? question.score : 0;
+                        } else {
+                            // If no expected answers, give full credit for any non-empty response
+                            earnedScore = submittedAnswer.essayAnswer?.trim() ? question.score : 0;
+                            isCorrect = earnedScore > 0;
+                        }
                     }
                     break;
 
                 case 'les': // Long Essay
-                    if (question.expectedAnswer && submittedAnswer.essayAnswer) {
-                        // For long essays, we might want to implement more sophisticated checking
-                        // This is a basic implementation
-                        const wordCount = submittedAnswer.essayAnswer.split(/\s+/).length;
-                        const meetsWordCount = !question.maxWords || wordCount <= question.maxWords;
-                        
-                        // Basic keyword matching
-                        const keywords = question.expectedAnswer.toLowerCase().split(/\s+/);
-                        const answerWords = submittedAnswer.essayAnswer.toLowerCase().split(/\s+/);
-                        const matchedKeywords = keywords.filter(keyword => 
-                            answerWords.some(word => word.includes(keyword))
-                        );
-                        
-                        const keywordScore = (matchedKeywords.length / keywords.length) * question.score;
-                        earnedScore = meetsWordCount ? keywordScore : 0;
+                    if (submittedAnswer.essayAnswer) {
+                        // For long essays - no word count validation
+                        // Basic keyword matching using expectedAnswers array
+                        if (question.expectedAnswers && question.expectedAnswers.length > 0) {
+                            const allKeywords = question.expectedAnswers.join(' ').toLowerCase().split(/\s+/);
+                            const answerWords = submittedAnswer.essayAnswer.toLowerCase().split(/\s+/);
+                            const matchedKeywords = allKeywords.filter((keyword: string) => 
+                                answerWords.some((word: string) => word.includes(keyword))
+                            );
+                            
+                            const keywordScore = (matchedKeywords.length / allKeywords.length) * question.score;
+                            earnedScore = keywordScore;
+                        } else {
+                            // If no expected answers, give full credit for any non-empty response
+                            earnedScore = submittedAnswer.essayAnswer?.trim() ? question.score : 0;
+                        }
                         isCorrect = earnedScore > 0;
                     }
                     break;
@@ -548,8 +560,8 @@ export class ExaminationRepository
                             const nestedAnswer = submittedAnswer.answers[index];
                             // Recursive checking for nested questions
                             // This is a simplified version
-                            isCorrect = nestedAnswer === nestedQ.expectedAnswer;
-                            earnedScore = isCorrect ? nestedQ.score : 0;
+                            isCorrect = nestedAnswer === (nestedQ as any).expectedAnswer;
+                            earnedScore = isCorrect ? (nestedQ as any).score : 0;
                             return { isCorrect, earnedScore };
                         });
                         

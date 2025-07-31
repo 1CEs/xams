@@ -74,7 +74,6 @@ interface Question {
   }[]
   isTrue?: boolean
   expectedAnswer?: string
-  maxWords?: number
   questions?: Question[]
 }
 
@@ -626,7 +625,6 @@ export default function CreateSchedulePage() {
             expectedAnswer: question.expectedAnswer || '',
             expectedAnswers: question.expectedAnswers || [],
             isTrue: question.isTrue || false,
-            maxWords: question.maxWords || 0,
             isRandomChoices: question.isRandomChoices || false,
             // Additional properties for compatibility
             question_id: question._id,

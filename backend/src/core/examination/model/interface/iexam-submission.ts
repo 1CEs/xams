@@ -21,8 +21,8 @@ export interface IExamSubmission {
     _id?: string;
     schedule_id: string; // Reference to the exam schedule
     student_id: string; // Reference to the student who submitted
-    course_id: string; // Reference to the course
-    group_id: string; // Reference to the group
+    course_id?: string; // Reference to the course (optional)
+    group_id?: string; // Reference to the group (optional)
     
     // Submission details
     submitted_answers: ISubmittedAnswer[];

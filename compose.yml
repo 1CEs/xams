@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: isongwuts/xams-frontend:1.5
+    image: isongwuts/xams-frontend:latest
     depends_on:
       - backend
     ports:
@@ -11,7 +11,7 @@ services:
       - xams-network
 
   backend:
-    image: isongwuts/xams-backend:1.3
+    image: isongwuts/xams-backend:latest
     depends_on:
       - mongo
     environment:

@@ -2,7 +2,7 @@ import Elysia, { t } from "elysia";
 import { CourseController } from "../controllers/course.controller";
 import { tokenVerifier } from "../middleware/token-verify.middleware";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
-import { AddCourseSchema, AddGroupSchema, ExamSettingSchema, updateCourseSchema } from "./schema/course.schema";
+import { AddCourseSchema, AddGroupSchema, UpdateGroupSchema, ExamSettingSchema, updateCourseSchema } from "./schema/course.schema";
 import { catchAsync } from "../../utils/error";
 import { Static } from "@sinclair/typebox";
 import { Context } from "elysia";
@@ -14,6 +14,7 @@ type CourseContext = Context & {
 
 type AddCourseBody = Static<typeof AddCourseSchema>
 type AddGroupBody = Static<typeof AddGroupSchema>
+type UpdateGroupBody = Static<typeof UpdateGroupSchema>
 type ExamSettingBody = Static<typeof ExamSettingSchema>
 type UpdateCourseBody = Static<typeof updateCourseSchema>
 
@@ -66,6 +67,11 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
         return await controller.addGroup(params.id, groupData);
     }), {
         body: AddGroupSchema
+    })
+    .patch('/:id/group/:groupName', catchAsync(async ({ params, body, controller }: CourseContext & { params: { id: string, groupName: string }, body: UpdateGroupBody }) => {
+        return await controller.updateGroup(params.id, params.groupName, body);
+    }), {
+        body: UpdateGroupSchema
     })
     .delete('/:id/group/:groupName', catchAsync(async ({ params, controller }: CourseContext & { params: { id: string, groupName: string } }) => {
         return await controller.deleteGroup(params.id, params.groupName);

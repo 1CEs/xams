@@ -11,8 +11,8 @@ export class ExamSubmissionController {
     async submitExam(body: {
         schedule_id: string;
         student_id: string;
-        course_id: string;
-        group_id: string;
+        course_id?: string;
+        group_id?: string;
         submitted_answers: ISubmittedAnswer[];
         time_taken?: number;
     }) {
@@ -20,8 +20,8 @@ export class ExamSubmissionController {
             const submission = await this._service.submitExam({
                 scheduleId: body.schedule_id,
                 studentId: body.student_id,
-                courseId: body.course_id,
-                groupId: body.group_id,
+                courseId: body.course_id || '',
+                groupId: body.group_id || '',
                 submittedAnswers: body.submitted_answers,
                 timeTaken: body.time_taken
             });

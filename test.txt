@@ -7,10 +7,7 @@ ANSWER: B
 
 What does HTML stand for?
 A. HighText Machine Language
-B. HyperText Markdown Language
-C. HyperText Markup Language
-D. HyperTool Multi Language
-ANSWER: C
+B. HyperT
 
 Which symbol is used for comments in Python?
 A. //

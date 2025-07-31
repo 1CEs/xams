@@ -1,7 +1,7 @@
 import localFont from "next/font/local";
 import illustrationImage from '@/public/images/3dillustrator.png'
 import Image from "next/image";
-import { Button } from "@nextui-org/react";
+import { Button, Link } from "@nextui-org/react";
 
 const cherryBomb = localFont({
   src: "./fonts/CherryBombOne-Regular.ttf",
@@ -25,8 +25,8 @@ export default function Home() {
         </div>
       </div>
       <div className="flex gap-x-4 justify-center items-center">
-          <Button className="text-primary" variant="flat" color="primary" size="lg">Explore Our Courses</Button>
-          <Button className=" font-bold" color="secondary" size="lg">Become our member</Button>
+          <Button as={Link} href="/explore" className="text-primary" variant="flat" color="primary" size="lg">Explore Our Courses</Button>
+          <Button as={Link} href="/member/sign-up" className=" font-bold" color="secondary" size="lg">Become our member</Button>
       </div>
     </div>
   );

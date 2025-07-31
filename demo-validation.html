@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aiken Format Validator Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .warning {
+            color: #856404;
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            font-family: monospace;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .error-item {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #fff;
+            border-left: 4px solid #dc3545;
+            padding-left: 10px;
+        }
+        .warning-item {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #fff;
+            border-left: 4px solid #ffc107;
+            padding-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Aiken Format Validator Demo</h1>
+        <p>This demo shows how the Aiken format validator works. Paste your Aiken format content below and click "Validate" to see the results.</p>
+        
+        <h3>Sample Aiken Content:</h3>
+        <textarea id="aikenContent" placeholder="Paste your Aiken format content here...">What does HTML stand for?
+A. HighText Machine Language
+B. HyperT
+
+Which symbol is used for comments in Python?
+A. //
+B. <!-- -->
+C. #
+D. /*
+ANSWER: C</textarea>
+
+        <button onclick="validateContent()">🔍 Validate Aiken Format</button>
+        <button onclick="loadSampleContent()">📄 Load Sample Content</button>
+        <button onclick="clearContent()">🗑️ Clear</button>
+
+        <div id="results" class="results" style="display: none;">
+            <h3>Validation Results:</h3>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Aiken Format Validator (JavaScript version)
+        function validateAikenFormat(content) {
+            const lines = content.split('\n').map(line => line.trim());
+            const errors = [];
+            const warnings = [];
+            let questionCount = 0;
+            
+            let currentQuestionStart = -1;
+            let currentQuestionText = '';
+            let currentOptions = [];
+            let hasAnswer = false;
+            let expectedOptions = ['A', 'B', 'C', 'D'];
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const lineNumber = i + 1;
+                
+                if (line === '') {
+                    if (currentQuestionStart !== -1) {
+                        validateCurrentQuestion();
+                        resetCurrentQuestion();
+                    }
+                    continue;
+                }
+                
+                if (line.startsWith('ANSWER:')) {
+                    if (currentQuestionStart === -1) {
+                        errors.push({
+                            line: lineNumber,
+                            message: 'ANSWER line found without a preceding question',
+                            type: 'answer'
+                        });
+                        continue;
+                    }
+                    
+                    const answerValue = line.substring(7).trim();
+                    
+                    if (!answerValue) {
+                        errors.push({
+                            line: lineNumber,
+                            message: 'ANSWER line is empty',
+                            type: 'answer'
+                        });
+                    } else if (!/^[A-D]$/.test(answerValue)) {
+                        errors.push({
+                            line: lineNumber,
+                            message: `Invalid answer format: "${answerValue}". Answer must be A, B, C, or D`,
+                            type: 'answer'
+                        });
+                    } else if (!currentOptions.includes(answerValue)) {
+                        errors.push({
+                            line: lineNumber,
+                            message: `Answer "${answerValue}" does not correspond to any provided option`,
+                            type: 'answer'
+                        });
+                    }
+                    
+                    hasAnswer = true;
+                    continue;
+                }
+                
+                if (/^[A-D]\.\s/.test(line)) {
+                    const optionLetter = line.charAt(0);
+                    const optionText = line.substring(3).trim();
+                    
+                    if (currentQuestionStart === -1) {
+                        errors.push({
+                            line: lineNumber,
+                            message: 'Option found without a preceding question',
+                            type: 'option'
+                        });
+                        continue;
+                    }
+                    
+                    if (!optionText) {
+                        errors.push({
+                            line: lineNumber,
+                            message: `Option ${optionLetter} has no text`,
+                            type: 'option'
+                        });
+                    } else if (optionText.length < 2) {
+                        errors.push({
+                            line: lineNumber,
+                            message: `Option ${optionLetter} text is too short: "${optionText}"`,
+                            type: 'option'
+                        });
+                    }
+                    
+                    if (currentOptions.includes(optionLetter)) {
+                        errors.push({
+                            line: lineNumber,
+                            message: `Duplicate option ${optionLetter} found`,
+                            type: 'option'
+                        });
+                    }
+                    
+                    currentOptions.push(optionLetter);
+                    continue;
+                }
+                
+                if (currentQuestionStart !== -1) {
+                    validateCurrentQuestion();
+                    resetCurrentQuestion();
+                }
+                
+                currentQuestionStart = lineNumber;
+                currentQuestionText = line;
+                
+                if (!line.trim()) {
+                    errors.push({
+                        line: lineNumber,
+                        message: 'Question text is empty',
+                        type: 'question'
+                    });
+                } else if (line.length < 10) {
+                    warnings.push({
+                        line: lineNumber,
+                        message: 'Question text is very short, might be incomplete',
+                        type: 'question'
+                    });
+                }
+            }
+            
+            if (currentQuestionStart !== -1) {
+                validateCurrentQuestion();
+            }
+            
+            function validateCurrentQuestion() {
+                if (currentQuestionStart === -1) return;
+                
+                questionCount++;
+                
+                if (currentOptions.length === 0) {
+                    errors.push({
+                        line: currentQuestionStart,
+                        message: 'Question has no options',
+                        type: 'structure'
+                    });
+                } else {
+                    const missingOptions = expectedOptions.filter(opt => !currentOptions.includes(opt));
+                    if (missingOptions.length > 0) {
+                        errors.push({
+                            line: currentQuestionStart,
+                            message: `Question is missing options: ${missingOptions.join(', ')}`,
+                            type: 'structure'
+                        });
+                    }
+                }
+                
+                if (!hasAnswer) {
+                    errors.push({
+                        line: currentQuestionStart,
+                        message: 'Question is missing ANSWER line',
+                        type: 'answer'
+                    });
+                }
+            }
+            
+            function resetCurrentQuestion() {
+                currentQuestionStart = -1;
+                currentQuestionText = '';
+                currentOptions = [];
+                hasAnswer = false;
+            }
+            
+            return {
+                isValid: errors.length === 0,
+                errors,
+                warnings,
+                questionCount
+            };
+        }
+
+        function validateContent() {
+            const content = document.getElementById('aikenContent').value;
+            const result = validateAikenFormat(content);
+            
+            const resultsDiv = document.getElementById('results');
+            const resultContent = document.getElementById('resultContent');
+            
+            let html = '';
+            
+            if (result.isValid) {
+                html += `<div class="success">✅ Valid Aiken format with ${result.questionCount} questions!</div>`;
+            } else {
+                html += `<div class="error">❌ Invalid Aiken format. Found ${result.errors.length} error(s)`;
+                if (result.warnings.length > 0) {
+                    html += ` and ${result.warnings.length} warning(s)`;
+                }
+                html += `</div>`;
+            }
+            
+            if (result.errors.length > 0) {
+                html += '<h4>Errors:</h4>';
+                result.errors.forEach(error => {
+                    html += `<div class="error-item"><strong>Line ${error.line} [${error.type.toUpperCase()}]:</strong> ${error.message}</div>`;
+                });
+            }
+            
+            if (result.warnings.length > 0) {
+                html += '<h4>Warnings:</h4>';
+                result.warnings.forEach(warning => {
+                    html += `<div class="warning-item"><strong>Line ${warning.line} [${warning.type.toUpperCase()}]:</strong> ${warning.message}</div>`;
+                });
+            }
+            
+            resultContent.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
+
+        function loadSampleContent() {
+            const sampleContent = `Which data type is used to store whole numbers in most programming languages?
+A. float
+B. int
+C. char
+D. string
+ANSWER: B
+
+What does HTML stand for?
+A. HighText Machine Language
+B. HyperText Markup Language
+C. High Technology Modern Language
+D. HyperText Machine Language
+ANSWER: B
+
+Which symbol is used for comments in Python?
+A. //
+B. <!-- -->
+C. #
+D. /*
+ANSWER: C`;
+
+            document.getElementById('aikenContent').value = sampleContent;
+        }
+
+        function clearContent() {
+            document.getElementById('aikenContent').value = '';
+            document.getElementById('results').style.display = 'none';
+        }
+
+        // Load the problematic content from test.txt by default
+        window.onload = function() {
+            const problematicContent = `What does HTML stand for?
+A. HighText Machine Language
+B. HyperT
+
+Which symbol is used for comments in Python?
+A. //
+B. <!-- -->
+C. #
+D. /*
+ANSWER: C`;
+            
+            document.getElementById('aikenContent').value = problematicContent;
+        };
+    </script>
+</body>
+</html>

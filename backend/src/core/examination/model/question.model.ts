@@ -41,16 +41,11 @@ const QuestionSchema = new Schema<QuestionDocument>({
     expectedAnswers: {
         type: [String],
         required: function () {
-            return this.type === 'ses' || this.type === 'les';
+            // Only require expectedAnswers for Short Essay (SES) questions
+            // Long Essay (LES) questions can have optional expected answers
+            return this.type === 'ses';
         },
         default: []
-    },
-    maxWords: {
-        type: Number,
-        required: function () {
-            return this.type === 'les';
-        },
-        default: 0
     },
     score: {
         type: Number,

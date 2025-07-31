@@ -16,7 +16,6 @@ interface Question {
   choices?: Choice[]
   isTrue?: boolean
   expectedAnswers?: string[]
-  maxWords?: number
   score: number
   questions?: Question[] // For nested questions
 }

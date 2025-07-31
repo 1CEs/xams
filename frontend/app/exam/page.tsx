@@ -25,7 +25,6 @@ interface Question {
   }[]
   isTrue?: boolean
   expectedAnswer?: string
-  maxWords?: number
   score: number
   isRandomChoices?: boolean
   questions?: Question[]

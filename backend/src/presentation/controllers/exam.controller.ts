@@ -197,11 +197,27 @@ export class ExaminationController implements IExaminationController {
 
     // Question-Only methods
     async addExaminationQuestion(id: string, payload: Omit<IQuestion, '_id'>, user?: IInstructor) {
+        // Validate Short Essay questions have at least one non-empty expected answer
+        if (payload.type === 'ses') {
+            if (!payload.expectedAnswers || payload.expectedAnswers.length === 0 || 
+                !payload.expectedAnswers.some(answer => answer.trim().length > 0)) {
+                return this._response('Short essay questions must have at least one expected answer', 400, null)
+            }
+        }
+        
         const exam = await this._service.addExaminationQuestion(id, payload)
         return this._response<typeof exam>('Add Question Successfully', 200, this._sanitizeExamData(exam, user))
     }
 
     async updateQuestion(id: string, question_id: string, payload: Partial<IQuestion>, user?: IInstructor) {
+        // Validate Short Essay questions have at least one non-empty expected answer
+        if (payload.type === 'ses') {
+            if (!payload.expectedAnswers || payload.expectedAnswers.length === 0 || 
+                !payload.expectedAnswers.some(answer => answer.trim().length > 0)) {
+                return this._response('Short essay questions must have at least one expected answer', 400, null)
+            }
+        }
+        
         const exam = await this._service.updateQuestion(id, question_id, payload)
         return this._response<typeof exam>('Update Question Successfully', 200, this._sanitizeExamData(exam, user))
     }

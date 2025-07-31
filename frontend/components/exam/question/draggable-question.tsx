@@ -141,10 +141,6 @@ const DraggableQuestion = ({ id, question, disableDrag, onEdit }: DraggableQuest
                                     <p className="text-tiny text-default-400">No expected answers set</p>
                                 )}
                             </div>
-                            
-                            {question.type === 'les' && (
-                                <p className="text-small text-default-500">Max Words: {question.maxWords}</p>
-                            )}
                         </div>
                     )}
                     {question.type === 'nested' && question.questions && (
@@ -181,9 +177,6 @@ const DraggableQuestion = ({ id, question, disableDrag, onEdit }: DraggableQuest
                                                     </div>
                                                 ) : (
                                                     <p className="text-xs text-gray-400">No expected answers set</p>
-                                                )}
-                                                {subQuestion.type === 'les' && (
-                                                    <p className="text-xs text-gray-500">Max Words: {subQuestion.maxWords}</p>
                                                 )}
                                             </div>
                                         )}

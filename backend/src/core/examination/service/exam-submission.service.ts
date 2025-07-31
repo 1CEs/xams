@@ -21,8 +21,8 @@ export class ExamSubmissionService implements IExamSubmissionService {
     async submitExam(submissionData: {
         scheduleId: string;
         studentId: string;
-        courseId: string;
-        groupId: string;
+        courseId?: string;
+        groupId?: string;
         submittedAnswers: ISubmittedAnswer[];
         timeTaken?: number;
     }): Promise<IExamSubmission> {

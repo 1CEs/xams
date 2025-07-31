@@ -7,7 +7,7 @@ const ShortEssayForm = () => {
     const { setFieldValue, values } = useFormikContext<QuestionForm>()
     const [editorKeys, setEditorKeys] = useState<number[]>([0])
 
-    // Initialize expectedAnswers if it doesn't exist
+    // Initialize expectedAnswers with at least one answer (required for short essays)
     useEffect(() => {
         if (!values.expectedAnswers || values.expectedAnswers.length === 0) {
             setFieldValue('expectedAnswers', [''])
@@ -23,6 +23,7 @@ const ShortEssayForm = () => {
 
     const removeExpectedAnswer = (index: number) => {
         const currentAnswers = values.expectedAnswers || ['']
+        // Always maintain at least one expected answer for short essays
         if (currentAnswers.length > 1) {
             const newAnswers = currentAnswers.filter((_, i) => i !== index)
             setFieldValue('expectedAnswers', newAnswers)
@@ -35,6 +36,12 @@ const ShortEssayForm = () => {
     return (
         <div className="px-10 flex flex-col gap-y-4">
             <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-y-2">
+                    <h3 className="text-lg font-medium">Expected Answers <span className="text-red-500">*</span></h3>
+                    <p className="text-sm text-gray-500">
+                        Short essay questions require at least one expected answer for grading.
+                    </p>
+                </div>
                 <Button
                     size="sm"
                     color="primary"
@@ -59,6 +66,11 @@ const ShortEssayForm = () => {
                                 Remove
                             </Button>
                         )}
+                        {expectedAnswers.length === 1 && (
+                            <span className="text-xs text-gray-400">
+                                Required
+                            </span>
+                        )}
                     </CardHeader>
                     <CardBody className="pt-0">
                         <TextEditor
@@ -71,10 +83,16 @@ const ShortEssayForm = () => {
                 </Card>
             ))}
             
-            <p className="text-sm text-gray-500">
-                Tip: Add multiple expected answers to allow for different correct responses. 
-                Students can submit any answer that matches one of these expected answers.
-            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700 font-medium mb-2">
+                    📝 Short Essay Requirements:
+                </p>
+                <ul className="text-sm text-blue-600 space-y-1">
+                    <li>• At least one expected answer is required</li>
+                    <li>• Add multiple expected answers to allow for different correct responses</li>
+                    <li>• Students can submit any answer that matches one of these expected answers</li>
+                </ul>
+            </div>
         </div>
     )
 }

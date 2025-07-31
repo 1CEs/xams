@@ -1,10 +1,11 @@
 import { clientAPI } from '@/config/axios.config'
 import { useTrigger } from '@/stores/trigger.store'
 import { errorHandler } from '@/utils/error'
-import { ModalContent, ModalHeader, ModalBody, Textarea, ModalFooter, Button, Input, useDisclosure, Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from '@nextui-org/react'
+import { ModalContent, ModalHeader, ModalBody, Textarea, ModalFooter, Button, Input, useDisclosure, Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader, Select, SelectItem } from '@nextui-org/react'
 import Image from 'next/image'
 import React, { FormEvent, SetStateAction, useState } from 'react'
 import { toast } from 'react-toastify'
+import { COURSE_CATEGORIES, COURSE_CATEGORY_LABELS, CourseCategory } from '@/constants/course.constants'
 
 type ImageChooserDrawerProps = {
     setBackground: React.Dispatch<SetStateAction<string>>
@@ -65,6 +66,7 @@ type Props = {
         course_name: string
         description: string
         background_src: string
+        category: string
     }
 }
 
@@ -75,9 +77,11 @@ const CourseUpdateModal = ({ courseId, initialData }: Props) => {
     const [courseForm, setCourseForm] = useState<{
         course_name: string;
         description: string;
+        category: string;
     }>({
         course_name: initialData.course_name,
         description: initialData.description,
+        category: initialData.category,
     });
 
     const onUpdateCourse = async (e: FormEvent<HTMLFormElement>) => {
@@ -122,6 +126,22 @@ const CourseUpdateModal = ({ courseId, initialData }: Props) => {
                                 name='description' 
                                 label='Description' 
                             />
+                            <Select
+                                label="Course Category"
+                                placeholder="Select a category"
+                                selectedKeys={[courseForm.category]}
+                                onSelectionChange={(keys) => {
+                                    const selectedCategory = Array.from(keys)[0] as string;
+                                    setCourseForm(prev => ({ ...prev, category: selectedCategory }));
+                                }}
+                                isRequired
+                            >
+                                {COURSE_CATEGORIES.map((category) => (
+                                    <SelectItem key={category} value={category}>
+                                        {COURSE_CATEGORY_LABELS[category]}
+                                    </SelectItem>
+                                ))}
+                            </Select>
                         </ModalBody>
                         <ModalFooter>
                             <Button color="danger" variant="light" onPress={onClose}>

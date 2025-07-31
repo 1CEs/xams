@@ -67,8 +67,7 @@ const NewQuestionForm = ({ examination_id, editingQuestion, onEditComplete }: Pr
                     isRandomChoices: editingQuestion?.isRandomChoices ?? true,
                     choices: editingQuestion?.choices || [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
                     isTrue: editingQuestion?.isTrue ?? false,
-                    expectedAnswers: editingQuestion?.expectedAnswers || [''],
-                    maxWords: editingQuestion?.maxWords || 0,
+                    expectedAnswers: editingQuestion?.expectedAnswers || (editingQuestion?.type === 'les' ? [] : ['']),
                     score: editingQuestion?.score || 1
                 }}
                 onSubmit={async (
@@ -81,6 +80,19 @@ const NewQuestionForm = ({ examination_id, editingQuestion, onEditComplete }: Pr
                             const hasCorrectChoice = values.choices?.some(choice => choice.isCorrect) || false;
                             if (!hasCorrectChoice) {
                                 setValidationError('You must select at least one correct answer for multiple choice questions.');
+                                setShowValidationModal(true);
+                                formikHelpers.setSubmitting(false);
+                                return;
+                            }
+                        }
+                        
+                        // Validate short essay questions have at least one non-empty expected answer
+                        if (values.type === 'ses') {
+                            const hasValidExpectedAnswer = values.expectedAnswers && 
+                                values.expectedAnswers.length > 0 && 
+                                values.expectedAnswers.some(answer => answer.trim().length > 0);
+                            if (!hasValidExpectedAnswer) {
+                                setValidationError('Short essay questions must have at least one expected answer.');
                                 setShowValidationModal(true);
                                 formikHelpers.setSubmitting(false);
                                 return;
@@ -110,7 +122,6 @@ const NewQuestionForm = ({ examination_id, editingQuestion, onEditComplete }: Pr
                                     choices: [{ content: '', isCorrect: false, score: 0 }, { content: '', isCorrect: false, score: 0 }],
                                     isTrue: false,
                                     expectedAnswers: [''],
-                                    maxWords: 0,
                                     score: 1
                                 }
                             })

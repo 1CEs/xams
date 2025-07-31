@@ -20,7 +20,6 @@ type QuestionForm = {
     }[]
     isTrue?: boolean
     expectedAnswers?: string[]
-    maxWords?: number
     score: number
     questions?: QuestionForm[]
 }
@@ -47,7 +46,6 @@ type Question = {
     }[]
     isTrue?: boolean
     expectedAnswers?: string[]
-    maxWords?: number
     score: number
     questions?: Question[]
 }

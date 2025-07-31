@@ -45,7 +45,6 @@ export interface QuestionForm {
     choices?: Choice[];
     isTrue?: boolean;
     expectedAnswers?: string[];
-    maxWords?: number;
 }
 
 interface NestedQuestionFormProps {

@@ -56,12 +56,12 @@ const ExamSubmissionSchema = new Schema<IExamSubmission>({
     },
     course_id: {
         type: String,
-        required: true,
+        required: false, // Made optional to support empty strings
         index: true
     },
     group_id: {
         type: String,
-        required: true,
+        required: false, // Made optional to support empty strings
         index: true
     },
     submitted_answers: {

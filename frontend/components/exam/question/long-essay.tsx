@@ -7,42 +7,43 @@ const LongEssayForm = () => {
     const { setFieldValue, values } = useFormikContext<QuestionForm>()
     const [editorKeys, setEditorKeys] = useState<number[]>([0])
 
-    // Initialize expectedAnswers if it doesn't exist
+    // Initialize expectedAnswers as empty array if it doesn't exist (optional for long essays)
     useEffect(() => {
-        if (!values.expectedAnswers || values.expectedAnswers.length === 0) {
-            setFieldValue('expectedAnswers', [''])
+        if (!values.expectedAnswers) {
+            setFieldValue('expectedAnswers', [])
         }
     }, [])
 
     const addExpectedAnswer = () => {
-        const currentAnswers = values.expectedAnswers || ['']
+        const currentAnswers = values.expectedAnswers || []
         const newAnswers = [...currentAnswers, '']
         setFieldValue('expectedAnswers', newAnswers)
-        setEditorKeys(prev => [...prev, Math.max(...prev) + 1])
+        setEditorKeys(prev => {
+            const maxKey = prev.length > 0 ? Math.max(...prev) : -1
+            return [...prev, maxKey + 1]
+        })
     }
 
     const removeExpectedAnswer = (index: number) => {
-        const currentAnswers = values.expectedAnswers || ['']
-        if (currentAnswers.length > 1) {
+        const currentAnswers = values.expectedAnswers || []
+        if (currentAnswers.length > 0) {
             const newAnswers = currentAnswers.filter((_, i) => i !== index)
             setFieldValue('expectedAnswers', newAnswers)
             setEditorKeys(prev => prev.filter((_, i) => i !== index))
         }
     }
 
-    const expectedAnswers = values.expectedAnswers || ['']
+    const expectedAnswers = values.expectedAnswers || []
 
     return (
         <div className="px-10 flex flex-col gap-y-4">
-            <Input
-                type="number"
-                label="Maximum Word Count"
-                placeholder="Enter maximum word count"
-                value={values.maxWords?.toString()}
-                onChange={(e) => setFieldValue('maxWords', parseInt(e.target.value) || 0)}
-            />
-            
             <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-y-2">
+                    <h3 className="text-lg font-medium">Expected Answers (Optional)</h3>
+                    <p className="text-sm text-gray-500">
+                        Add expected answers to help with grading. Leave empty if this is an open-ended question.
+                    </p>
+                </div>
                 <Button
                     size="sm"
                     color="primary"
@@ -57,16 +58,14 @@ const LongEssayForm = () => {
                 <Card key={editorKeys[index]} className="w-full">
                     <CardHeader className="flex justify-between items-center pb-2">
                         <span className="text-sm font-medium">Expected Answer {index + 1}</span>
-                        {expectedAnswers.length > 1 && (
-                            <Button
-                                size="sm"
-                                color="danger"
-                                variant="flat"
-                                onPress={() => removeExpectedAnswer(index)}
-                            >
-                                Remove
-                            </Button>
-                        )}
+                        <Button
+                            size="sm"
+                            color="danger"
+                            variant="flat"
+                            onPress={() => removeExpectedAnswer(index)}
+                        >
+                            Remove
+                        </Button>
                     </CardHeader>
                     <CardBody className="pt-0">
                         <TextEditor
@@ -79,10 +78,20 @@ const LongEssayForm = () => {
                 </Card>
             ))}
             
-            <p className="text-sm text-gray-500">
-                Tip: Add multiple expected answers to allow for different correct responses. 
-                Students can submit any answer that matches one of these expected answers.
-            </p>
+            {expectedAnswers.length === 0 && (
+                <div className="text-center py-8">
+                    <p className="text-gray-500 text-sm">
+                        No expected answers added. This will be treated as an open-ended question.
+                    </p>
+                </div>
+            )}
+            
+            {expectedAnswers.length > 0 && (
+                <p className="text-sm text-gray-500">
+                    Tip: Add multiple expected answers to allow for different correct responses. 
+                    Students can submit any answer that matches one of these expected answers.
+                </p>
+            )}
         </div>
     )
 }
