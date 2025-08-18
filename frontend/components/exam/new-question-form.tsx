@@ -15,9 +15,9 @@ import { useTrigger } from '@/stores/trigger.store'
 
 export const HeadLine = ({ number, content, isOptional }: { number: number, content: string, isOptional?: boolean }) => {
     return (
-        <div className='flex gap-x-8 items-center'>
+        <div className='flex gap-x-3 sm:gap-x-8 items-center'>
             <Avatar size='sm' name={number.toString()} />
-            <h1 className='text-xl'>{content} {isOptional && <span className='text-tiny text-foreground/50'>Optional</span>}</h1>
+            <h1 className='text-lg sm:text-xl'>{content} {isOptional && <span className='text-tiny text-foreground/50'>Optional</span>}</h1>
         </div>
     )
 }
@@ -148,7 +148,7 @@ const NewQuestionForm = ({ examination_id, editingQuestion, onEditComplete }: Pr
                 }
 
                 return (
-                    <form className="col-span-2 pl-32" onSubmit={handleSubmit}>
+                    <form className="w-full px-2 sm:px-4 lg:col-span-2 lg:pl-32" onSubmit={handleSubmit}>
                         {isEditing && (
                             <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
                                 <p className="text-sm text-primary font-medium">
@@ -157,23 +157,23 @@ const NewQuestionForm = ({ examination_id, editingQuestion, onEditComplete }: Pr
                             </div>
                         )}
                         <Card>
-                            <CardHeader className="justify-between">
-                                <div className='flex gap-x-4'>
-                                    <Button size="sm" color="success" type='submit'>
+                            <CardHeader className="flex-col sm:flex-row gap-3 sm:justify-between">
+                                <div className='flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto'>
+                                    <Button size="sm" color="success" type='submit' className="w-full sm:w-auto">
                                         {isEditing ? 'Update Question' : 'Save'}
                                     </Button>
                                     {!isEditing && (
-                                        <Button size="sm">Save and add new question</Button>
+                                        <Button size="sm" className="w-full sm:w-auto">Save and add new question</Button>
                                     )}
                                     {isEditing && (
-                                        <Button size="sm" color="warning" onPress={onEditComplete}>
+                                        <Button size="sm" color="warning" onPress={onEditComplete} className="w-full sm:w-auto">
                                             Cancel Edit
                                         </Button>
                                     )}
                                 </div>
 
                                 <Input
-                                    className='w-[100px] text-secondary'
+                                    className='w-full sm:w-[100px] text-secondary'
                                     size='sm'
                                     maxLength={4}
                                     startContent={<span className='text-sm text-foreground/50'>Score: </span>}
@@ -183,14 +183,14 @@ const NewQuestionForm = ({ examination_id, editingQuestion, onEditComplete }: Pr
                                 />
                             </CardHeader>
                             <Divider />
-                            <CardBody className='gap-y-9'>
+                            <CardBody className='gap-y-6 sm:gap-y-9'>
                                 <StepProvider number={1} content='Select Question Type'>
                                     <QuestionTypeSelector />
                                 </StepProvider>
                                 <StepProvider number={2} content='Write your question'>
-                                    <div className='px-10'>
+                                    <div className='px-2 sm:px-6 lg:px-10'>
                                         <TextEditor
-                                            className='min-h-[150px]'
+                                            className='min-h-[120px] sm:min-h-[150px]'
                                             name='question'
                                             type='unnested'
                                         />

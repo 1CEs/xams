@@ -52,37 +52,57 @@ const Navbar = () => {
     }
 
     return (
-        <Nav position="sticky" className="border-b border-secondary">
+        <Nav 
+            position="sticky" 
+            className="border-b border-secondary px-2 sm:px-4 lg:px-6"
+            maxWidth="full"
+            height="4rem"
+        >
             <NavbarBrand onClick={() => router.push('/')} className='cursor-pointer'>
-                <p className="font-bold hero-foreground">XAMS</p>
+                <p className="font-bold hero-foreground text-lg sm:text-xl">XAMS</p>
             </NavbarBrand>
-            <NavbarContent className="hidden sm:flex gap-4" justify="center">
+            
+            {/* Desktop Navigation */}
+            <NavbarContent className="hidden md:flex gap-2 lg:gap-4" justify="center">
                 <NavbarItem isActive={pathName === '/explore'}>
-                    <Link color={pathName === '/explore' ? 'secondary' : 'foreground'} href="/explore">
+                    <Link 
+                        color={pathName === '/explore' ? 'secondary' : 'foreground'} 
+                        href="/explore"
+                        className="text-sm lg:text-base font-medium hover:text-secondary transition-colors"
+                    >
                         Explores
                     </Link>
                 </NavbarItem>
                 <NavbarItem isActive={pathName === '/overview'}>
-                    <Link color={pathName === '/overview' ? 'secondary' : 'foreground'} href="/overview">
+                    <Link 
+                        color={pathName === '/overview' ? 'secondary' : 'foreground'} 
+                        href="/overview"
+                        className="text-sm lg:text-base font-medium hover:text-secondary transition-colors"
+                    >
                         Overview
                     </Link>
                 </NavbarItem>
                 <NavbarItem isActive={pathName === '/annoucement'}>
-                    <Link color={pathName === '/annoucement' ? 'secondary' : 'foreground'} href="/annoucement">
+                    <Link 
+                        color={pathName === '/annoucement' ? 'secondary' : 'foreground'} 
+                        href="/annoucement"
+                        className="text-sm lg:text-base font-medium hover:text-secondary transition-colors"
+                    >
                         Annoucement
                     </Link>
                 </NavbarItem>
             </NavbarContent>
 
+            {/* User Actions */}
             {(pathName !== '/member/sign-up' && pathName !== '/member/sign-in') ? (
                 contentLoading ? (
-                    <NavbarContent justify="end">
+                    <NavbarContent justify="end" className="gap-2">
                         <NavbarItem>
-                            <Spinner />
+                            <Spinner size="sm" />
                         </NavbarItem>
                     </NavbarContent>
                 ) : !signedIn ? (
-                    <NavbarContent justify="end">
+                    <NavbarContent justify="end" className="gap-2">
                         <NavbarItem>
                             <Button
                                 isLoading={loading}
@@ -90,15 +110,63 @@ const Navbar = () => {
                                 className="text-primary"
                                 color="primary"
                                 variant="flat"
+                                size="sm"
                             >
                                 {!loading && 'Sign In'}
                             </Button>
                         </NavbarItem>
                     </NavbarContent>
                 ) : (
-                    <NavbarContent justify="end">
+                    <NavbarContent justify="end" className="gap-2">
+                        {/* Mobile Navigation Menu - Only show on small screens when signed in */}
+                        <NavbarItem className="md:hidden">
+                            <Popover showArrow placement="bottom-end">
+                                <PopoverTrigger>
+                                    <Button
+                                        variant="light"
+                                        isIconOnly
+                                        size="sm"
+                                        className="text-foreground"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                        </svg>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="p-3 backdrop-blur-md gap-y-2 min-w-[200px]">
+                                    <div className="flex flex-col gap-2">
+                                        <Link 
+                                            href="/explore" 
+                                            className={`p-2 rounded-md text-sm font-medium transition-colors ${
+                                                pathName === '/explore' ? 'text-secondary bg-secondary/10' : 'text-foreground hover:text-secondary'
+                                            }`}
+                                        >
+                                            Explores
+                                        </Link>
+                                        <Link 
+                                            href="/overview" 
+                                            className={`p-2 rounded-md text-sm font-medium transition-colors ${
+                                                pathName === '/overview' ? 'text-secondary bg-secondary/10' : 'text-foreground hover:text-secondary'
+                                            }`}
+                                        >
+                                            Overview
+                                        </Link>
+                                        <Link 
+                                            href="/annoucement" 
+                                            className={`p-2 rounded-md text-sm font-medium transition-colors ${
+                                                pathName === '/annoucement' ? 'text-secondary bg-secondary/10' : 'text-foreground hover:text-secondary'
+                                            }`}
+                                        >
+                                            Annoucement
+                                        </Link>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        </NavbarItem>
+                        
+                        {/* User Profile */}
                         <NavbarItem>
-                            <Popover showArrow placement="bottom">
+                            <Popover showArrow placement="bottom-end">
                                 <PopoverTrigger>
                                     <Avatar
                                         className="cursor-pointer"
@@ -108,31 +176,46 @@ const Navbar = () => {
                                         src={user?.profile_url}
                                     />
                                 </PopoverTrigger>
-                                <PopoverContent className="p-4 backdrop-blur-md gap-y-3 mt-4">
-                                    <div className="flex gap-x-14">
-                                        <div className="flex gap-x-4 items-center">
+                                <PopoverContent className="p-4 backdrop-blur-md gap-y-3">
+                                    <div className="flex gap-x-4 sm:gap-x-6 lg:gap-x-8">
+                                        <div className="flex gap-x-3 sm:gap-x-4 items-center flex-1">
                                             <Avatar size="sm" isBordered color="primary" src={user?.profile_url} />
-                                            <div className="flex flex-col">
-                                                <h1 className="text-primary font-bold">{user?.username}</h1>
-                                                <h2 className="text-foreground/60">{user?.role}</h2>
+                                            <div className="flex flex-col min-w-0 flex-1">
+                                                <h1 className="text-primary font-bold text-sm sm:text-base truncate">{user?.username}</h1>
+                                                <h2 className="text-foreground/60 text-xs sm:text-sm capitalize">{user?.role}</h2>
                                             </div>
                                         </div>
-                                        <Button variant="light" className="text-2xl text-foreground/60 hover:text-foreground" isIconOnly>
+                                        <Button 
+                                            variant="light" 
+                                            className="text-lg sm:text-xl text-foreground/60 hover:text-foreground" 
+                                            isIconOnly
+                                            size="sm"
+                                        >
                                             <Link href="/settings">
                                                 <FluentSettings16Filled />
                                             </Link>
                                         </Button>
                                     </div>
                                     <Divider />
-                                    <Button onPress={onLogout} color="danger" className="w-full font-bold" size="sm">
-                                        Sign out
+                                    <Button 
+                                        onPress={onLogout} 
+                                        color="danger" 
+                                        className="w-full font-bold" 
+                                        size="sm"
+                                        isLoading={loading}
+                                    >
+                                        {!loading && 'Sign out'}
                                     </Button>
                                 </PopoverContent>
                             </Popover>
                         </NavbarItem>
                     </NavbarContent>
                 )
-            ) : <NavbarContent></NavbarContent>}
+            ) : (
+                <NavbarContent justify="end">
+                    <NavbarItem></NavbarItem>
+                </NavbarContent>
+            )}
         </Nav>
     )
 }

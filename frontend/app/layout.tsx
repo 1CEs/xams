@@ -35,17 +35,40 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}
       >
         <NextUIProvider>
           <NextTopLoader color="#82f4b1" showSpinner={false} />
-          <ToastContainer theme="dark" position="bottom-left"/>
+          {/* Responsive Toast Container */}
+          <ToastContainer 
+            theme="dark" 
+            position="bottom-left"
+            className="!bottom-4 !left-4 sm:!bottom-6 sm:!left-6"
+            toastClassName="!text-sm sm:!text-base"
+            bodyClassName="!p-3 sm:!p-4"
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            limit={5}
+          />
           <CookiesProvider>
-            <div className=" min-h-screen flex flex-col">
+            {/* Main App Container */}
+            <div className="min-h-screen flex flex-col relative">
+              {/* Navigation */}
               <Navbar />
-              <div className="grow shrink-0">
-                {children}
-              </div>
+              
+              {/* Main Content Area */}
+              <main className="flex-1 flex flex-col w-full max-w-full overflow-x-hidden">
+                <div className="flex-1 w-full">
+                  {children}
+                </div>
+              </main>
+              
+              {/* Footer */}
               <Footer />
             </div>
           </CookiesProvider>

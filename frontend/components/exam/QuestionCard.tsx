@@ -12,7 +12,6 @@ interface Question {
   _id: string
   question: string
   type: 'mc' | 'tf' | 'ses' | 'les' | 'nested'
-  isRandomChoices?: boolean
   choices?: Choice[]
   isTrue?: boolean
   expectedAnswers?: string[]
@@ -91,47 +90,7 @@ const QuestionCard = memo(({
   // Get user from store to check role
   const { user } = useUserStore();
   
-  // Add state to store randomized choices
-  const [randomizedChoices, setRandomizedChoices] = useState<Choice[] | null>(null);
-
-  useEffect(() => {
-    if (question.isRandomChoices && question.choices && !randomizedChoices) {
-      // Check if randomized choices are already stored in localStorage
-      if ((examId || code) && typeof window !== 'undefined') {
-        // Try to get from examId first, then from code
-        let storedRandomizedChoices = null;
-        
-        if (examId) {
-          storedRandomizedChoices = localStorage.getItem(`exam_${examId}_randomized_choices_${question._id}`);
-        }
-        
-        if (!storedRandomizedChoices && code) {
-          storedRandomizedChoices = localStorage.getItem(`exam_${code}_randomized_choices_${question._id}`);
-        }
-
-        if (storedRandomizedChoices) {
-          // Use stored randomized choices
-          setRandomizedChoices(JSON.parse(storedRandomizedChoices));
-        } else {
-          // Randomize choices and store in localStorage
-          const shuffledChoices = [...question.choices].sort(() => Math.random() - 0.5);
-          setRandomizedChoices(shuffledChoices);
-
-          // Store in localStorage using both examId and code if available
-          if (examId) {
-            localStorage.setItem(`exam_${examId}_randomized_choices_${question._id}`, JSON.stringify(shuffledChoices));
-          }
-          
-          if (code) {
-            localStorage.setItem(`exam_${code}_randomized_choices_${question._id}`, JSON.stringify(shuffledChoices));
-          }
-        }
-      } else {
-        // Fallback to just randomizing without storing
-        setRandomizedChoices([...question.choices].sort(() => Math.random() - 0.5));
-      }
-    }
-  }, [question.isRandomChoices, question.choices, randomizedChoices, question._id, examId, code]);
+  // Randomization is now handled at the exam level, so we just use the choices as provided
 
   // Handler functions moved from the examination page
   const handleCheckboxChange = useCallback((questionId: string, choice: string, isSingleAnswer: boolean) => {
@@ -203,13 +162,11 @@ const QuestionCard = memo(({
   }, [setAnswers]);
 
   const renderQuestionContent = useCallback((q: Question, isSubQuestion: boolean = false) => {
-    // Use the randomized choices if available, otherwise use the original choices
-    const displayChoices = q.isRandomChoices && randomizedChoices
-      ? randomizedChoices
-      : q.choices
+    // Use the choices as provided (randomization is handled at exam level)
+    const displayChoices = q.choices
 
     // Calculate if this is a multi-answer question based on number of correct choices
-    const correctChoicesCount = displayChoices?.filter(choice => choice.isCorrect).length || 0
+    const correctChoicesCount = displayChoices?.filter((choice: Choice) => choice.isCorrect).length || 0
     const isMultiAnswer = correctChoicesCount > 1
 
     // Find the current answer for this question
@@ -332,7 +289,7 @@ const QuestionCard = memo(({
         )}
       </div>
     )
-  }, [answers, handleCheckboxChange, handleTrueFalseChange, handleEssayChange, randomizedChoices]);
+  }, [answers, handleCheckboxChange, handleTrueFalseChange, handleEssayChange]);
 
   // Memoize the question content to prevent unnecessary re-renders
   const questionContent = useMemo(() => {
@@ -363,12 +320,23 @@ const QuestionCard = memo(({
 
   // For non-nested questions, render with card and question number
   return (
-    <Card key={question._id} id={`question-${question._id}`}>
-      <CardBody>
-        <div className="flex items-start gap-4 px-1">
-            {question.type !== 'nested' && <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary text-white text-sm flex items-center justify-center">
-              {questionNumber}
-            </div>}
+    <Card 
+      key={question._id} 
+      id={`question-${question._id}`}
+      className="shadow-sm hover:shadow-md transition-all duration-200 border border-default-200"
+    >
+      <CardBody className="p-6">
+        <div className="flex items-start gap-6">
+          {question.type !== 'nested' && (
+            <div className="flex-shrink-0 flex flex-col items-center">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-secondary text-white text-lg font-bold flex items-center justify-center shadow-sm">
+                {questionNumber}
+              </div>
+              <div className="text-xs text-center text-default-600 font-medium mt-2">
+                Question
+              </div>
+            </div>
+          )}
           {questionContent}
         </div>
       </CardBody>

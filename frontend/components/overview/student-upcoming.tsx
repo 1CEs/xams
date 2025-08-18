@@ -25,23 +25,24 @@ const StudentUpcoming = (props: Props) => {
 
   if (isLoading) {
     return (
-      <div className="min-h-[400px] flex flex-col items-center justify-center space-y-4">
-        <SolarRefreshLineDuotone className="text-secondary animate-spin text-4xl" />
-        <p className="text-default-500 text-lg">Loading your dashboard...</p>
+      <div className="min-h-[300px] sm:min-h-[400px] flex flex-col items-center justify-center space-y-4 px-4">
+        <SolarRefreshLineDuotone className="text-secondary animate-spin text-3xl sm:text-4xl" />
+        <p className="text-default-500 text-base sm:text-lg text-center">Loading your dashboard...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-[400px] flex flex-col items-center justify-center space-y-4">
-        <div className="text-center space-y-4">
-          <div className="text-6xl mb-4">😞</div>
+      <div className="min-h-[300px] sm:min-h-[400px] flex flex-col items-center justify-center space-y-4 px-4">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="text-4xl sm:text-6xl mb-4">😞</div>
           <Alert color="danger" title="Something went wrong" description={error} />
           <Button 
             color="primary" 
             variant="flat" 
             onPress={() => window.location.reload()}
+            className="w-full sm:w-auto"
           >
             Try Again
           </Button>
@@ -58,23 +59,23 @@ const StudentUpcoming = (props: Props) => {
   ) || [];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Welcome Header */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <Card className="bg-gradient-to-r from-primary-100 to-secondary-100 border-none">
-          <CardBody className="p-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+          <CardBody className="p-4 sm:p-6 md:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div className="flex items-center space-x-3 sm:space-x-4">
                 <Avatar 
                   src={user?.profile_url || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.info?.first_name} ${user?.info?.last_name}`}
                   size="lg"
-                  className="ring-2 ring-primary-200"
+                  className="ring-2 ring-primary-200 flex-shrink-0"
                 />
-                <div>
-                  <h1 className="text-3xl font-bold text-default-700">
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-default-700 truncate">
                     {getGreeting()}, {user?.info?.first_name || user?.username}! 👋
                   </h1>
-                  <p className="text-default-600 text-lg mt-1">
+                  <p className="text-default-600 text-sm sm:text-base md:text-lg mt-1">
                     {enrolledCourses.length > 0 
                       ? `You have ${enrolledCourses.length} course${enrolledCourses.length !== 1 ? 's' : ''} to explore today`
                       : "Ready to start your learning journey?"
@@ -87,9 +88,12 @@ const StudentUpcoming = (props: Props) => {
                   size="lg" 
                   variant="flat" 
                   color="success"
-                  startContent={<span className="text-lg">🎯</span>}
+                  startContent={<span className="text-base sm:text-lg">🎯</span>}
+                  className="self-start sm:self-auto"
                 >
-                  {enrolledCourses.length} Active Course{enrolledCourses.length !== 1 ? 's' : ''}
+                  <span className="text-xs sm:text-sm">
+                    {enrolledCourses.length} Active Course{enrolledCourses.length !== 1 ? 's' : ''}
+                  </span>
                 </Chip>
               )}
             </div>
@@ -98,7 +102,7 @@ const StudentUpcoming = (props: Props) => {
       </div>
 
       {/* Upcoming Exams Section */}
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <UpcomingExams />
       </div>
     </div>

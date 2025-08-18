@@ -455,25 +455,26 @@ export default function SubmittedExamPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
         <Button
           variant="light"
           startContent={<ArrowLeft />}
           onPress={() => router.back()}
+          className="self-start"
         >
           Back
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold">{examSchedule?.data?.title}</h1>
-          <p className="text-default-500">
+        <div className="flex-1">
+          <h1 className="text-xl sm:text-2xl font-bold">{examSchedule?.data?.title}</h1>
+          <p className="text-sm sm:text-base text-default-500">
             All Students ({submissions.length} total)
             {courseData && ` - ${courseData.course_name}`}
           </p>
         </div>
-        <div className="text-right flex flex-col gap-2">
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:text-right gap-2">
+          <div className="flex flex-wrap gap-2">
             <Chip color="success" variant="flat" size="sm">
               {submissions.filter(s => s.status !== 'unsubmitted').length} Submitted
             </Chip>
@@ -481,7 +482,7 @@ export default function SubmittedExamPage() {
               {submissions.filter(s => s.status === 'unsubmitted').length} Not Submitted
             </Chip>
           </div>
-          <Chip color="secondary" variant="flat">
+          <Chip color="secondary" variant="flat" className="self-start sm:self-end">
             {submissions.length} Total Students
           </Chip>
         </div>
@@ -491,14 +492,14 @@ export default function SubmittedExamPage() {
       {/* Exam Info Card */}
       <Card className="mb-6">
         <CardHeader>
-          <div className="flex justify-between items-center w-full">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full gap-4">
+            <div className="flex-1">
               <h3 className="text-lg font-semibold">{examSchedule.data.title}</h3>
               {examSchedule.data.description && (
-                <p className="text-sm text-default-600">{examSchedule.data.description}</p>
+                <p className="text-sm text-default-600 mt-1">{examSchedule.data.description}</p>
               )}
             </div>
-            <div className="text-right space-y-1">
+            <div className="flex flex-col sm:text-right space-y-1">
               <div className="text-sm text-default-600">
                 <span className="font-medium">{examSchedule.data.question_count}</span> Questions
               </div>
@@ -513,13 +514,14 @@ export default function SubmittedExamPage() {
       {/* Submissions Table */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center w-full">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full gap-4">
             <h3 className="text-lg font-semibold">Student Submissions</h3>
             <Button
               onPress={() => setViewMode(viewMode === 'students' ? 'questions' : 'students')}
               variant="bordered"
               color="secondary"
               size="sm"
+              className="self-start sm:self-auto"
             >
               {viewMode === 'students' ? 'Question View' : 'Student View'}
             </Button>
@@ -562,7 +564,7 @@ export default function SubmittedExamPage() {
         isIconOnly
         color="secondary"
         radius="full"
-        className="fixed animate-bounce bottom-8 right-8 z-50 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+        className="fixed animate-bounce bottom-4 right-4 sm:bottom-8 sm:right-8 z-50 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
         size="lg"
         aria-label="AI Essay Grading Assistant"
         onPress={openModal}
@@ -571,14 +573,23 @@ export default function SubmittedExamPage() {
       </Button>
 
       {/* AI Validation Modal */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} size={isSelectingLearners ? '2xl' : 'md'}>
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={closeModal} 
+        size={isSelectingLearners ? '2xl' : 'md'}
+        scrollBehavior="inside"
+        classNames={{
+          base: "mx-4 my-4 sm:mx-auto sm:my-16",
+          wrapper: "items-end sm:items-center"
+        }}
+      >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
+          <ModalHeader className="flex flex-col gap-1 px-4 sm:px-6">
             {isSelectingLearners ? 'Select Learners' : 'AI Essay Grading Assistant'}
           </ModalHeader>
-          <ModalBody>
+          <ModalBody className="px-4 sm:px-6">
             {isSelectingLearners ? (
-              <div className="max-h-[60vh] overflow-y-auto">
+              <div className="max-h-[50vh] sm:max-h-[60vh] overflow-y-auto">
                 <div className="mb-4 p-3 bg-primary-50 rounded-lg border border-primary-200">
                   <p className="text-sm text-primary-700">
                     💡 Only students who have submitted their exams are shown below.
@@ -586,22 +597,22 @@ export default function SubmittedExamPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   {submissions.filter(learner => learner.status !== 'unsubmitted').map((learner) => (
-                    <div key={learner._id} className="flex items-center gap-4 p-2 hover:bg-default-100 rounded-lg">
+                    <div key={learner._id} className="flex items-center gap-3 sm:gap-4 p-2 hover:bg-default-100 rounded-lg">
                       <Checkbox
                         color="secondary"
                         isSelected={selectedLearners.has(learner._id)}
                         onValueChange={() => toggleLearnerSelection(learner._id)}
                         aria-label={`Select ${learner.username}`}
                       />
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                         <img
                           src={learner.profile_url}
                           alt={learner.username}
-                          className="w-8 h-8 rounded-full"
+                          className="w-8 h-8 rounded-full flex-shrink-0"
                         />
-                        <div>
-                          <p className="font-medium">{learner.username}</p>
-                          <p className="text-xs text-gray-500">{learner.email}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">{learner.username}</p>
+                          <p className="text-xs text-gray-500 truncate">{learner.email}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <Chip 
                               size="sm" 
@@ -624,7 +635,7 @@ export default function SubmittedExamPage() {
               </div>
             ) : (
               <>
-                <p>Generate AI grading suggestions for essay questions:</p>
+                <p className="text-sm sm:text-base">Generate AI grading suggestions for essay questions:</p>
                 <div className="flex flex-col gap-2 mt-2">
                   <Button 
                     color="secondary" 
@@ -632,6 +643,7 @@ export default function SubmittedExamPage() {
                     onPress={() => handleEssayGrading('all')}
                     className="justify-start"
                     isLoading={isLoadingSubmissions && validationScope === 'all'}
+                    size="sm"
                   >
                     All Submissions
                   </Button>
@@ -641,6 +653,7 @@ export default function SubmittedExamPage() {
                     onPress={() => handleEssayGrading('ungraded')}
                     className="justify-start"
                     isLoading={isLoadingSubmissions && validationScope === 'ungraded'}
+                    size="sm"
                   >
                     Ungraded Submissions Only
                   </Button>
@@ -648,6 +661,7 @@ export default function SubmittedExamPage() {
                     variant={validationScope === 'selected' ? 'solid' : 'bordered'}
                     onPress={handleSelectLearners}
                     className="justify-start"
+                    size="sm"
                   >
                     {selectedLearners.size > 0 
                       ? `${selectedLearners.size} Learner(s) Selected` 
@@ -657,26 +671,40 @@ export default function SubmittedExamPage() {
               </>
             )}
           </ModalBody>
-          <ModalFooter className="flex justify-between">
+          <ModalFooter className="flex flex-col sm:flex-row justify-between gap-2 px-4 sm:px-6">
             {isSelectingLearners ? (
-              <Button color="default" variant="light" onPress={() => setIsSelectingLearners(false)}>
+              <Button 
+                color="default" 
+                variant="light" 
+                onPress={() => setIsSelectingLearners(false)}
+                size="sm"
+                className="w-full sm:w-auto"
+              >
                 Back
               </Button>
             ) : (
               <div />
             )}
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               {isSelectingLearners && (
                 <Button 
                   color="secondary" 
                   onPress={() => handleEssayGrading('selected')}
                   isDisabled={selectedLearners.size === 0}
                   isLoading={isLoadingSubmissions && validationScope === 'selected'}
+                  size="sm"
+                  className="w-full sm:w-auto"
                 >
                   Grade Selected ({selectedLearners.size})
                 </Button>
               )}
-              <Button color="danger" variant="light" onPress={closeModal}>
+              <Button 
+                color="danger" 
+                variant="light" 
+                onPress={closeModal}
+                size="sm"
+                className="w-full sm:w-auto"
+              >
                 {isSelectingLearners ? 'Cancel' : 'Close'}
               </Button>
             </div>
@@ -690,30 +718,36 @@ export default function SubmittedExamPage() {
         onClose={() => setShowResults(false)} 
         size="5xl"
         scrollBehavior="inside"
+        classNames={{
+          base: "mx-2 my-2 sm:mx-auto sm:my-8",
+          wrapper: "items-end sm:items-center"
+        }}
       >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <MdiRobot className="w-5 h-5" />
-              <span>AI Essay Grading Suggestions</span>
+          <ModalHeader className="flex flex-col gap-1 px-4 sm:px-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <div className="flex items-center gap-2">
+                <MdiRobot className="w-5 h-5" />
+                <span className="text-base sm:text-lg">AI Essay Grading Suggestions</span>
+              </div>
               <Chip size="sm" color="secondary" variant="flat">
                 {aiResults.length} Student{aiResults.length !== 1 ? 's' : ''}
               </Chip>
             </div>
           </ModalHeader>
-          <ModalBody>
-            <div className="space-y-6">
+          <ModalBody className="px-4 sm:px-6">
+            <div className="space-y-4 sm:space-y-6">
               {aiResults.map((result: any) => (
                 <Card key={result.submission_id} className="w-full">
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between w-full">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-semibold">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-semibold text-sm">
                           {result.student_name.slice(0, 2).toUpperCase()}
                         </div>
-                        <div>
-                          <h3 className="text-lg font-semibold">{result.student_name}</h3>
-                          <p className="text-sm text-default-500">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-base sm:text-lg font-semibold truncate">{result.student_name}</h3>
+                          <p className="text-xs sm:text-sm text-default-500">
                             {result.processed_essays} of {result.total_essays} essay questions processed
                           </p>
                         </div>
@@ -722,38 +756,39 @@ export default function SubmittedExamPage() {
                         size="sm" 
                         color={result.processed_essays === result.total_essays ? 'success' : 'warning'}
                         variant="flat"
+                        className="self-start sm:self-auto"
                       >
                         {result.processed_essays === result.total_essays ? 'Complete' : 'Partial'}
                       </Chip>
                     </div>
                   </CardHeader>
                   <CardBody className="pt-0">
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {result.questions.map((question: any, index: number) => (
-                        <div key={question.question_id || index} className="border-l-4 border-primary/30 pl-4">
+                        <div key={question.question_id || index} className="border-l-4 border-primary/30 pl-3 sm:pl-4">
                           {question.success ? (
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-2">
+                            <div className="space-y-2 sm:space-y-3">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                                 <Chip size="sm" color="secondary" variant="bordered">
                                   {question.question_type === 'ses' ? 'Short Essay' : 'Long Essay'}
                                 </Chip>
-                                <span className="text-sm text-default-600">
+                                <span className="text-xs sm:text-sm text-default-600">
                                   Max Score: {question.max_score} points
                                 </span>
                               </div>
                               
-                              <div className="bg-default-50 rounded-lg p-4 border">
-                                <h4 className="text-sm font-medium text-primary-700 mb-2">
+                              <div className="bg-default-50 rounded-lg p-3 sm:p-4 border">
+                                <h4 className="text-xs sm:text-sm font-medium text-primary-700 mb-2">
                                   🤖 AI Grading Suggestion:
                                 </h4>
-                                <div className="text-sm text-default-800 whitespace-pre-wrap">
+                                <div className="text-xs sm:text-sm text-default-800 whitespace-pre-wrap">
                                   {question.suggestion}
                                 </div>
                               </div>
                             </div>
                           ) : (
                             <div className="bg-danger-50 rounded-lg p-3 border border-danger-200">
-                              <p className="text-sm text-danger-600">
+                              <p className="text-xs sm:text-sm text-danger-600">
                                 ⚠️ Error: {question.error}
                               </p>
                             </div>
@@ -766,15 +801,17 @@ export default function SubmittedExamPage() {
               ))}
             </div>
             
-            <div className="text-xs text-default-500 mt-4 p-3 bg-warning-50 rounded-lg border border-warning-200">
+            <div className="text-xs sm:text-sm text-default-500 mt-4 p-3 bg-warning-50 rounded-lg border border-warning-200">
               💡 <strong>Important:</strong> These are AI-generated suggestions for guidance only. 
               Please use your professional judgment and review each suggestion carefully before applying any grades.
             </div>
           </ModalBody>
-          <ModalFooter>
+          <ModalFooter className="px-4 sm:px-6">
             <Button 
               color="secondary" 
               onPress={() => setShowResults(false)}
+              size="sm"
+              className="w-full sm:w-auto"
             >
               Close
             </Button>

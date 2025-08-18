@@ -16,23 +16,24 @@ const QuestionTypeSelector = (props: Props) => {
         setFieldValue('answer', [])
     }
     return (
-        <ul className='flex items-center h-fit justify-center p-3 gap-x-3'>
+        <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 p-2 sm:p-3 content-center'>
             {
                 questionTypes.map((item, idx: number) => (
-                    <li className={`
-                                    w-[18%] cursor-pointer border 
-                                    ${values.type == item.name ? 'border-secondary' : 'border-secondary/20'} 
-                                    flex flex-col gap-y-2 p-6 items-center justify-between`}
+                    <div className={`
+                                    cursor-pointer border rounded-lg transition-all duration-200 hover:scale-105
+                                    ${values.type == item.name ? 'border-secondary bg-secondary/10' : 'border-secondary/20 hover:border-secondary/40'} 
+                                    flex flex-col gap-y-2 p-3 sm:p-4 lg:p-6 items-center justify-center min-h-[80px] sm:min-h-[100px]`}
                         key={idx}
-
                         onClick={() => onSelectChange(item.name)}
                     >
-                        {item.icon}
-                        <span className='text-sm'>{item.content}</span>
-                    </li>
+                        <div className="text-lg sm:text-xl lg:text-2xl">
+                            {item.icon}
+                        </div>
+                        <span className='text-xs sm:text-sm text-center leading-tight'>{item.content}</span>
+                    </div>
                 ))
             }
-        </ul>
+        </div>
     )
 }
 

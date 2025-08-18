@@ -369,16 +369,16 @@ export default function CreateExaminationPage() {
                 collisionDetection={closestCenter}
                 modifiers={[]}
             >
-                <div className="grid grid-cols-3">
-                    <div className="col-span-1 flex flex-col gap-y-8">
-                        <div className="flex flex-row-reverse gap-x-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+                    <div className="lg:col-span-1 flex flex-col gap-y-4 lg:gap-y-8">
+                        <div className="flex flex-col sm:flex-row sm:justify-end gap-3 lg:gap-6">
                             <div className="flex flex-col gap-y-3">
                                 <Dropdown>
                                     <DropdownTrigger>
                                         <Button
                                             startContent={<MingcuteAddFill fontSize={14} />}
                                             variant="flat"
-                                            className="text-primary"
+                                            className="text-primary w-full sm:w-auto"
                                             color="primary"
                                             size="sm"
                                         > Add Question </Button>
@@ -427,46 +427,53 @@ export default function CreateExaminationPage() {
 
                                     </DropdownMenu>
                                 </Dropdown>
-                                <Button
-                                    variant="flat"
-                                    color='warning'
-                                    size="sm"
-                                    onPress={onAikenModalOpen}
-                                > What's aiken? </Button>
-                                <Button
-                                    startContent={<MdiBin fontSize={14} />}
-                                    variant="flat"
-                                    color='danger'
-                                    size="sm"
-                                    onPress={onOpen}
-                                > Delete </Button>
-                                <Button
-                                    startContent={<MdiBin fontSize={14} />}
-                                    variant="flat"
-                                    color='danger'
-                                    size="sm"
-                                    onPress={() => setDeleteAllModal({ isOpen: true })}
-                                    isDisabled={questionList.length === 0}
-                                > Delete All Questions </Button>
-                                <div className="flex gap-x-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                                     <Button
-                                        startContent={<IconParkOutlineCheckCorrect fontSize={14} />}
                                         variant="flat"
-                                        className="text-blue-300 bg-blue-500/30 w-full"
+                                        color='warning'
                                         size="sm"
-                                    > Finish </Button>
-                                    <Tooltip content='Preview your examination'>
+                                        onPress={onAikenModalOpen}
+                                        className="w-full"
+                                    > What's aiken? </Button>
+                                    <Button
+                                        startContent={<MdiBin fontSize={14} />}
+                                        variant="flat"
+                                        color='danger'
+                                        size="sm"
+                                        onPress={onOpen}
+                                        className="w-full"
+                                    > Delete </Button>
+                                    <Button
+                                        startContent={<MdiBin fontSize={14} />}
+                                        variant="flat"
+                                        color='danger'
+                                        size="sm"
+                                        onPress={() => setDeleteAllModal({ isOpen: true })}
+                                        isDisabled={questionList.length === 0}
+                                        className="w-full"
+                                    > 
+                                        <span className="hidden sm:inline">Delete All Questions</span>
+                                        <span className="sm:hidden">Delete All</span>
+                                    </Button>
+                                    <div className="flex gap-x-2">
                                         <Button
-                                            onPress={() => {
-                                                window.location.href = `http://localhost:8080/overview/preview/examination?id=${_id}`
-                                            }}
-                                            startContent={<PhEyeDuotone fontSize={14} />}
+                                            startContent={<IconParkOutlineCheckCorrect fontSize={14} />}
                                             variant="flat"
+                                            className="text-blue-300 bg-blue-500/30 flex-1"
                                             size="sm"
-                                            isIconOnly
-                                        > </Button>
-                                    </Tooltip>
-
+                                        > Finish </Button>
+                                        <Tooltip content='Preview your examination'>
+                                            <Button
+                                                onPress={() => {
+                                                    window.location.href = `http://localhost:8080/overview/preview/examination?id=${_id}`
+                                                }}
+                                                startContent={<PhEyeDuotone fontSize={14} />}
+                                                variant="flat"
+                                                size="sm"
+                                                isIconOnly
+                                            > </Button>
+                                        </Tooltip>
+                                    </div>
                                 </div>
 
                             </div>
@@ -527,7 +534,7 @@ export default function CreateExaminationPage() {
 
                             <div className="flex flex-col gap-y-3">
                                 {/* Selection Controls */}
-                                <div className="flex items-center justify-between py-3 rounded-lg">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 rounded-lg">
                                     <div className="flex items-center gap-3">
                                         <Checkbox
                                             color="secondary"
@@ -536,7 +543,8 @@ export default function CreateExaminationPage() {
                                             onValueChange={handleSelectAll}
                                             size="sm"
                                         >
-                                            Select All ({questionList.length} questions)
+                                            <span className="hidden sm:inline">Select All ({questionList.length} questions)</span>
+                                            <span className="sm:hidden">All ({questionList.length})</span>
                                         </Checkbox>
                                         {selectedQuestions.size > 0 && (
                                             <span className="text-sm text-foreground/70">
@@ -551,8 +559,10 @@ export default function CreateExaminationPage() {
                                             color="danger"
                                             size="sm"
                                             onPress={() => setDeleteAllModal({ isOpen: true })}
+                                            className="w-full sm:w-auto"
                                         >
-                                            Delete Selected ({selectedQuestions.size})
+                                            <span className="hidden sm:inline">Delete Selected ({selectedQuestions.size})</span>
+                                            <span className="sm:hidden">Delete ({selectedQuestions.size})</span>
                                         </Button>
                                     )}
                                 </div>
@@ -590,16 +600,18 @@ export default function CreateExaminationPage() {
                                 
                                 {/* Pagination Controls */}
                                 {totalPages > 1 && (
-                                    <div className="flex gap-2 mt-4">
+                                    <div className="flex flex-col sm:flex-row gap-2 mt-4 items-center">
                                         <Button
                                             size="sm"
                                             variant="flat"
                                             isDisabled={currentPage === 1}
                                             onPress={() => handlePageChange(currentPage - 1)}
+                                            className="w-full sm:w-auto"
                                         >
-                                            Previous
+                                            <span className="hidden sm:inline">Previous</span>
+                                            <span className="sm:hidden">Prev</span>
                                         </Button>
-                                        <div className="flex gap-1">
+                                        <div className="flex gap-1 flex-wrap justify-center">
                                             {currentPage > 1 && (
                                                 <Button
                                                     size="sm"
@@ -610,7 +622,7 @@ export default function CreateExaminationPage() {
                                                 </Button>
                                             )}
                                             {currentPage > 2 && (
-                                                <span className="flex items-center">...</span>
+                                                <span className="flex items-center text-xs">...</span>
                                             )}
                                             <Button
                                                 size="sm"
@@ -620,7 +632,7 @@ export default function CreateExaminationPage() {
                                                 {currentPage}
                                             </Button>
                                             {currentPage < totalPages - 1 && (
-                                                <span className="flex items-center">...</span>
+                                                <span className="flex items-center text-xs">...</span>
                                             )}
                                             {currentPage < totalPages && (
                                                 <Button
@@ -637,6 +649,7 @@ export default function CreateExaminationPage() {
                                             variant="flat"
                                             isDisabled={currentPage === totalPages}
                                             onPress={() => handlePageChange(currentPage + 1)}
+                                            className="w-full sm:w-auto"
                                         >
                                             Next
                                         </Button>
@@ -644,18 +657,20 @@ export default function CreateExaminationPage() {
                                 )}
                             </div>}
                     </div>
-                    {isNewQuestion ?
-                        <NewQuestionForm 
-                            examination_id={_id!} 
-                            editingQuestion={editingQuestion}
-                            onEditComplete={handleCancelEdit}
-                        />
-                        : null
-                    }
-                    {isNestedQuestion ?
-                        <NestedQuestionForm examinationId={_id || ''} />
-                        : null
-                    }
+                    <div className="lg:col-span-2">
+                        {isNewQuestion ?
+                            <NewQuestionForm 
+                                examination_id={_id!} 
+                                editingQuestion={editingQuestion}
+                                onEditComplete={handleCancelEdit}
+                            />
+                            : null
+                        }
+                        {isNestedQuestion ?
+                            <NestedQuestionForm examinationId={_id || ''} />
+                            : null
+                        }
+                    </div>
                 </div>
 
                 {/* Delete Confirmation Modal */}

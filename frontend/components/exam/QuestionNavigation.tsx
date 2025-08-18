@@ -24,12 +24,14 @@ const QuestionNavigation = ({
   const totalQuestions = questions.length
 
   return (
-    <Card className='w-1/3 h-fit sticky top-20'>
-      <CardBody className='px-5'>
+    <Card className='w-full h-fit sticky top-4 sm:top-20'>
+      <CardBody className='px-3 sm:px-5'>
         <div className="flex flex-col gap-4">
-          <div className='flex justify-between items-center'>
-            <h2 className="text-lg font-semibold">Questions Navigation</h2>
-            {timeRemaining}
+          <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2'>
+            <h2 className="text-base sm:text-lg font-semibold">Questions Navigation</h2>
+            <div className="self-start sm:self-auto">
+              {timeRemaining}
+            </div>
           </div>
 
           <div className="grid grid-cols-5 gap-2">
@@ -78,9 +80,10 @@ const QuestionNavigation = ({
               )
             })}
           </div>
-          <p className="text-sm text-foreground/50">
-            Page {currentPage} of {totalPages}
-          </p>
+          <div className="flex justify-between items-center text-sm text-foreground/50">
+            <span>Page {currentPage} of {totalPages}</span>
+            <span className="hidden sm:inline">Total: {totalQuestions}</span>
+          </div>
         </div>
       </CardBody>
     </Card>

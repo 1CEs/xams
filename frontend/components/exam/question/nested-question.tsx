@@ -187,40 +187,40 @@ const NestedQuestionForm = ({ examinationId }: NestedQuestionFormProps) => {
             }}
         >
             {({ handleSubmit, values, setFieldValue }) => (
-                <form className="col-span-2 pl-32" onSubmit={handleSubmit}>
+                <form className="w-full px-2 sm:px-4 lg:col-span-2 lg:pl-32" onSubmit={handleSubmit}>
                     <Card>
                         <CardHeader>
-                            <div className="flex gap-x-4 justify-between w-full">
-                                <div className="flex gap-x-4">
-                                    <Button size="sm" color="success" type="submit">
+                            <div className="flex flex-col sm:flex-row gap-3 sm:justify-between w-full">
+                                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                                    <Button size="sm" color="success" type="submit" className="w-full sm:w-auto">
                                         Save
                                     </Button>
                                     <Button size="sm" onPress={() => {
                                         handleSubmit();
                                         setNestedQuestions(() => []);
-                                    }}>
+                                    }} className="w-full sm:w-auto">
                                         Save and add new question
                                     </Button>
                                 </div>
 
-                                <div className="flex items-center gap-2 p-2 rounded-lg bg-black/70">
+                                <div className="flex items-center gap-2 p-2 rounded-lg bg-black/70 self-center sm:self-auto">
                                     <span className='text-sm'>Total Score: </span>
                                     <span className='text-secondary font-medium'>{values.score}</span>
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardBody className="gap-y-9">
+                        <CardBody className="gap-y-6 sm:gap-y-9">
                             <StepProvider number={1} content="Write down your question">
-                                <div className="px-10">
+                                <div className="px-2 sm:px-6 lg:px-10">
                                     <TextEditor
-                                        className="min-h-[150px] w-full"
+                                        className="min-h-[120px] sm:min-h-[150px] w-full"
                                         name="question"
                                         type="nested"
                                     />
                                 </div>
                             </StepProvider>
                             <StepProvider number={2} content="Add your questions">
-                                <div className="px-10">
+                                <div className="px-2 sm:px-6 lg:px-10">
                                     <DroppableQuestion id="nested-questions">
                                         {nestedQuestions.length === 0 && (
                                             <div className="text-md text-secondary gap-x-3 flex w-full h-full justify-center items-center rounded-lg p-8">

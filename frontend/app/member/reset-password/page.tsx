@@ -67,22 +67,23 @@ const ResetPasswordPage = (props: Props) => {
   }
 
   return (
-    <div className="flex items-center justify-center pt-16 bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold">Reset Password</h1>
-          <p className="text-tiny text-foreground-500">
+    <div className="flex items-center justify-center min-h-screen bg-background px-4 sm:px-8">
+      <Card className="w-full max-w-sm sm:max-w-md">
+        <CardHeader className="flex flex-col gap-1 px-4 sm:px-6">
+          <h1 className="text-xl sm:text-2xl font-bold">Reset Password</h1>
+          <p className="text-sm sm:text-tiny text-foreground-500">
             Enter your new password and confirm it to reset your password.
           </p>
         </CardHeader>
         <Divider />
         <form onSubmit={handleSubmit}>
-          <CardBody className="flex flex-col gap-4">
+          <CardBody className="flex flex-col gap-4 px-4 sm:px-6">
             <PasswordInput
               name="password"
               label="New Password"
               placeholder="Enter your new password"
               onChange={handlePasswordChange}
+              size="sm"
             />
             <PasswordInput
               name="confirmPassword"
@@ -90,20 +91,22 @@ const ResetPasswordPage = (props: Props) => {
               placeholder="Enter your password again"
               onChange={handleConfirmPasswordChange}
               error={passwordMatchError}
+              size="sm"
             />
           </CardBody>
           <Divider />
-          <CardFooter className="flex flex-col gap-4">
+          <CardFooter className="flex flex-col gap-4 px-4 sm:px-6">
             <Button
               type="submit"
               color="secondary"
               className="w-full"
               isLoading={isLoading}
               isDisabled={!password || !confirmPassword || !!passwordMatchError}
+              size="sm"
             >
               Reset Password
             </Button>
-            <div className="flex justify-center gap-1 text-sm">
+            <div className="flex justify-center gap-1 text-xs sm:text-sm">
               <span>Back to</span>
               <Link href="/member/sign-in" color="secondary">
                 Sign In

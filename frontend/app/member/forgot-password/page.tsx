@@ -63,18 +63,24 @@ const ForgotPasswordPage = (props: Props) => {
   }
 
   return (
-    <div className="flex items-center justify-center pt-16 bg-background">
-      <Image className='transform scale-x-[-1]' src={ResetPassword.src} alt="Reset Password" width={500} height={500} />
-      <Card className="w-full max-w-md">
-        <CardHeader className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold">Forgot Password</h1>
-          <p className="text-tiny text-foreground-500">
+    <div className="flex flex-col lg:flex-row items-center justify-center min-h-screen bg-background px-4 sm:px-8">
+      <Image 
+        className='hidden lg:block transform scale-x-[-1] mr-8' 
+        src={ResetPassword.src} 
+        alt="Reset Password" 
+        width={400} 
+        height={400} 
+      />
+      <Card className="w-full max-w-sm sm:max-w-md">
+        <CardHeader className="flex flex-col gap-1 px-4 sm:px-6">
+          <h1 className="text-xl sm:text-2xl font-bold">Forgot Password</h1>
+          <p className="text-sm sm:text-tiny text-foreground-500">
             Enter your email address and we'll send you a link to reset your password.
           </p>
         </CardHeader>
         <Divider />
         <form onSubmit={handleSubmit}>
-          <CardBody className="flex flex-col gap-4">
+          <CardBody className="flex flex-col gap-4 px-4 sm:px-6">
             <Input
               type="email"
               label="Email"
@@ -83,19 +89,21 @@ const ForgotPasswordPage = (props: Props) => {
               onValueChange={setEmail}
               isRequired
               isDisabled={isLoading}
+              size="sm"
             />
           </CardBody>
           <Divider />
-          <CardFooter className="flex flex-col gap-4">
+          <CardFooter className="flex flex-col gap-4 px-4 sm:px-6">
             <Button
               type="submit"
               color="secondary"
               className="w-full"
               isLoading={isLoading}
+              size="sm"
             >
               Send Reset Link
             </Button>
-            <div className="flex justify-center gap-1 text-sm">
+            <div className="flex items-center justify-center gap-1 text-xs sm:text-sm">
               <span>Back to</span>
               <Link href="/member/sign-in" color="secondary">
                 Sign In

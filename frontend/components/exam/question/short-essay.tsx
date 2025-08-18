@@ -34,8 +34,8 @@ const ShortEssayForm = () => {
     const expectedAnswers = values.expectedAnswers || ['']
 
     return (
-        <div className="px-10 flex flex-col gap-y-4">
-            <div className="flex justify-between items-center">
+        <div className="px-2 sm:px-6 lg:px-10 flex flex-col gap-y-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <div className="flex flex-col gap-y-2">
                     <h3 className="text-lg font-medium">Expected Answers <span className="text-red-500">*</span></h3>
                     <p className="text-sm text-gray-500">
@@ -47,6 +47,7 @@ const ShortEssayForm = () => {
                     color="primary"
                     variant="flat"
                     onPress={addExpectedAnswer}
+                    className="w-full sm:w-auto"
                 >
                     + Add Answer
                 </Button>
@@ -54,7 +55,7 @@ const ShortEssayForm = () => {
             
             {expectedAnswers.map((answer, index) => (
                 <Card key={editorKeys[index]} className="w-full">
-                    <CardHeader className="flex justify-between items-center pb-2">
+                    <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pb-2">
                         <span className="text-sm font-medium">Expected Answer {index + 1}</span>
                         {expectedAnswers.length > 1 && (
                             <Button
@@ -62,6 +63,7 @@ const ShortEssayForm = () => {
                                 color="danger"
                                 variant="flat"
                                 onPress={() => removeExpectedAnswer(index)}
+                                className="w-full sm:w-auto"
                             >
                                 Remove
                             </Button>
@@ -77,7 +79,7 @@ const ShortEssayForm = () => {
                             key={editorKeys[index]}
                             name={`expectedAnswers.${index}`}
                             type="unnested"
-                            className="min-h-[150px]"
+                            className="min-h-[120px] sm:min-h-[150px]"
                         />
                     </CardBody>
                 </Card>

@@ -473,7 +473,7 @@ const PreviewExaminationPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
       <Modal
         isOpen={isTimeoutModalOpen}
         onClose={() => { }}
@@ -502,37 +502,39 @@ const PreviewExaminationPage = () => {
         setCurrentPage={setCurrentPage}
       />
 
-      <Card className="mb-8">
-        <CardHeader className="flex gap-3">
-          <div className="flex items-center gap-2">
-            <div className="bg-secondary text-white p-2 rounded-full">
-              <HealthiconsIExamMultipleChoice fontSize={24} />
+      <Card className="mb-4 sm:mb-8">
+        <CardHeader className="flex gap-3 p-3 sm:p-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="bg-secondary text-white p-2 rounded-full flex-shrink-0">
+              <HealthiconsIExamMultipleChoice fontSize={20} className="sm:text-2xl" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">{exam.title}</h1>
-              <p className="text-foreground/50">{exam.description}</p>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold truncate">{exam.title}</h1>
+              <p className="text-sm sm:text-base text-foreground/50 line-clamp-2">{exam.description}</p>
             </div>
           </div>
         </CardHeader>
         <Divider />
-        <CardBody>
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-foreground/50">Total Questions: {exam.questions.length}</p>
-            <p className="text-foreground/50">Total Score: {exam.questions.reduce((acc, q) => acc + q.score, 0)}</p>
+        <CardBody className="p-3 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4 mb-4">
+            <p className="text-sm sm:text-base text-foreground/50">Total Questions: {exam.questions.length}</p>
+            <p className="text-sm sm:text-base text-foreground/50">Total Score: {exam.questions.reduce((acc, q) => acc + q.score, 0)}</p>
           </div>
         </CardBody>
       </Card>
 
-      <div className="space-x-6 flex">
-        <QuestionNavigation
-          questions={exam.questions}
-          currentPage={currentPage}
-          questionsPerPage={questionsPerPage}
-          timeRemaining={<ExamTimer initialTime={initialTime} onTimeout={handleTimeout} hasSubmitted={hasSubmitted} />}
-          isQuestionAnswered={isQuestionAnswered}
-          handleQuestionNavigation={handleQuestionNavigation}
-        />
-        <div className="space-y-6 w-2/3">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+        <div className="lg:w-1/3">
+          <QuestionNavigation
+            questions={exam.questions}
+            currentPage={currentPage}
+            questionsPerPage={questionsPerPage}
+            timeRemaining={<ExamTimer initialTime={initialTime} onTimeout={handleTimeout} hasSubmitted={hasSubmitted} />}
+            isQuestionAnswered={isQuestionAnswered}
+            handleQuestionNavigation={handleQuestionNavigation}
+          />
+        </div>
+        <div className="space-y-4 sm:space-y-6 lg:w-2/3">
           {currentQuestions.map((question, index) => {
             const questionNumber = getQuestionNumber(exam.questions, startIndex + index)
             return (
@@ -548,42 +550,49 @@ const PreviewExaminationPage = () => {
           })}
         </div>
       </div>
-      <div className='flex w-full '>
-        <div className='w-1/3'></div>
-        <div className="mt-8 flex justify-start w-2/3 pl-4">
-          <div className={`${currentPage == totalPages ? 'w-full flex justify-start items-center' : null}`}>
-            <Button
-              color="default"
-              onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              isDisabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            <span className="mx-4">Page {currentPage} of {totalPages}</span>
-            <Button
-              color="default"
-              onPress={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              isDisabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
-          </div>
-          {currentPage == totalPages && (
-            <div className="flex items-center gap-4">
+      <div className='flex flex-col lg:flex-row w-full gap-4'>
+        <div className='lg:w-1/3'></div>
+        <div className="mt-4 sm:mt-8 flex flex-col sm:flex-row justify-start lg:w-2/3 gap-4">
+          <div className={`${currentPage == totalPages ? 'w-full flex flex-col sm:flex-row justify-start items-center gap-3' : 'flex flex-col sm:flex-row items-center gap-3'}`}>
+            <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
               <Button
-                color="secondary"
-                size="md"
-                isLoading={isSubmitting}
-                onPress={handleSubmit}
-                isDisabled={!isAllQuestionsAnswered()}
+                color="default"
+                size="sm"
+                onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                isDisabled={currentPage === 1}
+                className="flex-1 sm:flex-none"
               >
-                Submit
+                Previous
               </Button>
-              {!isAllQuestionsAnswered() && (
-                <span className="text-sm text-danger">Please answer all questions before submitting</span>
-              )}
+              <span className="text-sm sm:text-base whitespace-nowrap">Page {currentPage} of {totalPages}</span>
+              <Button
+                color="default"
+                size="sm"
+                onPress={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                isDisabled={currentPage === totalPages}
+                className="flex-1 sm:flex-none"
+              >
+                Next
+              </Button>
             </div>
-          )}
+            {currentPage == totalPages && (
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                <Button
+                  color="secondary"
+                  size="md"
+                  isLoading={isSubmitting}
+                  onPress={handleSubmit}
+                  isDisabled={!isAllQuestionsAnswered()}
+                  className="w-full sm:w-auto"
+                >
+                  Submit
+                </Button>
+                {!isAllQuestionsAnswered() && (
+                  <span className="text-xs sm:text-sm text-danger text-center">Please answer all questions before submitting</span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

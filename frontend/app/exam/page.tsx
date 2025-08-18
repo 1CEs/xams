@@ -26,7 +26,6 @@ interface Question {
   isTrue?: boolean
   expectedAnswer?: string
   score: number
-  isRandomChoices?: boolean
   questions?: Question[]
 }
 
@@ -266,28 +265,23 @@ const ExaminationPage = () => {
       localStorage.removeItem(`exam_answers_${exam._id}`)
       localStorage.removeItem(`exam_page_${exam._id}`) // Also clear saved page
       // Also clear randomized choices from localStorage
-      if (exam) {
-        exam.questions.forEach(question => {
-          if (question.isRandomChoices) {
-            localStorage.removeItem(`exam_${exam._id}_randomized_choices_${question._id}`)
-            // Also check for schedule-based storage
-            if (schedule_id) {
-              localStorage.removeItem(`exam_${schedule_id}_randomized_choices_${question._id}`)
+      if (exam && schedule_id) {
+        // Clear all randomized choices and question order for this exam
+        const clearRandomizedData = (questions: Question[]) => {
+          questions.forEach(question => {
+            // Clear randomized choices for all questions (if choice randomization was enabled)
+            localStorage.removeItem(`exam_${schedule_id}_randomized_choices_${question._id}`)
+            
+            // Also clear for nested questions
+            if (question.type === 'nested' && question.questions) {
+              clearRandomizedData(question.questions)
             }
-          }
-          // Also clear for nested questions
-          if (question.type === 'nested' && question.questions) {
-            question.questions.forEach(subQuestion => {
-              if (subQuestion.isRandomChoices) {
-                localStorage.removeItem(`exam_${exam._id}_randomized_choices_${subQuestion._id}`)
-                // Also check for schedule-based storage
-                if (schedule_id) {
-                  localStorage.removeItem(`exam_${schedule_id}_randomized_choices_${subQuestion._id}`)
-                }
-              }
-            })
-          }
-        })
+          })
+        }
+        
+        clearRandomizedData(exam.questions)
+        // Clear randomized question order
+        localStorage.removeItem(`exam_${schedule_id}_question_order`)
       }
     }
   }, [exam, schedule_id])
@@ -364,6 +358,62 @@ const ExaminationPage = () => {
           
           // The scheduleData is now the exam schedule directly
           examData = scheduleData
+          
+          // Apply randomization based on exam schedule settings
+          if (examData && examData.questions && schedule_id) {
+            // Apply question randomization if enabled
+            if (scheduleData.randomize_question) {
+              const storedQuestionOrder = localStorage.getItem(`exam_${schedule_id}_question_order`);
+              
+              if (!storedQuestionOrder) {
+                // Create randomized question order and store it
+                const questionIds = examData.questions.map(q => q._id);
+                const shuffledIds = [...questionIds].sort(() => Math.random() - 0.5);
+                localStorage.setItem(`exam_${schedule_id}_question_order`, JSON.stringify(shuffledIds));
+                
+                // Reorder questions based on shuffled IDs
+                const reorderedQuestions = shuffledIds.map(id => 
+                  examData!.questions.find(q => q._id === id)!
+                ).filter(Boolean);
+                examData!.questions = reorderedQuestions;
+              } else {
+                // Use stored question order
+                const storedIds = JSON.parse(storedQuestionOrder);
+                const reorderedQuestions = storedIds.map((id: string) => 
+                  examData!.questions.find(q => q._id === id)!
+                ).filter(Boolean);
+                examData!.questions = reorderedQuestions;
+              }
+            }
+            
+            // Apply choice randomization if enabled
+            const ensureRandomizedChoices = (questions: Question[]) => {
+              questions.forEach(q => {
+                // Check if this question type supports choice randomization and if it's enabled
+                if (scheduleData.randomize_choice && (q.type === 'mc' || q.type === 'tf') && q.choices) {
+                  // Check if randomized choices exist in localStorage
+                  const storedRandomizedChoices = localStorage.getItem(`exam_${schedule_id}_randomized_choices_${q._id}`);
+                  
+                  // If not, create and store them
+                  if (!storedRandomizedChoices) {
+                    const shuffledChoices = [...q.choices].sort(() => Math.random() - 0.5);
+                    localStorage.setItem(`exam_${schedule_id}_randomized_choices_${q._id}`, JSON.stringify(shuffledChoices));
+                    q.choices = shuffledChoices;
+                  } else {
+                    // Use stored randomized choices
+                    q.choices = JSON.parse(storedRandomizedChoices);
+                  }
+                }
+                
+                // Also check nested questions
+                if (q.type === 'nested' && q.questions) {
+                  ensureRandomizedChoices(q.questions);
+                }
+              });
+            };
+            
+            ensureRandomizedChoices(examData.questions);
+          }
         }
 
         // Load saved answers from localStorage
@@ -405,31 +455,6 @@ const ExaminationPage = () => {
             const savedAnswer = parsedSavedAnswers.find((sa: Answer) => sa.questionId === answer.questionId)
             return savedAnswer || answer
           })
-        }
-
-        // Ensure randomized choices are properly synchronized with saved answers
-        if (examData && schedule_id) {
-          const ensureRandomizedChoices = (questions: Question[]) => {
-            questions.forEach(q => {
-              if (q.isRandomChoices && q.choices) {
-                // Check if randomized choices exist in localStorage
-                const storedRandomizedChoices = localStorage.getItem(`exam_${schedule_id}_randomized_choices_${q._id}`);
-                
-                // If not, create and store them
-                if (!storedRandomizedChoices) {
-                  const shuffledChoices = [...q.choices].sort(() => Math.random() - 0.5);
-                  localStorage.setItem(`exam_${schedule_id}_randomized_choices_${q._id}`, JSON.stringify(shuffledChoices));
-                }
-              }
-              
-              // Also check nested questions
-              if (q.type === 'nested' && q.questions) {
-                ensureRandomizedChoices(q.questions);
-              }
-            });
-          };
-          
-          ensureRandomizedChoices(examData.questions);
         }
 
         setExam(examData)
@@ -682,7 +707,7 @@ const ExaminationPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
       <Modal
         isOpen={isTimeoutModalOpen}
         onClose={() => { }}
@@ -712,36 +737,38 @@ const ExaminationPage = () => {
       />
 
       <Card className="mb-8">
-        <CardHeader className="flex gap-3">
-          <div className="flex items-center gap-2">
-            <div className="bg-secondary text-white p-2 rounded-full">
+        <CardHeader className="flex flex-col sm:flex-row gap-3">
+          <div className="flex items-center gap-2 w-full">
+            <div className="bg-secondary text-white p-2 rounded-full flex-shrink-0">
               <HealthiconsIExamMultipleChoice fontSize={24} />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">{exam.title}</h1>
-              <p className="text-foreground/50">{exam.description}</p>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold break-words">{exam.title}</h1>
+              <p className="text-foreground/50 text-sm sm:text-base break-words">{exam.description}</p>
             </div>
           </div>
         </CardHeader>
         <Divider />
         <CardBody>
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-foreground/50">Total Questions: {exam.questions.length}</p>
-            <p className="text-foreground/50">Total Score: {exam.questions.reduce((acc, q) => acc + q.score, 0)}</p>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-4">
+            <p className="text-foreground/50 text-sm sm:text-base">Total Questions: {exam.questions.length}</p>
+            <p className="text-foreground/50 text-sm sm:text-base">Total Score: {exam.questions.reduce((acc, q) => acc + q.score, 0)}</p>
           </div>
         </CardBody>
       </Card>
 
-      <div className="space-x-6 flex">
-        <QuestionNavigation
-          questions={exam.questions}
-          currentPage={currentPage}
-          questionsPerPage={questionsPerPage}
-          timeRemaining={<ExamTimer initialTime={initialTime} onTimeout={handleTimeout} hasSubmitted={hasSubmitted} />}
-          isQuestionAnswered={isQuestionAnswered}
-          handleQuestionNavigation={handleQuestionNavigation}
-        />
-        <div className="space-y-6 w-2/3">
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="w-full lg:w-1/3">
+          <QuestionNavigation
+            questions={exam.questions}
+            currentPage={currentPage}
+            questionsPerPage={questionsPerPage}
+            timeRemaining={<ExamTimer initialTime={initialTime} onTimeout={handleTimeout} hasSubmitted={hasSubmitted} />}
+            isQuestionAnswered={isQuestionAnswered}
+            handleQuestionNavigation={handleQuestionNavigation}
+          />
+        </div>
+        <div className="flex-1 space-y-6">
           {currentQuestions.map((question, index) => {
             const questionNumber = getQuestionNumber(exam.questions, startIndex + index)
             return (
@@ -758,42 +785,51 @@ const ExaminationPage = () => {
           })}
         </div>
       </div>
-      <div className='flex w-full '>
-        <div className='w-1/3'></div>
-        <div className="mt-8 flex justify-start w-2/3 pl-4">
-          <div className={`${currentPage == totalPages ? 'w-full flex justify-start items-center' : null}`}>
-            <Button
-              color="default"
-              onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              isDisabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            <span className="mx-4">Page {currentPage} of {totalPages}</span>
-            <Button
-              color="default"
-              onPress={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              isDisabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
-          </div>
-          {currentPage == totalPages && (
-            <div className="flex items-center gap-4">
-              <Button
-                color="secondary"
-                size="md"
-                isLoading={isSubmitting}
-                onPress={handleSubmit}
-                isDisabled={!isAllQuestionsAnswered()}
-              >
-                Submit
-              </Button>
-              {!isAllQuestionsAnswered() && (
-                <span className="text-sm text-danger">Please answer all questions before submitting</span>
+      <div className="mt-8">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-0">
+          <div className="hidden lg:block lg:w-1/3"></div>
+          <div className="flex-1 lg:pl-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4 order-2 sm:order-1">
+                <Button
+                  color="default"
+                  size="sm"
+                  onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  isDisabled={currentPage === 1}
+                  className="min-w-0"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm sm:text-base whitespace-nowrap">Page {currentPage} of {totalPages}</span>
+                <Button
+                  color="default"
+                  size="sm"
+                  onPress={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  isDisabled={currentPage === totalPages}
+                  className="min-w-0"
+                >
+                  Next
+                </Button>
+              </div>
+              {currentPage == totalPages && (
+                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 order-1 sm:order-2 w-full sm:w-auto">
+                  <Button
+                    color="secondary"
+                    size="md"
+                    isLoading={isSubmitting}
+                    onPress={handleSubmit}
+                    isDisabled={!isAllQuestionsAnswered()}
+                    className="w-full sm:w-auto"
+                  >
+                    Submit
+                  </Button>
+                  {!isAllQuestionsAnswered() && (
+                    <span className="text-xs sm:text-sm text-danger text-center sm:text-left">Please answer all questions before submitting</span>
+                  )}
+                </div>
               )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

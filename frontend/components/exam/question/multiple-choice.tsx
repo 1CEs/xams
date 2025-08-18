@@ -62,47 +62,37 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number, correctCount }) => {
     }
 
     return (
-        <div className="flex gap-x-6 w-full">
-            <Chip
-                color={currentChoices[number]?.isCorrect ? 'secondary' : stateColor}
-                variant="dot"
-            >
-                <span className='text-sm'>
-                    {convertToAlphabet(number)}
-                </span>
-            </Chip>
-            <div className="flex flex-col w-full">
-                <div className="flex justify-between items-center pb-6">
-                    <div className="flex gap-2 gap-x-8 w-full ">
-                        <Checkbox
-                            name={`choices.${number}.isCorrect`}
-                            color="secondary"
-                            isSelected={currentChoices[number]?.isCorrect}
-                            onValueChange={(isSelected) => handleToggleCorrectAnswer(isSelected)}
-                            size="lg"
-                        >
-                            <span className={`text-tiny text-${stateColor}`}>{requiredInput ? requiredInput : 'Set as correct answer'}</span>
-                        </Checkbox>
-                        {correctCount > 1 &&
-                            <Input
-                                startContent={
-                                    <div className="pointer-events-none flex items-center">
-                                        <span className="text-default-400 text-small">Score:</span>
-                                    </div>
-                                }
-                                disabled={true}
-                                className='w-[135px] min-w-[60px]'
-                                type="number"
-                                size='sm'
-                                value={
-                                    (currentChoices[number]?.isCorrect) ?
-                                        (correctCount > 0 ? (values.score / correctCount).toFixed(2) : '0')
-                                        :
-                                        (correctCount > 0 ? ((values.score / correctCount) * -1).toFixed(2) : '0')
-                                }
-                                onChange={(e) => setFieldValue(`choices.${number}.score`, e.target.value)}
-                            />
-                        }
+        <div className="bg-default-50 p-3 sm:p-4 rounded-lg border border-default-200">
+            <div className="flex flex-col gap-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                        <div className="flex items-center gap-x-3">
+                            <div className="w-8 h-8 bg-secondary text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                                {convertToAlphabet(number)}
+                            </div>
+                            <Checkbox
+                                isSelected={currentChoices[number]?.isCorrect || false}
+                                onValueChange={handleToggleCorrectAnswer}
+                                size="md"
+                                color="secondary"
+                            >
+                                <span className="text-sm font-medium">Correct Answer</span>
+                            </Checkbox>
+                        </div>
+                        <Input
+                            size="sm"
+                            className="w-full sm:w-20"
+                            label="Score"
+                            type="number"
+                            step="0.01"
+                            value={
+                                currentChoices[number]?.isCorrect
+                                    ? (correctCount > 0 ? (values.score / correctCount).toFixed(2) : '0')
+                                    :
+                                    (correctCount > 0 ? ((values.score / correctCount) * -1).toFixed(2) : '0')
+                            }
+                            onChange={(e) => setFieldValue(`choices.${number}.score`, e.target.value)}
+                        />
                     </div>
                     {number < 2 ? (
                         <span className="text-tiny text-foreground/50">Mandatory</span>
@@ -114,13 +104,14 @@ const ChoiceBox: React.FC<ChoiceBoxProps> = ({ number, correctCount }) => {
                             onPress={handleRemoveChoice}
                             isDisabled={number !== currentChoices.length - 1}
                             startContent={<MdiBin />}
+                            className="self-end sm:self-auto"
                         />
                     )}
                 </div>
                 <TextEditor
                     name={`choices.${number}.content`}
                     type='unnested'
-                    className="min-h-[100px] w-full"
+                    className="min-h-[80px] sm:min-h-[100px] w-full"
                 />
             </div>
         </div>
@@ -156,7 +147,7 @@ const MultipleChoiceForm: React.FC<MultipleChoiceFormProps> = () => {
     }
 
     return (
-        <div className="px-10 flex flex-col gap-y-4">
+        <div className="px-2 sm:px-6 lg:px-10 flex flex-col gap-y-4">
             <p className='text-sm text-foreground/50'>
                 <span className='text-danger'>* </span>
                 <span>You can select multiple correct answers, but wrong choices will deduct points.</span>
@@ -164,7 +155,7 @@ const MultipleChoiceForm: React.FC<MultipleChoiceFormProps> = () => {
             {(values.choices || []).map((_: any, idx: number) => (
                 <ChoiceBox correctCount={correctCount} key={idx} number={idx} />
             ))}
-            <div className='flex justify-between items-center'>
+            <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3'>
                 <Checkbox
                     isSelected={!values.isRandomChoices}
                     onValueChange={(isSelected) => setFieldValue('isRandomChoices', !isSelected)}
@@ -178,7 +169,7 @@ const MultipleChoiceForm: React.FC<MultipleChoiceFormProps> = () => {
                     color="secondary"
                     startContent={<MingcuteAddFill />}
                     size="sm"
-                    className="w-fit text-primary"
+                    className="w-full sm:w-fit text-primary"
                     onPress={handleAddChoice}
                 >
                     Add another answer
