@@ -189,16 +189,21 @@ const Form = (props: Props) => {
                 const errorData = error.response?.data
                 let userFriendlyMessage = ''
                 
-                // Use centralized error message handling
-                userFriendlyMessage = getAuthErrorMessage(errorData, props.isSignUp)
-                
-                // Handle legacy string-based errors if no message was found
-                if (userFriendlyMessage === 'An unexpected error occurred') {
-                    const splitWords = errorData?.split?.(" ") || []
-                    if (splitWords[0] === 'E11000') {
-                        userFriendlyMessage = AUTH_ERROR_MESSAGES.SIGNUP.ACCOUNT_EXISTS
-                    } else {
-                        userFriendlyMessage = error.response?.statusText || AUTH_ERROR_MESSAGES.GENERAL.UNEXPECTED_ERROR
+                // For sign-in errors, prioritize specific authentication messages
+                if (!props.isSignUp && error.response?.status === 401) {
+                    userFriendlyMessage = 'Invalid username or password'
+                } else {
+                    // Use centralized error message handling
+                    userFriendlyMessage = getAuthErrorMessage(errorData, props.isSignUp)
+                    
+                    // Handle legacy string-based errors if no message was found
+                    if (userFriendlyMessage === 'An unexpected error occurred') {
+                        const splitWords = errorData?.split?.(" ") || []
+                        if (splitWords[0] === 'E11000') {
+                            userFriendlyMessage = AUTH_ERROR_MESSAGES.SIGNUP.ACCOUNT_EXISTS
+                        } else {
+                            userFriendlyMessage = error.response?.statusText || AUTH_ERROR_MESSAGES.GENERAL.UNEXPECTED_ERROR
+                        }
                     }
                 }
                 
@@ -207,13 +212,13 @@ const Form = (props: Props) => {
                     toast.error(userFriendlyMessage)
                     setError(userFriendlyMessage)
                 } else {
-                    const errorMsg = AUTH_ERROR_MESSAGES.GENERAL.UNEXPECTED_ERROR
+                    const errorMsg = props.isSignUp ? AUTH_ERROR_MESSAGES.GENERAL.UNEXPECTED_ERROR : 'Invalid username or password'
                     toast.error(errorMsg)
                     setError(errorMsg)
                 }
             } else {
                 // Handle non-axios errors
-                const errorMessage = AUTH_ERROR_MESSAGES.GENERAL.UNEXPECTED_ERROR
+                const errorMessage = props.isSignUp ? AUTH_ERROR_MESSAGES.GENERAL.UNEXPECTED_ERROR : 'Invalid username or password'
                 toast.error(errorMessage)
                 setError(errorMessage)
             }

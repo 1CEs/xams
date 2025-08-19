@@ -16,7 +16,12 @@ export interface AuthErrorData {
 /**
  * Transforms technical error messages into user-friendly ones
  */
-export const getAuthErrorMessage = (errorData: AuthErrorData, isSignUp: boolean = false): string => {
+export const getAuthErrorMessage = (errorData: any, isSignUp: boolean = false): string => {
+  // Handle direct string messages from backend
+  if (typeof errorData === 'string') {
+    return errorData
+  }
+  
   // Handle standardized error format from backend
   if (errorData?.message) {
     return errorData.message
@@ -41,7 +46,7 @@ export const getAuthErrorMessage = (errorData: AuthErrorData, isSignUp: boolean 
       if (errorMessage.includes('passwordRegex') || errorMessage.includes('^(?=.*[a-z])(?=.*[A-Z])')) {
         return isSignUp 
           ? 'Password must contain at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)'
-          : 'Invalid password format'
+          : 'Invalid username or password'
       }
       
       if (errorMessage.includes('emailRegex') || errorMessage.includes('@')) {
@@ -51,7 +56,17 @@ export const getAuthErrorMessage = (errorData: AuthErrorData, isSignUp: boolean 
       return errorMessage
     }
     
+    // Handle any other password-related validation errors for sign-in
+    if (!isSignUp && errorMessage?.toLowerCase().includes('password')) {
+      return 'Invalid username or password'
+    }
+    
     return errorMessage || 'Validation error occurred'
+  }
+  
+  // For sign-in, if we can't parse the error, assume it's invalid credentials
+  if (!isSignUp) {
+    return 'Invalid username or password'
   }
   
   return 'An unexpected error occurred'
