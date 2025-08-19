@@ -73,6 +73,15 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
     }
 
     async updateUser(_id: string, payload: Partial<T>) {
+        // Hash password if it's being updated
+        if (payload.password) {
+            const hashedPassword = await Bun.password.hash(payload.password, {
+                algorithm: 'bcrypt',
+                cost: 4,
+            })
+            payload = { ...payload, password: hashedPassword }
+        }
+        
         const result = await this._repository.update(_id, payload, { password: 0 })
         return result as T | null
     }

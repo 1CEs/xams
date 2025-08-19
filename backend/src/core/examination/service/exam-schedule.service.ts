@@ -22,6 +22,10 @@ export class ExaminationScheduleService implements IExaminationScheduleService {
         return await this._repository.findById(id);
     }
 
+    async getAllExaminationSchedules(): Promise<ExaminationScheduleDocument[]> {
+        return await this._repository.find();
+    }
+
     async updateExaminationSchedule(id: string, updateData: any): Promise<ExaminationScheduleDocument | null> {
         return await this._repository.updateExaminationSchedule(id, updateData);
     }

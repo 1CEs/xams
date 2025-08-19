@@ -1,7 +1,7 @@
 import Elysia, { t } from "elysia";
 import { UserController } from "../controllers/user.controller";
 import { tokenVerifier } from "../middleware/token-verify.middleware";
-import { updateCategorySchema, updateUserSchema } from "./schema/user.schema";
+import { banUserSchema, updateCategorySchema, updateUserSchema } from "./schema/user.schema";
 import { catchAsync } from "../../utils/error";
 import { Static } from "@sinclair/typebox";
 import { Context } from "elysia";
@@ -13,6 +13,7 @@ type UserContext = Context & {
 
 type UpdateUserBody = Static<typeof updateUserSchema>
 type UpdateCategoryBody = Static<typeof updateCategorySchema>
+type BanUserBody = Static<typeof banUserSchema>
 
 export const UserRoute = new Elysia({ prefix: '/user' })
     .derive(() => { return { controller: new UserController() } })
@@ -29,6 +30,9 @@ export const UserRoute = new Elysia({ prefix: '/user' })
             .patch('/examination/:id', catchAsync(async ({ params, user, controller }: UserContext & { params: { id: string } }) => await controller.updateExamBank(user._id as unknown as string, params.id)))
             .patch('/category', catchAsync(async ({ body, user, controller }: UserContext & { body: UpdateCategoryBody }) => await controller.updateCategory(user._id as unknown as string, body)), {
                 body: updateCategorySchema
+            })
+            .patch('/ban/:id', catchAsync(async ({ params, body, controller }: UserContext & { params: { id: string }, body: BanUserBody }) => await controller.banUser(params.id, body)), {
+                body: banUserSchema
             })
             .delete('/:id', catchAsync(async ({ params, controller }: UserContext & { params: { id: string } }) => await controller.deleteUser(params.id)))
     )

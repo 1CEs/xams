@@ -163,6 +163,18 @@ const Form = (props: Props) => {
                 const res = await clientAPI.post('auth/sign-in', signInFormEntries)
                 const userData = res.data.data as UserResponse
                 
+                // Check if user is suspended before proceeding
+                if (userData.status?.is_banned) {
+                    const suspendMessage = userData.status.ban_reason 
+                        ? `Your account has been suspended. Reason: ${userData.status.ban_reason}`
+                        : 'Your account has been suspended. Please contact support for more information.'
+                    
+                    toast.error(suspendMessage)
+                    setError(suspendMessage)
+                    setLoading(false)
+                    return
+                }
+                
                 // Add login time for session monitoring
                 const userDataWithLoginTime = {
                     ...userData,

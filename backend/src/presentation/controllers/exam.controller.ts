@@ -139,7 +139,7 @@ export class ExaminationController implements IExaminationController {
         return this._response<typeof exam>('Create Examination Successfully', 200, this._sanitizeExamData(exam, user))
     }
 
-    async getExaminations(user?: IInstructor) {
+    async getExaminations(user?: IInstructor | any) {
         const exams = await this._service.getExaminations()
         return this._response<typeof exams>('Done', 200, this._sanitizeExamData(exams, user))
     }
@@ -178,6 +178,16 @@ export class ExaminationController implements IExaminationController {
         } catch (error: any) {
             console.error('Error getting examination schedule:', error);
             return this._response(`Error getting examination schedule: ${error.message || 'Unknown error'}`, 500, null);
+        }
+    }
+
+    async getAllExaminationSchedules(user?: any) {
+        try {
+            const schedules = await this._scheduleService.getAllExaminationSchedules();
+            return this._response<typeof schedules>('Done', 200, schedules);
+        } catch (error: any) {
+            console.error('Error getting examination schedules:', error);
+            return this._response(`Error getting examination schedules: ${error.message || 'Unknown error'}`, 500, null);
         }
     }
 

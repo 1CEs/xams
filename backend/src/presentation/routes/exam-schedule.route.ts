@@ -15,6 +15,10 @@ export const ExamScheduleRoute = new Elysia({ prefix: '/exam-schedule' })
     .use(tokenVerifier)
     .group('', (app) => 
         app
+            // Get all exam schedules
+            .get('', catchAsync(async ({ controller }: ExamScheduleContext) => 
+                await controller.getAllExaminationSchedules()))
+            
             // Get exam schedule by ID
             .get('/:id', catchAsync(async ({ params, controller }: ExamScheduleContext & { params: { id: string } }) => 
                 await controller.getExaminationScheduleById(params.id)))

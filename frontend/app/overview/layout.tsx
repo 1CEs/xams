@@ -9,11 +9,13 @@ import SessionMonitor from "@/components/auth/session-monitor"
 export default function OverviewLayout({
     admin,
     student,
-    teacher
+    teacher,
+    banned
 }: Readonly<{
     admin: React.ReactNode
     student: React.ReactNode
     teacher: React.ReactNode
+    banned: React.ReactNode
 }>) {
     const { user } = useUserStore()
     console.log(user)
@@ -25,6 +27,7 @@ export default function OverviewLayout({
                     <Loading />
                 }>
                     {   
+                        user?.status?.is_banned ? banned :
                         user?.role == 'admin' ? admin : 
                         user?.role == 'instructor' ? teacher : 
                         user?.role == 'student' ? student : 

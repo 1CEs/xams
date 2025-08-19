@@ -15,6 +15,22 @@ const UserInfoSchema = new Schema<IUser['info']>({
     }
 }, {_id: false})
 
+const UserStatusSchema = new Schema<IUser['status']>({
+    is_banned: {
+        type: Schema.Types.Boolean,
+        required: true,
+        default: false
+    },
+    ban_until: {
+        type: Schema.Types.Date,
+        required: false
+    },
+    ban_reason: {
+        type: Schema.Types.String,
+        required: false
+    }
+}, {_id: false})
+
 const UserSchema = new Schema<IUserDocument>({
     username: {
         type: Schema.Types.String,
@@ -44,6 +60,13 @@ const UserSchema = new Schema<IUserDocument>({
         type: Schema.Types.String,
         required: true,
         enum: ['student', 'instructor', 'admin']
+    },
+    status: {
+        type: UserStatusSchema,
+        required: true,
+        default: {
+            is_banned: false
+        }
     },
     info: {
         type: UserInfoSchema,

@@ -2,18 +2,21 @@
 
 import { useEffect, useState } from 'react'
 import { clientAPI } from '@/config/axios.config'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
+import { 
+  Table, 
+  TableHeader, 
+  TableColumn, 
+  TableBody, 
+  TableRow, 
   TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  Button,
+  Chip,
+  Spinner,
+  Card,
+  CardBody
+} from '@nextui-org/react'
 import { toast } from 'react-toastify'
-import { MdiBin, FaGroup, PhStudentFill, FeEdit } from '@/components/icons/icons'
+import { MdiBin, FaGroup, PhStudentFill, FeEdit, SolarRefreshLineDuotone } from '@/components/icons/icons'
 
 interface Course {
   _id: string
@@ -75,90 +78,119 @@ export function CoursesTable() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[200px]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"></div>
+        <Spinner size="lg" color="primary" label="Loading courses..." />
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Courses ({courses.length})</h3>
-        <Button onClick={fetchCourses} variant="outline" size="sm">
-          Refresh
-        </Button>
-      </div>
+    <Card className="border-none shadow-lg">
+      <CardBody className="p-0">
+        <div className="flex justify-between items-center p-4 sm:p-6 border-b border-divider">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg hero-background">
+              <FaGroup className="h-5 w-5 text-background" />
+            </div>
+            <div>
+              <h3 className="text-lg sm:text-xl font-bold text-foreground">Courses Management</h3>
+              <p className="text-sm text-default-500">{courses.length} total courses</p>
+            </div>
+          </div>
+          <Button 
+            onClick={fetchCourses} 
+            variant="flat" 
+            color="primary"
+            size="sm"
+            startContent={<SolarRefreshLineDuotone className="h-4 w-4" />}
+          >
+            Refresh
+          </Button>
+        </div>
 
-      <div className="rounded-md border">
-        <Table>
+        <Table 
+          aria-label="Courses table"
+          classNames={{
+            wrapper: "shadow-none",
+            th: "bg-default-50 text-default-700 font-semibold",
+            td: "py-4"
+          }}
+        >
           <TableHeader>
-            <TableRow>
-              <TableHead>Course Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Groups</TableHead>
-              <TableHead>Students</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
+            <TableColumn>COURSE</TableColumn>
+            <TableColumn>DESCRIPTION</TableColumn>
+            <TableColumn>GROUPS</TableColumn>
+            <TableColumn>STUDENTS</TableColumn>
+            <TableColumn>CREATED</TableColumn>
+            <TableColumn>ACTIONS</TableColumn>
           </TableHeader>
-          <TableBody>
-            {courses.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No courses found
+          <TableBody emptyContent="No courses found">
+            {courses.map((course) => (
+              <TableRow key={course._id}>
+                <TableCell>
+                  <div>
+                    <p className="font-semibold text-foreground">{course.course_name}</p>
+                    <p className="text-xs text-default-500">ID: {course._id.slice(-6)}</p>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <p className="text-sm text-default-600 max-w-[200px] truncate">
+                    {course.description || 'No description available'}
+                  </p>
+                </TableCell>
+                <TableCell>
+                  <Chip 
+                    color="primary" 
+                    variant="flat"
+                    size="sm"
+                    startContent={<FaGroup className="h-3 w-3" />}
+                  >
+                    {course.groups?.length || 0} groups
+                  </Chip>
+                </TableCell>
+                <TableCell>
+                  <Chip 
+                    color="secondary" 
+                    variant="flat"
+                    size="sm"
+                    startContent={<PhStudentFill className="h-3 w-3" />}
+                  >
+                    {course.groups?.reduce((total, group) => total + (group.students?.length || 0), 0) || 0} students
+                  </Chip>
+                </TableCell>
+                <TableCell>
+                  <p className="text-sm text-default-600">
+                    {course.created_at 
+                      ? new Date(course.created_at).toLocaleDateString()
+                      : 'N/A'
+                    }
+                  </p>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="light" 
+                      size="sm"
+                      isIconOnly
+                      color="primary"
+                    >
+                      <FeEdit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="light" 
+                      size="sm"
+                      isIconOnly
+                      color="danger"
+                      onClick={() => handleDeleteCourse(course._id)}
+                    >
+                      <MdiBin className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
-            ) : (
-              courses.map((course) => (
-                <TableRow key={course._id}>
-                  <TableCell className="font-medium">
-                    {course.course_name}
-                  </TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {course.description || 'No description'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                      <FaGroup className="h-3 w-3" />
-                      {getTotalGroups(course)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                      <PhStudentFill className="h-3 w-3" />
-                      {getTotalStudents(course)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <span className="text-xs">📅</span>
-                      {course.created_at 
-                        ? new Date(course.created_at).toLocaleDateString()
-                        : 'N/A'
-                      }
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="outline" size="sm">
-                        <FeEdit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleDeleteCourse(course._id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <MdiBin className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
-      </div>
-    </div>
+      </CardBody>
+    </Card>
   )
 }

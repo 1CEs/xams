@@ -10,7 +10,7 @@ import { Answer, SubmitAnswer } from "../../types/exam";
 
 type ExamContext = Context & {
     controller: ExaminationController;
-    user: IInstructor;
+    user: IInstructor | any;
 }
 
 type AddExamBody = Static<typeof AddExaminationSchema> & { bankId?: string, subBankPath?: string[] }
@@ -28,6 +28,12 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
         app
             // Examination-Only routes
             .get('', catchAsync(async ({ controller, user }: ExamContext) => await controller.getExaminations(user)))
+            .get('/all', catchAsync(async ({ controller, user }: ExamContext) => await controller.getExaminations(user)))
+            .get('/by-instructor', catchAsync(async ({ query, controller, user }: ExamContext & { query: { instructor_id: string } }) => await controller.getExaminationByInstructorId(query.instructor_id, user)), {
+                query: t.Object({
+                    instructor_id: t.String()
+                })
+            })
             .get('/:id', catchAsync(async ({ params, query, controller, user }: ExamContext & { params: { id: string }, query: { schedule_id?: string } }) => 
                 await controller.getExaminationById(params.id, user, query.schedule_id)), {
                 query: t.Object({
@@ -36,11 +42,6 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
             })
             .get('/schedule/:id', catchAsync(async ({ params, controller }: ExamContext & { params: { id: string } }) => 
                 await controller.getExaminationScheduleById(params.id)))
-            .get('', catchAsync(async ({ query, controller, user }: ExamContext & { query: { instructor_id: string } }) => await controller.getExaminationByInstructorId(query.instructor_id, user)), {
-                query: t.Object({
-                    instructor_id: t.String()
-                })
-            })
             .post('', catchAsync(async ({ body, user, controller }: ExamContext & { body: AddExamBody }) => await controller.addExamination({ ...body, instructor_id: user._id as unknown as string }, user, body.bankId, body.subBankPath)), {
                 body: AddExaminationSchema
             })

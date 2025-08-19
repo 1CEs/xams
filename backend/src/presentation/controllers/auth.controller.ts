@@ -135,6 +135,30 @@ export class AuthController implements IAuthController {
             if (!passwordIsValid) {
                 throw new UnauthorizedError('Incorrect password. Please check your password and try again.')
             }
+
+            // Check if user is banned
+            if (user.status?.is_banned) {
+                const banMessage = user.status.ban_until 
+                    ? `Your account is banned until ${new Date(user.status.ban_until).toLocaleDateString()}.`
+                    : 'Your account has been permanently banned.'
+                const reasonMessage = user.status.ban_reason 
+                    ? ` Reason: ${user.status.ban_reason}`
+                    : ''
+                throw new UnauthorizedError(`${banMessage}${reasonMessage} Please contact support if you believe this is an error.`)
+            }
+
+            // Check if temporary ban has expired
+            if (user.status?.is_banned && user.status.ban_until && new Date(user.status.ban_until) <= new Date()) {
+                // Automatically unban expired users
+                const instance = this._factory.createService('general')
+                await instance.updateUser(String(user._id), {
+                    status: {
+                        is_banned: false,
+                        ban_until: undefined,
+                        ban_reason: undefined
+                    }
+                })
+            }
             
             delete payload.body
             await this.setToken(String(user._id), { ...payload })

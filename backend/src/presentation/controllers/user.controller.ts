@@ -47,6 +47,22 @@ export class UserController implements IUserController {
         return this._response<typeof deleted>('Delete Successfully', 200, deleted)
     }
 
+    async banUser(id: string, banData: { is_banned: boolean; ban_until?: Date; ban_reason?: string }) {
+        const payload: Partial<IUser> = {
+            status: {
+                is_banned: banData.is_banned,
+                ban_until: banData.ban_until,
+                ban_reason: banData.ban_reason
+            }
+        }
+        const updated = await this._factory.createService('general').updateUser(id, payload)
+        return this._response<typeof updated>(
+            banData.is_banned ? 'User suspended successfully' : 'User unsuspended successfully', 
+            200, 
+            updated
+        )
+    }
+
     async forgotPassword(email: string, jwt: JWTInstance) {
         const result = await this._factory.createService('general').forgotPassword(email, jwt)
         return this._response<typeof result>('Password reset email sent successfully', 200, result)

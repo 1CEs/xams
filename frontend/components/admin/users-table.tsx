@@ -2,26 +2,45 @@
 
 import { useEffect, useState } from 'react'
 import { clientAPI } from '@/config/axios.config'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
+import { 
+  Table, 
+  TableHeader, 
+  TableColumn, 
+  TableBody, 
+  TableRow, 
   TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  Button,
+  Chip,
+  Avatar,
+  Spinner,
+  Card,
+  CardBody,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Input,
+  Textarea,
+  useDisclosure
+} from '@nextui-org/react'
 import { toast } from 'react-toastify'
-import { MdiBin, PhStudentFill, FluentSettings16Filled, FeEdit } from '@/components/icons/icons'
+import { MdiBin, PhStudentFill, FluentSettings16Filled, FeEdit, SolarRefreshLineDuotone, FaGroup } from '@/components/icons/icons'
 
 interface User {
   _id: string
   username: string
   email: string
   role: 'admin' | 'instructor' | 'student'
-  first_name?: string
-  last_name?: string
+  status: {
+    is_banned: boolean
+    ban_until?: string
+    ban_reason?: string
+  }
+  info: {
+    first_name: string
+    last_name: string
+  }
   created_at?: string
   updated_at?: string
 }
@@ -29,6 +48,22 @@ interface User {
 export function UsersTable() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [banUntil, setBanUntil] = useState('')
+  const [banReason, setBanReason] = useState('')
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [editForm, setEditForm] = useState({
+    username: '',
+    email: '',
+    first_name: '',
+    last_name: '',
+    role: 'student' as 'admin' | 'instructor' | 'student',
+    password: '',
+    confirmPassword: ''
+  })
+  const [showPassword, setShowPassword] = useState(false)
+  const { isOpen: isBanModalOpen, onOpen: onBanModalOpen, onClose: onBanModalClose } = useDisclosure()
+  const { isOpen: isEditModalOpen, onOpen: onEditModalOpen, onClose: onEditModalClose } = useDisclosure()
 
   useEffect(() => {
     fetchUsers()
@@ -60,112 +95,489 @@ export function UsersTable() {
     }
   }
 
-  const getRoleBadgeVariant = (role: string) => {
+  const handleSuspendUser = (user: User) => {
+    setSelectedUser(user)
+    setBanUntil('')
+    setBanReason('')
+    onBanModalOpen()
+  }
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user)
+    setEditForm({
+      username: user.username,
+      email: user.email,
+      first_name: user.info?.first_name || '',
+      last_name: user.info?.last_name || '',
+      role: user.role,
+      password: '',
+      confirmPassword: ''
+    })
+    setShowPassword(false)
+    onEditModalOpen()
+  }
+
+  const submitUserUpdate = async () => {
+    if (!editingUser) return
+
+    // Validate password if provided
+    if (editForm.password) {
+      if (editForm.password !== editForm.confirmPassword) {
+        toast.error('Passwords do not match')
+        return
+      }
+      if (editForm.password.length < 8) {
+        toast.error('Password must be at least 8 characters long')
+        return
+      }
+      // Check password strength
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+      if (!passwordRegex.test(editForm.password)) {
+        toast.error('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
+        return
+      }
+    }
+
+    try {
+      const updateData: any = {
+        username: editForm.username,
+        email: editForm.email,
+        role: editForm.role,
+        info: {
+          first_name: editForm.first_name,
+          last_name: editForm.last_name
+        }
+      }
+
+      // Only include password if it's provided
+      if (editForm.password) {
+        updateData.password = editForm.password
+      }
+
+      await clientAPI.patch(`/user/${editingUser._id}`, updateData)
+      toast.success('User updated successfully')
+      fetchUsers()
+      onEditModalClose()
+    } catch (error) {
+      console.error('Error updating user:', error)
+      toast.error('Failed to update user')
+    }
+  }
+
+  const submitSuspend = async () => {
+    if (!selectedUser) return
+
+    try {
+      const suspendData: BanUserPayload = {
+        is_banned: !selectedUser.status.is_banned,
+        ban_until: banUntil || undefined,
+        ban_reason: banReason || undefined
+      }
+
+      await clientAPI.patch(`/user/ban/${selectedUser._id}`, suspendData)
+      toast.success(suspendData.is_banned ? 'User suspended successfully' : 'User unsuspended successfully')
+      fetchUsers()
+      onBanModalClose()
+    } catch (error) {
+      console.error('Error updating user suspension status:', error)
+      toast.error('Failed to update user suspension status')
+    }
+  }
+
+  const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'destructive'
+        return 'danger'
       case 'instructor':
-        return 'default'
+        return 'primary'
       case 'student':
         return 'secondary'
       default:
-        return 'outline'
+        return 'default'
     }
   }
 
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'admin':
-        return <FluentSettings16Filled className="h-4 w-4" />
+        return '🛠️'
       case 'instructor':
-        return <FluentSettings16Filled className="h-4 w-4" />
+        return '👨‍🏫'
       case 'student':
-        return <PhStudentFill className="h-4 w-4" />
+        return '👨‍🎓'
       default:
-        return null
+        return '👤'
     }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[200px]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"></div>
+        <Spinner size="lg" color="primary" label="Loading users..." />
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Users ({users.length})</h3>
-        <Button onClick={fetchUsers} variant="outline" size="sm">
-          Refresh
-        </Button>
-      </div>
+    <>
+      <Card className="border-none shadow-lg">
+        <CardBody className="p-0">
+          <div className="flex justify-between items-center p-4 sm:p-6 border-b border-divider">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg hero-background">
+                <FaGroup className="h-5 w-5 text-background" />
+              </div>
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground">Users Management</h3>
+                <p className="text-sm text-default-500">{users.length} total users</p>
+              </div>
+            </div>
+            <Button 
+              onClick={fetchUsers} 
+              variant="flat" 
+              color="primary"
+              size="sm"
+              startContent={<SolarRefreshLineDuotone className="h-4 w-4" />}
+            >
+              Refresh
+            </Button>
+          </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Username</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No users found
-                </TableCell>
-              </TableRow>
-            ) : (
-              users.map((user) => (
+          <Table 
+            aria-label="Users table"
+            classNames={{
+              wrapper: "shadow-none",
+              th: "bg-default-50 text-default-700 font-semibold",
+              td: "py-4"
+            }}
+          >
+            <TableHeader>
+              <TableColumn>USER</TableColumn>
+              <TableColumn>EMAIL</TableColumn>
+              <TableColumn>USERNAME</TableColumn>
+              <TableColumn>ROLE</TableColumn>
+              <TableColumn>STATUS</TableColumn>
+              <TableColumn>CREATED</TableColumn>
+              <TableColumn>ACTIONS</TableColumn>
+            </TableHeader>
+            <TableBody emptyContent="No users found">
+              {users.map((user) => (
                 <TableRow key={user._id}>
-                  <TableCell className="font-medium">
-                    {user.first_name && user.last_name 
-                      ? `${user.first_name} ${user.last_name}`
-                      : user.username
-                    }
-                  </TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.username}</TableCell>
                   <TableCell>
-                    <Badge variant={getRoleBadgeVariant(user.role)} className="flex items-center gap-1 w-fit">
-                      {getRoleIcon(user.role)}
-                      {user.role}
-                    </Badge>
+                    <div className="flex items-center gap-3">
+                      <Avatar
+                        size="sm"
+                        name={user.info?.first_name ? `${user.info.first_name} ${user.info.last_name}` : user.username}
+                        className="bg-gradient-to-r from-primary/20 to-secondary/20"
+                      />
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {user.info?.first_name && user.info?.last_name 
+                            ? `${user.info.first_name} ${user.info.last_name}`
+                            : user.username
+                          }
+                        </p>
+                        <p className="text-xs text-default-500">ID: {user._id.slice(-6)}</p>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    {user.created_at 
-                      ? new Date(user.created_at).toLocaleDateString()
-                      : 'N/A'
-                    }
+                    <p className="text-sm">{user.email}</p>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="outline" size="sm">
+                  <TableCell>
+                    <p className="text-sm font-mono">{user.username}</p>
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      color={getRoleColor(user.role)} 
+                      variant="flat"
+                      size="sm"
+                      startContent={<span className="text-xs">{getRoleIcon(user.role)}</span>}
+                    >
+                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                    </Chip>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <Chip 
+                        color={user.status?.is_banned ? 'danger' : 'success'} 
+                        variant="flat"
+                        size="sm"
+                      >
+                        {user.status?.is_banned ? '🚫 Suspended' : '✅ Active'}
+                      </Chip>
+                      {user.status?.is_banned && user.status?.ban_until && (
+                        <p className="text-xs text-danger-500">
+                          Until: {new Date(user.status.ban_until).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <p className="text-sm text-default-600">
+                      {user.created_at 
+                        ? new Date(user.created_at).toLocaleDateString()
+                        : 'N/A'
+                      }
+                    </p>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="light" 
+                        size="sm"
+                        isIconOnly
+                        color={user.status?.is_banned ? 'success' : 'warning'}
+                        onClick={() => handleSuspendUser(user)}
+                      >
+                        <span className="text-sm">🚫</span>
+                      </Button>
+                      <Button 
+                        variant="light" 
+                        size="sm"
+                        isIconOnly
+                        color="primary"
+                        onClick={() => handleEditUser(user)}
+                      >
                         <FeEdit className="h-4 w-4" />
                       </Button>
                       <Button 
-                        variant="outline" 
+                        variant="light" 
                         size="sm"
+                        isIconOnly
+                        color="danger"
                         onClick={() => handleDeleteUser(user._id)}
-                        className="text-red-600 hover:text-red-700"
                       >
                         <MdiBin className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+              ))}
+            </TableBody>
+          </Table>
+        </CardBody>
+      </Card>
+
+      {/* Edit User Modal */}
+      <Modal isOpen={isEditModalOpen} onClose={onEditModalClose} size="lg">
+        <ModalContent>
+          <ModalHeader>
+            <h3 className="text-lg font-semibold">Edit User</h3>
+          </ModalHeader>
+          <ModalBody>
+            {editingUser && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
+                  <Avatar
+                    size="sm"
+                    name={editingUser.info?.first_name ? `${editingUser.info.first_name} ${editingUser.info.last_name}` : editingUser.username}
+                  />
+                  <div>
+                    <p className="font-medium">
+                      {editingUser.info?.first_name && editingUser.info?.last_name 
+                        ? `${editingUser.info.first_name} ${editingUser.info.last_name}`
+                        : editingUser.username
+                      }
+                    </p>
+                    <p className="text-sm text-default-500">ID: {editingUser._id}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="First Name"
+                    placeholder="Enter first name"
+                    value={editForm.first_name}
+                    onChange={(e) => setEditForm({...editForm, first_name: e.target.value})}
+                    isRequired
+                  />
+                  <Input
+                    label="Last Name"
+                    placeholder="Enter last name"
+                    value={editForm.last_name}
+                    onChange={(e) => setEditForm({...editForm, last_name: e.target.value})}
+                    isRequired
+                  />
+                </div>
+
+                <Input
+                  label="Username"
+                  placeholder="Enter username"
+                  value={editForm.username}
+                  onChange={(e) => setEditForm({...editForm, username: e.target.value})}
+                  isRequired
+                />
+
+                <Input
+                  label="Email"
+                  type="email"
+                  placeholder="Enter email address"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                  isRequired
+                />
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium text-default-700">Password Settings</h4>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color={showPassword ? 'danger' : 'primary'}
+                      onClick={() => {
+                        setShowPassword(!showPassword)
+                        if (!showPassword) {
+                          setEditForm({...editForm, password: '', confirmPassword: ''})
+                        }
+                      }}
+                    >
+                      {showPassword ? 'Cancel Password Change' : 'Change Password'}
+                    </Button>
+                  </div>
+                  
+                  {showPassword && (
+                    <div className="space-y-3 p-4 bg-warning-50 rounded-lg border border-warning-200">
+                      <p className="text-sm text-warning-700 mb-3">
+                        ⚠️ <strong>Warning:</strong> Changing the password will require the user to sign in again with the new password.
+                      </p>
+                      
+                      <Input
+                        label="New Password"
+                        type="password"
+                        placeholder="Enter new password"
+                        value={editForm.password}
+                        onChange={(e) => setEditForm({...editForm, password: e.target.value})}
+                        description="Must be at least 8 characters with uppercase, lowercase, number, and special character"
+                      />
+                      
+                      <Input
+                        label="Confirm New Password"
+                        type="password"
+                        placeholder="Confirm new password"
+                        value={editForm.confirmPassword}
+                        onChange={(e) => setEditForm({...editForm, confirmPassword: e.target.value})}
+                        color={editForm.password && editForm.confirmPassword && editForm.password !== editForm.confirmPassword ? 'danger' : 'default'}
+                        errorMessage={editForm.password && editForm.confirmPassword && editForm.password !== editForm.confirmPassword ? 'Passwords do not match' : ''}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-default-700 mb-2">Role</label>
+                  <div className="flex gap-2">
+                    {(['student', 'instructor', 'admin'] as const).map((role) => (
+                      <Button
+                        key={role}
+                        size="sm"
+                        variant={editForm.role === role ? 'solid' : 'flat'}
+                        color={editForm.role === role ? getRoleColor(role) : 'default'}
+                        onClick={() => setEditForm({...editForm, role})}
+                        startContent={<span className="text-xs">{getRoleIcon(role)}</span>}
+                      >
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onEditModalClose}>
+              Cancel
+            </Button>
+            <Button 
+              color="primary"
+              onPress={submitUserUpdate}
+            >
+              {showPassword && editForm.password ? 'Update User & Password' : 'Update User'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Suspend User Modal */}
+      <Modal isOpen={isBanModalOpen} onClose={onBanModalClose} size="lg">
+        <ModalContent>
+          <ModalHeader>
+            <h3 className="text-lg font-semibold">
+              {selectedUser?.status?.is_banned ? 'Unsuspend User' : 'Suspend User'}
+            </h3>
+          </ModalHeader>
+          <ModalBody>
+            {selectedUser && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
+                  <Avatar
+                    size="sm"
+                    name={selectedUser.info?.first_name ? `${selectedUser.info.first_name} ${selectedUser.info.last_name}` : selectedUser.username}
+                  />
+                  <div>
+                    <p className="font-medium">
+                      {selectedUser.info?.first_name && selectedUser.info?.last_name 
+                        ? `${selectedUser.info.first_name} ${selectedUser.info.last_name}`
+                        : selectedUser.username
+                      }
+                    </p>
+                    <p className="text-sm text-default-500">{selectedUser.email}</p>
+                  </div>
+                </div>
+
+                {!selectedUser.status?.is_banned && (
+                  <>
+                    <Input
+                      type="date"
+                      label="Suspend Until (Optional)"
+                      placeholder="Select end date for suspension"
+                      value={banUntil}
+                      onChange={(e) => setBanUntil(e.target.value)}
+                      description="Leave empty for permanent suspension"
+                    />
+                    <Textarea
+                      label="Suspension Reason (Optional)"
+                      placeholder="Enter reason for suspending this user..."
+                      value={banReason}
+                      onChange={(e) => setBanReason(e.target.value)}
+                      rows={3}
+                    />
+                  </>
+                )}
+
+                {selectedUser.status?.is_banned && (
+                  <div className="p-3 bg-danger-50 rounded-lg border border-danger-200">
+                    <p className="text-sm text-danger-700">
+                      <strong>Current Suspension Status:</strong>
+                    </p>
+                    {selectedUser.status.ban_until && (
+                      <p className="text-sm text-danger-600">
+                        Suspended until: {new Date(selectedUser.status.ban_until).toLocaleDateString()}
+                      </p>
+                    )}
+                    {selectedUser.status.ban_reason && (
+                      <p className="text-sm text-danger-600">
+                        Reason: {selectedUser.status.ban_reason}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onBanModalClose}>
+              Cancel
+            </Button>
+            <Button 
+              color={selectedUser?.status?.is_banned ? 'success' : 'danger'}
+              onPress={submitSuspend}
+            >
+              {selectedUser?.status?.is_banned ? 'Unsuspend User' : 'Suspend User'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
   )
 }
