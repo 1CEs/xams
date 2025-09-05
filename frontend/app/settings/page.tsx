@@ -91,8 +91,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex justify-center">
-      <Card className="max-w-md w-full">
+    <div className="flex justify-center">]=
+      <Card className="max-w-md w-full mt-16">
         <CardHeader className="font-bold text-xl flex justify-between items-center">
           User Settings
           <Switch

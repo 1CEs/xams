@@ -97,7 +97,7 @@ export default function StudentCoursePage() {
                     <Tabs 
                         aria-label="Your Groups"
                         classNames={{
-                            tabList: "flex-wrap gap-1 sm:gap-2",
+                            tabList: " gap-1 sm:gap-2",
                             tab: "px-3 sm:px-4 py-2 text-sm sm:text-base",
                             tabContent: "text-sm sm:text-base"
                         }}
