@@ -9,7 +9,7 @@ export interface IUser {
     profile_url: string
     bio?: string
     role: UserRole
-    status: {
+    status?: {
         is_banned: boolean
         ban_until?: Date
         ban_reason?: string

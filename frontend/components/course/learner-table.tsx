@@ -32,8 +32,16 @@ type StudentData = {
   username: string;
   email: string;
   role: string;
-  status: "active" | "inactive";
+  status: {
+    is_banned: boolean;
+    ban_until?: string;
+    ban_reason?: string;
+  };
   profile_url?: string;
+  info: {
+    first_name: string;
+    last_name: string;
+  };
 };
 
 export const columns: Column[] = [
@@ -167,7 +175,8 @@ export const EditIcon = (props: SVGProps<SVGSVGElement>) => {
 
 const statusColorMap = {
   active: "success",
-  inactive: "danger"
+  banned: "danger",
+  suspended: "warning"
 };
 
 type LearnersTableProps = {
@@ -204,11 +213,12 @@ export const LearnersTable = ({ studentIds, courseId, groupName, onStudentRemove
           const userData = response.data.data;
           return {
             _id: userData._id,
-            name: userData.username || 'Unknown',
+            username: userData.username || 'Unknown',
             email: userData.email || 'No email',
-            role: userData.role || 'Student',
-            status: userData.status || 'active',
-            profile_url: userData.profile_url || `https://i.pravatar.cc/150?u=${userData._id}`
+            role: userData.role || 'student',
+            status: userData.status || { is_banned: false },
+            profile_url: userData.profile_url || `https://i.pravatar.cc/150?u=${userData._id}`,
+            info: userData.info || { first_name: 'Unknown', last_name: 'User' }
           };
         });
         
@@ -259,35 +269,70 @@ export const LearnersTable = ({ studentIds, courseId, groupName, onStudentRemove
   };
 
   const renderCell = React.useCallback((student: StudentData, columnKey: string) => {
-    const cellValue = columnKey !== "actions" ? student[columnKey as keyof StudentData] : null;
-
     switch (columnKey) {
       case "name":
         return (
           <User
             avatarProps={{ radius: "lg", src: student.profile_url }}
             description={student.email}
-            name={cellValue}
+            name={`${student.info.first_name} ${student.info.last_name}`}
           >
             {student.email}
           </User>
         );
+      case "email":
+        return (
+          <div className="flex flex-col">
+            <p className="text-sm">{student.email}</p>
+          </div>
+        );
       case "role":
         return (
           <div className="flex flex-col">
-            <p className="text-bold text-sm capitalize">{cellValue}</p>
+            <p className="text-bold text-sm capitalize">{student.role}</p>
           </div>
         );
       case "status":
+        const getStatusInfo = () => {
+          if (student.status?.is_banned) {
+            return {
+              label: student.status.ban_until ? 'Suspended' : 'Banned',
+              color: student.status.ban_until ? 'warning' : 'danger',
+              description: student.status.ban_reason || 'No reason provided'
+            };
+          }
+          return {
+            label: 'Active',
+            color: 'success',
+            description: 'Student is active'
+          };
+        };
+        
+        const statusInfo = getStatusInfo();
+        
         return (
-          <Chip 
-            className="capitalize" 
-            color={statusColorMap[student.status as keyof typeof statusColorMap] as any} 
-            size="sm" 
-            variant="flat"
-          >
-            {cellValue}
-          </Chip>
+          <div className="flex flex-col gap-1">
+            <Chip 
+              className="capitalize" 
+              color={statusInfo.color as any}
+              size="sm" 
+              variant="flat"
+            >
+              {statusInfo.label}
+            </Chip>
+            {student.status?.is_banned && student.status.ban_until && (
+              <p className="text-xs text-warning-600">
+                Until: {new Date(student.status.ban_until).toLocaleDateString()}
+              </p>
+            )}
+            {student.status?.is_banned && student.status.ban_reason && (
+              <Tooltip content={student.status.ban_reason}>
+                <p className="text-xs text-danger-500 truncate max-w-32 cursor-help">
+                  Reason: {student.status.ban_reason}
+                </p>
+              </Tooltip>
+            )}
+          </div>
         );
       case "actions":
         return (
@@ -303,7 +348,7 @@ export const LearnersTable = ({ studentIds, courseId, groupName, onStudentRemove
           </div>
         );
       default:
-        return cellValue;
+        return null;
     }
   }, []);
 

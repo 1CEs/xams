@@ -1,0 +1,30 @@
+{
+  "name": "xams-test-framework",
+  "version": "1.0.0",
+  "description": "Comprehensive test framework for XAMS (Examination Management System)",
+  "main": "main.ts",
+  "scripts": {
+    "test": "npx ts-node main.ts",
+    "build": "tsc",
+    "generate-report": "npx ts-node main.ts"
+  },
+  "keywords": [
+    "testing",
+    "xams",
+    "examination",
+    "typescript",
+    "excel",
+    "test-automation"
+  ],
+  "author": "XAMS Test Framework",
+  "license": "MIT",
+  "dependencies": {
+    "xlsx": "^0.18.5",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "puppeteer": "^21.0.0",
+    "cheerio": "^1.0.0-rc.12",
+    "@types/cheerio": "^0.22.0",
+    "ts-node": "^10.9.0"
+  }
+}

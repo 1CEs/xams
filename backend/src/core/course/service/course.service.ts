@@ -20,6 +20,11 @@ export class CourseService implements ICourseService {
         return courses 
     }
 
+    async searchCourses (search: string) {
+        const courses = await this._repository.searchCourses(search)
+        return courses
+    }
+
     async getCourseById (id: string) {
         const course = await this._repository.findById(id)
         return course

@@ -4,7 +4,8 @@ import DraggableQuestion from "@/components/exam/question/draggable-question"
 import NestedQuestionForm from "@/components/exam/question/nested-question"
 
 import ConfirmModal from "@/components/modals/confirm-modal"
-import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, IcRoundFolder, MdiBin, MingcuteAddFill, MingcuteFileNewFill, PhEyeDuotone, SystemUiconsReuse } from "@/components/icons/icons"
+import QuestionRandomizationModal from "@/components/modals/question-randomization-modal"
+import { IconParkOutlineCheckCorrect, IconParkTwotoneNestedArrows, IcRoundFolder, MdiBin, MingcuteAddFill, MingcuteFileNewFill, PhEyeDuotone, SystemUiconsReuse, MingcuteDownFill } from "@/components/icons/icons"
 import { clientAPI } from "@/config/axios.config"
 import { errorHandler } from "@/utils/error"
 import { Button, Card, CardBody, CardFooter, Checkbox, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Modal, ModalContent, ModalHeader, ModalBody, Textarea, Tooltip, useDisclosure } from "@nextui-org/react"
@@ -39,8 +40,10 @@ export default function CreateExaminationPage() {
     const _id = searchParams.get('id')
     const { isOpen, onOpen, onOpenChange } = useDisclosure()
     const { isOpen: isAikenModalOpen, onOpen: onAikenModalOpen, onOpenChange: onAikenModalOpenChange } = useDisclosure()
+    const { isOpen: isRandomizationModalOpen, onOpen: onRandomizationModalOpen, onOpenChange: onRandomizationModalOpenChange } = useDisclosure()
     const [deleteQuestionModal, setDeleteQuestionModal] = useState({ isOpen: false, questionId: '' })
     const [deleteAllModal, setDeleteAllModal] = useState({ isOpen: false })
+    const [pendingQuestions, setPendingQuestions] = useState<any[]>([])
     const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set())
     const [selectAll, setSelectAll] = useState(false)
     const [exam, setExam] = useState<any>(null)
@@ -124,6 +127,65 @@ export default function CreateExaminationPage() {
         }
     }
 
+    const exportAsAiken = () => {
+        // Filter only MC questions
+        const mcQuestions = questionList.filter(q => q.type === 'mc')
+        
+        if (mcQuestions.length === 0) {
+            toast.warning('No multiple choice questions found to export')
+            return
+        }
+
+        // Convert MC questions to Aiken format
+        const aikenContent = mcQuestions.map((question, index) => {
+            const choices = question.choices || []
+            const correctChoiceIndex = choices.findIndex(choice => choice.isCorrect)
+            
+            if (correctChoiceIndex === -1) {
+                toast.error(`Question ${index + 1} has no correct answer marked`)
+                return null
+            }
+
+            // Generate choice labels (A, B, C, D, E, F)
+            const choiceLabels = ['A', 'B', 'C', 'D', 'E', 'F']
+            
+            let aikenQuestion = question.question + '\n'
+            
+            // Add choices
+            choices.forEach((choice, choiceIndex) => {
+                if (choiceIndex < choiceLabels.length) {
+                    aikenQuestion += `${choiceLabels[choiceIndex]}. ${choice.content}\n`
+                }
+            })
+            
+            // Add correct answer
+            aikenQuestion += `ANSWER: ${choiceLabels[correctChoiceIndex]}\n`
+            
+            return aikenQuestion
+        }).filter(q => q !== null) // Remove null entries (questions with errors)
+
+        if (aikenContent.length === 0) {
+            toast.error('No valid questions to export')
+            return
+        }
+
+        // Join all questions with empty lines between them
+        const finalContent = aikenContent.join('\n')
+        
+        // Create and download file
+        const blob = new Blob([finalContent], { type: 'text/plain;charset=utf-8' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `${exam?.title || 'exam'}_mc_questions.txt`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        
+        toast.success(`Successfully exported ${aikenContent.length} MC questions to Aiken format`)
+    }
+
     const onAikenImportClick = () => {
         const el = document.getElementById('aiken-import')
         if (el) {
@@ -202,43 +264,14 @@ export default function CreateExaminationPage() {
 
                         if (uniqueQuestions.length < data.length) {
                             const duplicateCount = data.length - uniqueQuestions.length
-                            toast.info(`Found ${duplicateCount} duplicate question(s) that will be skipped. Importing ${uniqueQuestions.length} new questions...`)
+                            toast.info(`Found ${duplicateCount} duplicate question(s) that will be skipped. Showing ${uniqueQuestions.length} new questions for randomization settings...`)
                         } else {
-                            toast.info(`Importing ${uniqueQuestions.length} questions...`)
+                            toast.info(`Showing ${uniqueQuestions.length} questions for randomization settings...`)
                         }
 
-                        // Upload each unique question to the exam
-                        let successCount = 0
-                        let failedCount = 0
-                        
-                        for (let i = 0; i < uniqueQuestions.length; i++) {
-                            try {
-                                const update = await clientAPI.post(`exam/question/${_id}`, uniqueQuestions[i])
-                                if (update.data.code === 200) {
-                                    successCount++
-                                } else {
-                                    failedCount++
-                                    console.error(`Failed to add question ${i + 1}:`, update.data.message)
-                                }
-                            } catch (error) {
-                                failedCount++
-                                console.error(`Failed to add question ${i + 1}:`, error)
-                            }
-                        }
-
-                        // Show appropriate success/error messages
-                        if (successCount > 0 && failedCount === 0) {
-                            toast.success(`Successfully imported ${successCount} new questions`)
-                        } else if (successCount > 0 && failedCount > 0) {
-                            toast.warning(`Successfully imported ${successCount} questions, but ${failedCount} failed to import`)
-                        } else {
-                            toast.error('Failed to import any questions. Please check the file format and try again.')
-                        }
-
-                        // Refresh the question list if any questions were added
-                        if (successCount > 0) {
-                            setTrigger(!trigger)
-                        }
+                        // Store questions and open randomization modal
+                        setPendingQuestions(uniqueQuestions)
+                        onRandomizationModalOpen()
 
                     } catch (error) {
                         console.error('Error uploading file:', error)
@@ -358,6 +391,59 @@ export default function CreateExaminationPage() {
         }
     }
 
+    const handleRandomizationConfirm = async (questionsWithRandomization: any[]) => {
+        try {
+            toast.info(`Importing ${questionsWithRandomization.length} questions...`)
+            
+            // Upload each question to the exam with randomization settings
+            let successCount = 0
+            let failedCount = 0
+            
+            for (let i = 0; i < questionsWithRandomization.length; i++) {
+                try {
+                    const update = await clientAPI.post(`exam/question/${_id}`, questionsWithRandomization[i])
+                    if (update.data.code === 200) {
+                        successCount++
+                    } else {
+                        failedCount++
+                        console.error(`Failed to add question ${i + 1}:`, update.data.message)
+                    }
+                } catch (error) {
+                    failedCount++
+                    console.error(`Failed to add question ${i + 1}:`, error)
+                }
+            }
+
+            // Show appropriate success/error messages
+            if (successCount > 0 && failedCount === 0) {
+                toast.success(`Successfully imported ${successCount} new questions`)
+            } else if (successCount > 0 && failedCount > 0) {
+                toast.warning(`Successfully imported ${successCount} questions, but ${failedCount} failed to import`)
+            } else {
+                toast.error('Failed to import any questions. Please check the file format and try again.')
+            }
+
+            // Refresh the question list if any questions were added
+            if (successCount > 0) {
+                setTrigger(!trigger)
+            }
+            
+            // Close modal and reset state
+            onRandomizationModalOpenChange()
+            setPendingQuestions([])
+            
+        } catch (error) {
+            console.error('Error importing questions:', error)
+            toast.error('Failed to import questions. Please try again.')
+        }
+    }
+
+    const handleRandomizationCancel = () => {
+        setPendingQuestions([])
+        onRandomizationModalOpenChange()
+        toast.info('Import cancelled')
+    }
+
 
 
     if (exam) {
@@ -435,6 +521,15 @@ export default function CreateExaminationPage() {
                                         onPress={onAikenModalOpen}
                                         className="w-full"
                                     > What's aiken? </Button>
+                                    <Button
+                                        startContent={<MingcuteDownFill fontSize={14} />}
+                                        variant="flat"
+                                        color='secondary'
+                                        size="sm"
+                                        onPress={exportAsAiken}
+                                        isDisabled={questionList.filter(q => q.type === 'mc').length === 0}
+                                        className="w-full"
+                                    > Export as Aiken </Button>
                                     <Button
                                         startContent={<MdiBin fontSize={14} />}
                                         variant="flat"
@@ -705,6 +800,15 @@ export default function CreateExaminationPage() {
                         onAction={selectedQuestions.size > 0 ? handleDeleteSelected : handleDeleteAllQuestions}
                     />
                 </Modal>
+
+                {/* Question Randomization Modal */}
+                <QuestionRandomizationModal
+                    isOpen={isRandomizationModalOpen}
+                    onOpenChange={onRandomizationModalOpenChange}
+                    questions={pendingQuestions}
+                    onConfirm={handleRandomizationConfirm}
+                    onCancel={handleRandomizationCancel}
+                />
 
                 {/* Aiken Format Information Modal */}
                 <Modal 

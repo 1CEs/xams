@@ -63,7 +63,7 @@ const ForgotPasswordPage = (props: Props) => {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row items-center justify-center min-h-screen bg-background px-4 sm:px-8">
+    <div className="flex flex-col lg:flex-row items-center justify-center h-fit bg-background px-4 sm:px-8">
       <Image 
         className='hidden lg:block transform scale-x-[-1] mr-8' 
         src={ResetPassword.src} 

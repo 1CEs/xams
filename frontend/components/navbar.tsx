@@ -82,13 +82,13 @@ const Navbar = () => {
                         Overview
                     </Link>
                 </NavbarItem>
-                <NavbarItem isActive={pathName === '/annoucement'}>
+                <NavbarItem isActive={pathName === '/contact'}>
                     <Link 
-                        color={pathName === '/annoucement' ? 'secondary' : 'foreground'} 
-                        href="/annoucement"
+                        color={pathName === '/contact' ? 'secondary' : 'foreground'} 
+                        href="/contact"
                         className="text-sm lg:text-base font-medium hover:text-secondary transition-colors"
                     >
-                        Annoucement
+                        Contact
                     </Link>
                 </NavbarItem>
             </NavbarContent>
@@ -152,12 +152,12 @@ const Navbar = () => {
                                             Overview
                                         </Link>
                                         <Link 
-                                            href="/annoucement" 
+                                            href="/contact" 
                                             className={`p-2 rounded-md text-sm font-medium transition-colors ${
-                                                pathName === '/annoucement' ? 'text-secondary bg-secondary/10' : 'text-foreground hover:text-secondary'
+                                                pathName === '/contact' ? 'text-secondary bg-secondary/10' : 'text-foreground hover:text-secondary'
                                             }`}
                                         >
-                                            Annoucement
+                                            contact
                                         </Link>
                                     </div>
                                 </PopoverContent>

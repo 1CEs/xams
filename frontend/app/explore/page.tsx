@@ -12,7 +12,9 @@ import {
   COURSE_CATEGORY_LABELS, 
   sortCoursesAlphabetically, 
   filterCoursesByCategory, 
-  searchCourses 
+  searchCourses,
+  SearchType,
+  SEARCH_TYPE_LABELS
 } from "@/constants/course.constants";
 
 type Props = {};
@@ -20,6 +22,7 @@ type Props = {};
 const ExplorePage = (props: Props) => {
   const { user } = useUserStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchType, setSearchType] = useState<SearchType>("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortOrder, setSortOrder] = useState<'en' | 'th'>('en');
   const [courses, setCourses] = useState<CourseResponse[]>([]);
@@ -51,7 +54,7 @@ const ExplorePage = (props: Props) => {
     let filtered = courses;
     
     // Apply search
-    filtered = searchCourses(filtered, searchQuery);
+    filtered = searchCourses(filtered, searchQuery, searchType);
     
     // Apply category filter
     filtered = filterCoursesByCategory(filtered, selectedCategory);
@@ -60,7 +63,7 @@ const ExplorePage = (props: Props) => {
     filtered = sortCoursesAlphabetically(filtered, sortOrder);
     
     return filtered;
-  }, [courses, searchQuery, selectedCategory, sortOrder]);
+  }, [courses, searchQuery, searchType, selectedCategory, sortOrder]);
 
   if (isLoading) {
     return (
@@ -106,9 +109,25 @@ const ExplorePage = (props: Props) => {
       {/* Search and Filter Controls */}
       <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-4 flex-1">
+          {/* Search Type Selector */}
+          <Select
+            placeholder="Search by..."
+            selectedKeys={[searchType]}
+            onSelectionChange={(keys) => setSearchType(Array.from(keys)[0] as SearchType)}
+            size="md"
+            className="w-full sm:w-40"
+            items={Object.entries(SEARCH_TYPE_LABELS).map(([key, label]) => ({ key, label }))}
+          >
+            {(item) => (
+              <SelectItem key={item.key}>
+                {item.label}
+              </SelectItem>
+            )}
+          </Select>
+          
           {/* Search Input */}
           <Input
-            placeholder="Search courses..."
+            placeholder={`Search ${SEARCH_TYPE_LABELS[searchType].toLowerCase()}...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             startContent={<MdiSearch className="text-default-400" />}
@@ -159,12 +178,12 @@ const ExplorePage = (props: Props) => {
       </div>
       
       {/* Results Info */}
-      {(searchQuery || selectedCategory !== 'all') && (
+      {(searchQuery || selectedCategory !== 'all' || searchType !== 'all') && (
         <div className="flex items-center gap-2 text-sm text-default-500">
           <span>Showing {processedCourses.length} of {courses.length} courses</span>
           {searchQuery && (
             <Chip size="sm" variant="flat" color="primary">
-              Search: "{searchQuery}"
+              {SEARCH_TYPE_LABELS[searchType]}: "{searchQuery}"
             </Chip>
           )}
           {selectedCategory !== 'all' && (
@@ -190,6 +209,7 @@ const ExplorePage = (props: Props) => {
                 variant="flat" 
                 onPress={() => {
                   setSearchQuery("");
+                  setSearchType("all");
                   setSelectedCategory("all");
                 }}
               >

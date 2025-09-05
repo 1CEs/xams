@@ -48,21 +48,24 @@ export class AuthController implements IAuthController {
     }
 
     async signup(payload: SignUpPayload) {
-        try {
             // Validate required fields
             if (!payload.body?.username || !payload.body?.email || !payload.body?.password) {
-                throw new ValidationError('Username, email, and password are required')
+                return this._errorResponse('Username, email, and password are required', 400, 'ValidationError')
             }
 
             // Validate email format
             if (!RegExp(emailRegex).test(payload.body.email)) {
-                throw new ValidationError('Please provide a valid email address')
+                return this._errorResponse('Please provide a valid email address', 400, 'ValidationError')
             }
 
             // Validate password strength with detailed requirements
             const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
             if (!passwordRegex.test(payload.body.password)) {
-                throw new ValidationError('Password must contain at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)')
+                return this._errorResponse(
+                    'Password must contain at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)',
+                    400,
+                    'ValidationError'
+                )
             }
 
             const instance = this._factory.createService(payload.body.role)
@@ -71,7 +74,7 @@ export class AuthController implements IAuthController {
                 const user = await instance.register(payload.body)
                 
                 if (!user) {
-                    throw new BadRequestError('Failed to create user account')
+                    return this._errorResponse('Failed to create user account', 400, 'BadRequestError')
                 }
 
                 delete payload.body
@@ -82,26 +85,26 @@ export class AuthController implements IAuthController {
                 // Handle duplicate key errors (username/email already exists)
                 if (error.message?.includes('E11000') || error.code === 11000) {
                     if (error.message?.includes('username')) {
-                        throw new ConflictError('This username is already taken. Please choose a different one.')
+                        console.log("Username")
+                        // Return error response directly with proper status
+                        return this._errorResponse('This username is already taken. Please choose a different one.', 400, 'ConflictError')
                     } else if (error.message?.includes('email')) {
-                        throw new ConflictError('An account with this email already exists. Please use a different email or sign in.')
+                        console.log("Email")
+                        return this._errorResponse('An account with this email already exists. Please use a different email or sign in.', 400, 'ConflictError')
                     } else {
-                        throw new ConflictError('Username or email already exists. Please use different credentials.')
+                        console.log("Else")
+                        return this._errorResponse('Username or email already exists. Please use different credentials.', 400, 'ConflictError')
                     }
                 }
                 throw error
             }
-        } catch (error: any) {
-            console.error('Signup error:', error)
-            throw error
-        }
     }
 
     async signin(payload: SignInPayload) {
         try {
             // Validate required fields
             if (!payload.body?.identifier || !payload.body?.password) {
-                throw new ValidationError('Username/email and password are required')
+                return this._errorResponse('Username/email and password are required', 400, 'ValidationError')
             }
 
             const instance = this._factory.createService('general')
@@ -116,12 +119,12 @@ export class AuthController implements IAuthController {
                 }
             } catch (error) {
                 console.error('Database error during user lookup:', error)
-                throw new BadRequestError('Unable to process sign-in request. Please try again.')
+                return this._errorResponse('Unable to process sign-in request. Please try again.', 400, 'BadRequestError')
             }
 
             if (!user) {
                 const identifierType = isEmail ? 'email address' : 'username'
-                throw new UnauthorizedError(`No account found with this ${identifierType}. Please check your credentials or sign up for a new account.`)
+                return this._errorResponse(`No account found with this ${identifierType}. Please check your credentials or sign up for a new account.`, 400, 'UnauthorizedError')
             }
 
             let passwordIsValid: boolean
@@ -129,36 +132,35 @@ export class AuthController implements IAuthController {
                 passwordIsValid = await Bun.password.verify(payload.body.password, user.password)
             } catch (error) {
                 console.error('Password verification error:', error)
-                throw new BadRequestError('Unable to verify password. Please try again.')
+                return this._errorResponse('Unable to verify password. Please try again.', 400, 'BadRequestError')
             }
 
             if (!passwordIsValid) {
-                throw new UnauthorizedError('Incorrect password. Please check your password and try again.')
+                return this._errorResponse('Incorrect password. Please check your password and try again.', 400, 'UnauthorizedError')
             }
 
-            // Check if user is banned
+            // Check if user is banned - return user data with banned status instead of throwing error
             if (user.status?.is_banned) {
-                const banMessage = user.status.ban_until 
-                    ? `Your account is banned until ${new Date(user.status.ban_until).toLocaleDateString()}.`
-                    : 'Your account has been permanently banned.'
-                const reasonMessage = user.status.ban_reason 
-                    ? ` Reason: ${user.status.ban_reason}`
-                    : ''
-                throw new UnauthorizedError(`${banMessage}${reasonMessage} Please contact support if you believe this is an error.`)
+                // Check if temporary ban has expired
+                if (user.status.ban_until && new Date(user.status.ban_until) <= new Date()) {
+                    // Automatically unban expired users
+                    const instance = this._factory.createService('general')
+                    await instance.updateUser(String(user._id), {
+                        status: {
+                            is_banned: false,
+                            ban_until: undefined,
+                            ban_reason: undefined
+                        }
+                    })
+                    // Continue with normal flow since ban has expired
+                } else {
+                    // User is still banned - return user data with banned status for frontend to handle
+                    delete payload.body
+                    await this.setToken(String(user._id), { ...payload })
+                    return this._response<typeof user>(`Account is banned`, 200, user)
+                }
             }
 
-            // Check if temporary ban has expired
-            if (user.status?.is_banned && user.status.ban_until && new Date(user.status.ban_until) <= new Date()) {
-                // Automatically unban expired users
-                const instance = this._factory.createService('general')
-                await instance.updateUser(String(user._id), {
-                    status: {
-                        is_banned: false,
-                        ban_until: undefined,
-                        ban_reason: undefined
-                    }
-                })
-            }
             
             delete payload.body
             await this.setToken(String(user._id), { ...payload })
@@ -166,13 +168,13 @@ export class AuthController implements IAuthController {
             return this._response<typeof user>(`Welcome back, ${user.username}! Sign-in successful.`, 200, user)
         } catch (error: any) {
             console.error('Signin error:', error)
-            throw error
+            return this._errorResponse('Signin error', 400, 'SigninError')
         }
     } 
 
     me(user: IUser) {
         if (!user) {
-            throw new UnauthorizedError('User session not found. Please sign in again.')
+            return this._errorResponse('User session not found. Please sign in again.', 400, 'UnauthorizedError')
         }
         return this._response<typeof user>(`Hello ${user.username}`, 200, user)
     }
@@ -184,7 +186,7 @@ export class AuthController implements IAuthController {
             return this._response<null>('You have been signed out successfully. See you next time!', 200, null)
         } catch (error) {
             console.error('Logout error:', error)
-            throw new BadRequestError('Unable to complete sign out. Please try again.')
+            return this._errorResponse('Unable to complete sign out. Please try again.', 400, 'BadRequestError')
         }
     }
 
@@ -229,11 +231,11 @@ export class AuthController implements IAuthController {
     async forgotPassword(email: string, jwt: JWTInstance) {
         try {
             if (!email) {
-                throw new ValidationError('Email address is required')
+                return this._errorResponse('Email address is required', 400, 'ValidationError')
             }
 
             if (!RegExp(emailRegex).test(email)) {
-                throw new ValidationError('Please provide a valid email address')
+                return this._errorResponse('Please provide a valid email address', 400, 'ValidationError')
             }
 
             const result = await this._factory.createService('general').forgotPassword(email, jwt)

@@ -44,7 +44,7 @@ export class UploadController implements IUploadController {
                             score: index === correctAnswerIndex ? 1 : 0
                         })),
                         score: 1,
-                        isRandomChoices: true
+                        isRandomChoices: true // Default value, will be overridden by frontend
                     })
                 }
                 currentQuestion = null

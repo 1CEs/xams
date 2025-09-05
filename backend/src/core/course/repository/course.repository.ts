@@ -5,6 +5,7 @@ import { ICourseRepository } from "./interface/icourse.repository";
 import { CourseModel } from "../model/course.model";
 import { IGroup } from "../model/interface/igroup";
 import { ExaminationScheduleModel } from "../../examination/model/examination-schedule.model";
+import { UserModel } from "../../user/model/user.model";
 
 export class CourseRepository extends BaseRepository<ICourse & Document> implements ICourseRepository {
     constructor() {
@@ -73,5 +74,50 @@ export class CourseRepository extends BaseRepository<ICourse & Document> impleme
         // Get the exam schedule using the schedule_id and return it
         const examSchedule = await ExaminationScheduleModel.findById(scheduleId).exec()
         return examSchedule
+    }
+
+    async searchCourses(search: string) {
+        const searchLower = search.toLowerCase()
+        
+        // Use aggregation pipeline to join with users collection and search
+        const courses = await this._model.aggregate([
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'instructor_id',
+                    foreignField: '_id',
+                    as: 'instructor'
+                }
+            },
+            {
+                $unwind: '$instructor'
+            },
+            {
+                $match: {
+                    $or: [
+                        { course_name: { $regex: searchLower, $options: 'i' } },
+                        { description: { $regex: searchLower, $options: 'i' } },
+                        { 'instructor.info.first_name': { $regex: searchLower, $options: 'i' } },
+                        { 'instructor.info.last_name': { $regex: searchLower, $options: 'i' } },
+                        { 'instructor.username': { $regex: searchLower, $options: 'i' } }
+                    ]
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    instructor_id: 1,
+                    background_src: 1,
+                    course_name: 1,
+                    description: 1,
+                    category: 1,
+                    groups: 1,
+                    createdAt: 1,
+                    updatedAt: 1
+                }
+            }
+        ]).exec()
+        
+        return courses
     }
 }

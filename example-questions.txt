@@ -1,17 +1,139 @@
-{
-    "question": "ซอฟต์แวร์คืออะไร",
-    "answer": "ซอฟต์แวร์คือโปรแกรมชุดของคำสั่งที่ควบคุมการทำงานของคอมพิวเตอร์",
-    "student_answer": "ซอฟต์แวร์คือชุดคำสั่งที่ควบคุมการทำงานของคอมพิวเตอร์"
-}
+1. What is the sum of the interior angles of a triangle?
+A. 90 degrees
+B. 180 degrees
+C. 270 degrees
+D. 360 degrees
+ANSWER: B
 
-{
-    "question": "ระบบปฏิบัติการคืออะไร",
-    "answer": "ระบบปฏิบัติการคือซอฟต์แวร์ที่ทำหน้าที่ควบคุมการทำงานของฮาร์ดแวร์และซอฟต์แวร์อื่นๆ ทั้งหมดในระบบคอมพิวเตอร์",
-    "student_answer": "ระบบปฏิบัติการคือซอฟต์แวร์ที่ควบคุมการทำงานของคอมพิวเตอร์"
-}
+2. Which tool is best used to measure the length of a pencil?
+A. Protractor
+B. Compass
+C. Ruler
+D. Set square
+ANSWER: C
 
-{
-    "question": "หน่วยความจำเข้าถึงโดยสุ่มคืออะไร",
-    "answer": "หน่วยความจำเข้าถึงโดยสุ่ม (Random Access Memory: RAM) เป็นหน่วยความจำหลักของคอมพิวเตอร์ที่ทำหน้าที่เก็บข้อมูลชั่วคราว",
-    "student_answer": "หน่วยความจำเข้าถึงโดยสุ่มคือ ROM"
-}
+3. A square has each side of 5 cm. What is its perimeter?
+A. 10 cm
+B. 15 cm
+C. 20 cm
+D. 25 cm
+ANSWER: C
+
+4. Which of the following is a right angle?
+A. 30°
+B. 45°
+C. 90°
+D. 120°
+ANSWER: C
+
+5. How many sides does a hexagon have?
+A. 5
+B. 6
+C. 7
+D. 8
+ANSWER: B
+
+6. Which unit is most appropriate for measuring the distance between two cities?
+A. Centimeter
+B. Meter
+C. Kilometer
+D. Millimeter
+ANSWER: C
+
+7. The diameter of a circle is 14 cm. What is its radius?
+A. 3 cm
+B. 7 cm
+C. 14 cm
+D. 28 cm
+ANSWER: B
+
+8. Which solid shape has 6 faces, all of which are rectangles?
+A. Sphere
+B. Cube
+C. Rectangular prism
+D. Pyramid
+ANSWER: C
+
+9. What do we call a polygon with all sides and angles equal?
+A. Irregular polygon
+B. Scalene polygon
+C. Regular polygon
+D. Concave polygon
+ANSWER: C
+
+10. The area of a rectangle is found by:
+A. Length + Width
+B. Length × Width
+C. 2 × (Length + Width)
+D. Length ÷ Width
+ANSWER: B
+
+11. Which angle is greater than 90° but less than 180°?
+A. Acute angle
+B. Right angle
+C. Obtuse angle
+D. Reflex angle
+ANSWER: C
+
+12. A cube has edges of 3 cm. What is its volume?
+A. 9 cm³
+B. 18 cm³
+C. 27 cm³
+D. 36 cm³
+ANSWER: C
+
+13. The line that divides a circle into two equal halves is called:
+A. Chord
+B. Diameter
+C. Radius
+D. Arc
+ANSWER: B
+
+14. Which figure has no edges or vertices?
+A. Cylinder
+B. Cone
+C. Sphere
+D. Cube
+ANSWER: C
+
+15. Which of the following is NOT a polygon?
+A. Triangle
+B. Square
+C. Circle
+D. Pentagon
+ANSWER: C
+
+16. A protractor is used to measure:
+A. Length
+B. Weight
+C. Angles
+D. Area
+ANSWER: C
+
+17. The perimeter of a circle is also called its:
+A. Area
+B. Diameter
+C. Circumference
+D. Radius
+ANSWER: C
+
+18. How many lines of symmetry does a square have?
+A. 2
+B. 3
+C. 4
+D. 5
+ANSWER: C
+
+19. Which pair of lines never meet and are always the same distance apart?
+A. Intersecting lines
+B. Perpendicular lines
+C. Parallel lines
+D. Tangent lines
+ANSWER: C
+
+20. Which triangle has all three sides of equal length?
+A. Isosceles triangle
+B. Scalene triangle
+C. Equilateral triangle
+D. Right triangle
+ANSWER: C

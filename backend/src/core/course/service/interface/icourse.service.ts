@@ -5,6 +5,7 @@ import { IExaminationSchedule } from "../../../examination/model/interface/iexam
 export interface ICourseService {
     addCourse: (payload: Omit<ICourse, '_id'>) => Promise<ICourse | null>
     getCourses: () => Promise<ICourse[] | null>
+    searchCourses: (search: string) => Promise<ICourse[] | null>
     getCourseById: (id: string) => Promise<ICourse | null>
     getCourseByInstructorId: (instructor_id: string) => Promise<ICourse[] | null>
     getCourseByStudentId: (student_id: string) => Promise<ICourse[] | null>

@@ -42,7 +42,8 @@ export default function BannedPage() {
         }
     }
 
-    if (!user || !user.status?.is_banned) {
+    // Add defensive checks to prevent object rendering issues
+    if (!user || !user.status || typeof user.status !== 'object' || user.status.is_banned !== true) {
         return null
     }
 

@@ -1,6 +1,5 @@
 "use client"
 import Loading from "@/components/state/loading"
-import HeaderSection from "@/components/overview/header-section"
 import Breadcrumb from "@/components/breadcrumb"
 import { useUserStore } from "@/stores/user.store"
 import { Suspense } from "react"
@@ -18,7 +17,6 @@ export default function OverviewLayout({
     banned: React.ReactNode
 }>) {
     const { user } = useUserStore()
-    console.log(user)
     return (
         <div className="size-full pt-8 sm:pt-10 md:pt-12 px-3 sm:px-6 md:px-10 lg:px-14">
             <div className="max-w-7xl mx-auto">

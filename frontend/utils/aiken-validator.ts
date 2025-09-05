@@ -106,12 +106,6 @@ export function validateAikenFormat(content: string): AikenValidationResult {
           message: `Option ${optionLetter} has no text`,
           type: 'option'
         });
-      } else if (optionText.length < 2) {
-        errors.push({
-          line: lineNumber,
-          message: `Option ${optionLetter} text is too short: "${optionText}"`,
-          type: 'option'
-        });
       }
       
       // Check for duplicate options

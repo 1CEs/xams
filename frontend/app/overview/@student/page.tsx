@@ -15,7 +15,7 @@ export default function StudentOverview() {
                     className="flex justify-center pb-3" 
                     size="lg"
                     classNames={{
-                        tabList: "flex-wrap gap-1 sm:gap-2",
+                        tabList: " gap-1 sm:gap-2",
                         tab: "px-2 sm:px-4 py-2 text-xs sm:text-sm md:text-base",
                         tabContent: "text-xs sm:text-sm md:text-base"
                     }}

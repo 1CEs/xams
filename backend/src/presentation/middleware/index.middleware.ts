@@ -7,6 +7,7 @@ import { rateLimit } from "./rate-limit.middleware";
 export const indexMiddleware = new Elysia()
     .use(cors({
         origin: [
+            "http://localhost:8081", // Frontend development server
             "http://localhost:8080", // Frontend development server
             "http://localhost:3000", // Backend server (for same-origin requests)
             "https://xams.online",    // Production frontend (if exists)

@@ -42,7 +42,7 @@ export class NotFoundError extends AppError {
 
 export class ConflictError extends AppError {
   constructor(message: string) {
-    super(message, 409);
+    super(message, 400);
   }
 }
 
@@ -60,9 +60,11 @@ export class InternalServerError extends AppError {
 
 // Error response interface
 interface ErrorResponse {
-  status: string;
   message: string;
-  errors?: any[];
+  code: number;
+  data: null;
+  success: boolean;
+  errorType: string;
   stack?: string;
 }
 
@@ -72,45 +74,73 @@ export const errorPlugin = new Elysia()
         // Log error for development
         if (process.env.NODE_ENV === 'development') {
             console.error('Error 💥', error);
+            console.error('Error type:', typeof error);
+            console.error('Error instanceof AppError:', error instanceof AppError);
+            console.error('Error statusCode:', (error as any).statusCode);
+            console.error('Error constructor name:', error.constructor?.name);
         }
 
-        let err = { ...error };
-        err.message = error.message;
+        let processedError: AppError;
+        let errorMessage = 'Something went wrong!';
+        let errorType = 'InternalServerError';
 
-        // Handle specific error types
-        if (error.name === 'CastError') {
-            const castError = error as Error & { path: string; value: string };
-            const message = `Invalid ${castError.path}: ${castError.value}`;
-            err = new BadRequestError(message);
-        }
-
-        if (error.name === 'ValidationError') {
-            const errors = Object.values((error as any).errors).map((el: any) => el.message);
+        // Handle AppError instances (our custom errors)
+        const errorObj = error as any;
+        
+        // Check for ConflictError specifically first
+        if (errorObj.constructor?.name === 'ConflictError' || 
+            (errorObj.statusCode === 400 && errorObj.message?.includes('already taken'))) {
+            processedError = new ConflictError(errorObj.message);
+            errorMessage = errorObj.message;
+            errorType = 'ConflictError';
+        } else if (error instanceof AppError || errorObj.statusCode) {
+            processedError = error as AppError;
+            errorMessage = errorObj.message || 'Something went wrong!';
+            errorType = errorObj.constructor?.name || 'AppError';
+        } else if (errorObj.name === 'CastError') {
+            const message = `Invalid ${errorObj.path}: ${errorObj.value}`;
+            processedError = new BadRequestError(message);
+            errorMessage = message;
+            errorType = 'BadRequestError';
+        } else if (errorObj.name === 'ValidationError') {
+            const errors = Object.values(errorObj.errors || {}).map((el: any) => el.message);
             const message = `Invalid input data. ${errors.join('. ')}`;
-            err = new ValidationError(message);
+            processedError = new ValidationError(message);
+            errorMessage = message;
+            errorType = 'ValidationError';
+        } else if (errorObj.name === 'JsonWebTokenError') {
+            processedError = new UnauthorizedError('Invalid token. Please log in again!');
+            errorMessage = 'Invalid token. Please log in again!';
+            errorType = 'UnauthorizedError';
+        } else if (errorObj.name === 'TokenExpiredError') {
+            processedError = new UnauthorizedError('Your token has expired! Please log in again.');
+            errorMessage = 'Your token has expired! Please log in again.';
+            errorType = 'UnauthorizedError';
+        } else {
+            // Default error handling
+            processedError = new InternalServerError(errorObj.message || 'Something went wrong!');
+            errorMessage = errorObj.message || 'Something went wrong!';
+            errorType = 'InternalServerError';
         }
 
-        if (error.name === 'JsonWebTokenError') {
-            err = new UnauthorizedError('Invalid token. Please log in again!');
-        }
+        // Get status code from processed error
+        const statusCode = processedError.statusCode;
 
-        if (error.name === 'TokenExpiredError') {
-            err = new UnauthorizedError('Your token has expired! Please log in again.');
-        }
-
-        // Default to 500 if status code is not set
-        const statusCode = (err as any).statusCode || 500;
-        const status = (err as any).status || 'error';
-
-        // Prepare error response
+        // Prepare error response in the expected format
         const errorResponse: ErrorResponse = {
-            status,
-            message: err.message || 'Something went wrong!',
+            message: errorMessage,
+            code: statusCode,
+            data: null,
+            success: false,
+            errorType
         };
 
         // Add stack trace in development
         if (process.env.NODE_ENV === 'development') {
-            errorResponse.stack = error.stack;
+            const errorObj = error as any;
+            if (errorObj.stack) {
+                errorResponse.stack = errorObj.stack;
+            }
         }
 
         // Set status and return response

@@ -7,6 +7,11 @@ export const SignUpSchema = t.Object({
     password: t.String({ pattern: passwordRegex, description: 'Password must contain at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)' }),
     profile_url: t.String({ pattern: urlRegex, description: 'Profile URL must be a valid URL' }),
     bio: t.String({ default: 'Not set yet' }),
+    status: t.Optional(t.Object({
+        is_banned: t.Boolean({ description: 'Whether the user is banned' }),
+        ban_until: t.Optional(t.Date({ description: 'Ban expiration date' })),
+        ban_reason: t.Optional(t.String({ description: 'Reason for the ban' }))
+    })),
     role: t.Union([
         t.Literal('student'),
         t.Literal('instructor'),

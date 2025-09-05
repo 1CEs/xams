@@ -68,13 +68,34 @@ export const filterCoursesByCategory = (courses: CourseResponse[], category: str
     return courses.filter(course => course.category === category);
 };
 
-export const searchCourses = (courses: CourseResponse[], searchQuery: string) => {
+export type SearchType = 'all' | 'course_name' | 'instructor' | 'category';
+
+export const SEARCH_TYPE_LABELS: Record<SearchType, string> = {
+    all: 'All Fields',
+    course_name: 'Course Name',
+    instructor: 'Instructor ID',
+    category: 'Category'
+};
+
+export const searchCourses = (courses: CourseResponse[], searchQuery: string, searchType: SearchType = 'all') => {
     if (!searchQuery.trim()) return courses;
     
     const query = searchQuery.toLowerCase();
-    return courses.filter(course => 
-        course.course_name.toLowerCase().includes(query) ||
-        course.description.toLowerCase().includes(query) ||
-        COURSE_CATEGORY_LABELS[course.category as CourseCategory]?.toLowerCase().includes(query)
-    );
+    
+    return courses.filter(course => {
+        switch (searchType) {
+            case 'course_name':
+                return course.course_name.toLowerCase().includes(query);
+            case 'instructor':
+                return course.instructor_id.toLowerCase().includes(query);
+            case 'category':
+                return COURSE_CATEGORY_LABELS[course.category as CourseCategory]?.toLowerCase().includes(query);
+            case 'all':
+            default:
+                return course.course_name.toLowerCase().includes(query) ||
+                       course.description.toLowerCase().includes(query) ||
+                       course.instructor_id.toLowerCase().includes(query) ||
+                       COURSE_CATEGORY_LABELS[course.category as CourseCategory]?.toLowerCase().includes(query);
+        }
+    });
 };

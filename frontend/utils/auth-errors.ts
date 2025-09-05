@@ -6,6 +6,10 @@
 export interface AuthErrorData {
   message?: string
   status?: string
+  code?: number
+  success?: boolean
+  errorType?: string
+  data?: any
   err?: { message?: string }
   errors?: Array<{
     schema?: { description?: string }
@@ -19,12 +23,43 @@ export interface AuthErrorData {
 export const getAuthErrorMessage = (errorData: any, isSignUp: boolean = false): string => {
   // Handle direct string messages from backend
   if (typeof errorData === 'string') {
+    // Check for specific duplicate key error patterns
+    if (errorData.includes('username is already taken')) {
+      return AUTH_ERROR_MESSAGES.SIGNUP.USERNAME_EXISTS
+    }
+    if (errorData.includes('email already exists')) {
+      return AUTH_ERROR_MESSAGES.SIGNUP.EMAIL_EXISTS
+    }
+    if (errorData.includes('Username or email already exists')) {
+      return AUTH_ERROR_MESSAGES.SIGNUP.ACCOUNT_EXISTS
+    }
     return errorData
   }
   
   // Handle standardized error format from backend
   if (errorData?.message) {
-    return errorData.message
+    const message = errorData.message
+    
+    // Handle ConflictError type specifically
+    if (errorData.errorType === 'ConflictError' || errorData.code === 400) {
+      // Return the exact message from the backend for ConflictError
+      return message
+    }
+    
+    // Check for specific duplicate key error patterns in backend messages
+    if (isSignUp) {
+      if (message.includes('username is already taken')) {
+        return AUTH_ERROR_MESSAGES.SIGNUP.USERNAME_EXISTS
+      }
+      if (message.includes('email already exists')) {
+        return AUTH_ERROR_MESSAGES.SIGNUP.EMAIL_EXISTS
+      }
+      if (message.includes('Username or email already exists')) {
+        return AUTH_ERROR_MESSAGES.SIGNUP.ACCOUNT_EXISTS
+      }
+    }
+    
+    return message
   }
   
   if (errorData?.status === 'fail' || errorData?.status === 'error') {

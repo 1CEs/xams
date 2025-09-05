@@ -5,17 +5,6 @@ C. char
 D. string
 ANSWER: B
 
-What does HTML stand for?
-A. HighText Machine Language
-B. HyperT
-
-Which symbol is used for comments in Python?
-A. //
-B. <!-- -->
-C. #
-D. /*
-ANSWER: C
-
 Which keyword is used to define a function in Python?
 A. def
 B. func
@@ -28,13 +17,6 @@ A. for loop
 B. while loop
 C. do-while loop
 D. until loop
-ANSWER: C
-
-In JavaScript, which symbol is used for strict equality?
-A. ==
-B. =
-C. ===
-D. !=
 ANSWER: C
 
 Which data structure uses FIFO (First In, First Out)?
@@ -65,25 +47,11 @@ C. Exits the function and optionally passes back a value
 D. Prints the value to the console
 ANSWER: C
 
-Which operator is used to access elements in an array?
-A. ()
-B. {}
-C. <>
-D. []
-ANSWER: D
-
 Which keyword is used to create a class in Python?
 A. create
 B. class
 C. object
 D. def
-ANSWER: B
-
-What is the result of: `len([1, 2, 3, 4])`?
-A. 3
-B. 4
-C. 5
-D. Error
 ANSWER: B
 
 Which of the following is a valid variable name in most programming languages?
@@ -120,17 +88,3 @@ B. scan()
 C. input()
 D. get()
 ANSWER: C
-
-Which of the following is a loop structure?
-A. if
-B. elif
-C. for
-D. return
-ANSWER: C
-
-What will `5 % 2` return in most programming languages?
-A. 2
-B. 2.5
-C. 0
-D. 1
-ANSWER: D

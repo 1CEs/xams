@@ -11,8 +11,8 @@ type JWTInstance = {
 
 export interface IAuthController {
     signup: (payload: SignUpPayload) => Promise<ControllerResponse<any>>
-    signin: (payload: SignInPayload) => Promise<ControllerResponse<IUser>>
-    me: (user: (IUser | IStudent | IInstructor)) => ControllerResponse<IUser>
+    signin: (payload: SignInPayload) => Promise<ControllerResponse<IUser | null>>
+    me: (user: (IUser | IStudent | IInstructor)) => ControllerResponse<IUser | null>
     logout: (
         {
             jwt,

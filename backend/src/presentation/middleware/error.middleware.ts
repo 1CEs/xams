@@ -4,6 +4,12 @@ import { AuthenticationError } from "../errors/authentication.error";
 import { BadRequestError } from "../errors/badrequest.error";
 import { ForbiddenError } from "../errors/forbidden.error";
 import { TooManyRequestError } from "../errors/toomanyrequest.error";
+import { 
+    ConflictError, 
+    ValidationError, 
+    NotFoundError, 
+    UnauthorizedError 
+} from "../../utils/error";
 
 export const errorMiddleware = new Elysia()
     .error('UNAUTHORIZED', AuthorizationError)
@@ -12,6 +18,43 @@ export const errorMiddleware = new Elysia()
     .error('FORBIDDEN', ForbiddenError)
     .error('TOO_MANY_REQUEST', TooManyRequestError)
     .onError(({ code, error, set }) => {
+        // Handle custom error classes from utils/error.ts
+        if (error instanceof ConflictError) {
+            set.status = 409
+            return { 
+                status: 'fail',
+                message: error.message,
+                code: 409
+            }
+        }
+        
+        if (error instanceof ValidationError) {
+            set.status = 422
+            return { 
+                status: 'fail',
+                message: error.message,
+                code: 422
+            }
+        }
+        
+        if (error instanceof UnauthorizedError) {
+            set.status = 401
+            return { 
+                status: 'fail',
+                message: error.message,
+                code: 401
+            }
+        }
+        
+        if (error instanceof NotFoundError) {
+            set.status = 404
+            return { 
+                status: 'fail',
+                message: error.message,
+                code: 404
+            }
+        }
+
         switch (code) {
             case 'UNAUTHORIZED':
                 set.status = 'Unauthorized'
@@ -39,8 +82,13 @@ export const errorMiddleware = new Elysia()
                 return { code, err: parsedError }
             default:
                 set.status = 'Internal Server Error'
+                console.error('Unhandled error:', error)
                 // Handle case where error may not have message property
                 const errorMessage = 'message' in error ? error.message : 'An unknown error occurred'
-                return { code: set.status, err: errorMessage }
+                return { 
+                    status: 'error',
+                    message: errorMessage,
+                    code: 500
+                }
         }
     })

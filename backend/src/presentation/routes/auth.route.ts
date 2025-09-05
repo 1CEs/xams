@@ -25,21 +25,31 @@ type SignInBody = Static<typeof SignInSchema>
 export const AuthRoute = new Elysia({ prefix: '/auth' })
     .use(JWT)
     .decorate('controller', new AuthController())
-    .post('/sign-up', catchAsync(async ({
+    .post('/sign-up', async ({
         controller,
         body,
         cookie: { accessToken, refreshToken },
-        jwt
-    }: AuthContext & { body: SignUpBody }) => await controller.signup({ body, accessToken, refreshToken, jwt })),
+        jwt,
+        set
+    }: AuthContext & { body: SignUpBody }) => {
+        const result = await controller.signup({ body, accessToken, refreshToken, jwt });
+        
+        // If it's an error response, set the HTTP status code
+        if (!result.success && result.code) {
+            set.status = result.code;
+        }
+        
+        return result;
+    },
         {
             body: SignUpSchema,
         })
-    .post('/sign-in', catchAsync(async ({
+    .post('/sign-in', async ({
         controller,
         body,
         cookie: { accessToken, refreshToken },
         jwt
-    }: AuthContext & { body: SignInBody }) => await controller.signin({ body, accessToken, refreshToken, jwt })), {
+    }: AuthContext & { body: SignInBody }) => await controller.signin({ body, accessToken, refreshToken, jwt }), {
         body: SignInSchema,
     })
     .post('/forgot-password', catchAsync(async ({ body, controller, jwt }: AuthContext & { body: { email: string } }) => await controller.forgotPassword(body.email, jwt)), {

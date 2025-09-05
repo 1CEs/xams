@@ -137,16 +137,17 @@ const Form = (props: Props) => {
                 const signUpFormEntries = Object.fromEntries(formData.entries())
 
                 const signUpPayload: UserSignUpPayload | any = {
-                    ...signUpFormEntries,
+                    username: (signUpFormEntries.username as string).trim(),
+                    email: (signUpFormEntries.email as string).trim(),
+                    password: (signUpFormEntries.password as string).trim(),
+                    role: signUpFormEntries.role as string || 'student',
+                    bio: 'Not set yet',
+                    profile_url: 'https://miscmedia-9gag-fun.9cache.com/images/thumbnail-facebook/1656473044.0987_Y3UVY8_n.jpg',
                     info: {
                         first_name: signUpFormEntries.first_name as string,
                         last_name: signUpFormEntries.last_name as string
-                    },
-                    profile_url: 'https://miscmedia-9gag-fun.9cache.com/images/thumbnail-facebook/1656473044.0987_Y3UVY8_n.jpg'
+                    }
                 }
-
-                delete signUpPayload.first_name
-                delete signUpPayload.last_name
                 const res = await clientAPI.post('auth/sign-up', signUpPayload)
                 const userData = res.data.data as UserResponse
                 setUser(userData)
@@ -163,14 +164,20 @@ const Form = (props: Props) => {
                 const res = await clientAPI.post('auth/sign-in', signInFormEntries)
                 const userData = res.data.data as UserResponse
                 
-                // Check if user is suspended before proceeding
+                // Check if user is banned and redirect to banned page
                 if (userData.status?.is_banned) {
-                    const suspendMessage = userData.status.ban_reason 
-                        ? `Your account has been suspended. Reason: ${userData.status.ban_reason}`
-                        : 'Your account has been suspended. Please contact support for more information.'
+                    const banUntil = userData.status.ban_until
+                    const banReason = userData.status.ban_reason
+                    const isPermanent = !banUntil
                     
-                    toast.error(suspendMessage)
-                    setError(suspendMessage)
+                    // Build query parameters for the banned page
+                    const params = new URLSearchParams()
+                    if (banUntil) params.set('banUntil', banUntil.toString())
+                    if (banReason) params.set('banReason', banReason)
+                    if (isPermanent) params.set('permanent', 'true')
+                    
+                    // Redirect to banned page with ban information
+                    router.replace(`/member/banned?${params.toString()}`)
                     setLoading(false)
                     return
                 }
@@ -201,9 +208,15 @@ const Form = (props: Props) => {
                 const errorData = error.response?.data
                 let userFriendlyMessage = ''
                 
-                // For sign-in errors, prioritize specific authentication messages
-                if (!props.isSignUp && error.response?.status === 401) {
+                // Handle ConflictError type specifically (400 status with errorType)
+                if (errorData?.errorType === 'ConflictError' && errorData?.code === 400) {
+                    userFriendlyMessage = errorData.message || 'Username or email already exists'
+                } else if (!props.isSignUp && error.response?.status === 401) {
+                    // For sign-in errors, prioritize specific authentication messages
                     userFriendlyMessage = 'Invalid username or password'
+                } else if (props.isSignUp && error.response?.status === 409) {
+                    // Handle 409 Conflict errors for duplicate username/email
+                    userFriendlyMessage = errorData?.message || 'Username or email already exists'
                 } else {
                     // Use centralized error message handling
                     userFriendlyMessage = getAuthErrorMessage(errorData, props.isSignUp)

@@ -44,21 +44,24 @@ export class CourseController implements ICourseController {
     }
 
     async getCourses(search?: string) {
+        // If search parameter is provided, use enhanced search that includes instructor names
+        if (search && search.trim() !== '') {
+            const searchResults = await this._service.searchCourses(search.trim())
+            
+            // Handle case where search results might be null
+            if (!searchResults) {
+                return this._response<[]>('No courses found', 200, [])
+            }
+            
+            return this._response<typeof searchResults>('Done', 200, searchResults)
+        }
+        
+        // If no search parameter, return all courses
         const courses = await this._service.getCourses()
         
         // Handle case where courses might be null
         if (!courses) {
             return this._response<[]>('No courses found', 200, [])
-        }
-        
-        // If search parameter is provided, filter courses by name
-        if (search && search.trim() !== '') {
-            const searchLower = search.toLowerCase()
-            const filteredCourses = courses.filter(course => 
-                course.course_name.toLowerCase().includes(searchLower) ||
-                course.description!.toLowerCase().includes(searchLower)
-            )
-            return this._response<typeof filteredCourses>('Done', 200, filteredCourses)
         }
         
         return this._response<typeof courses>('Done', 200, courses)
