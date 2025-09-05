@@ -17,7 +17,7 @@ const nextConfig = {
   env: {
     DEVELOPMENT_BASE_API: 'http://localhost:3000/api/',
     PRODUCTION_BASE_API: 'https://api.xams.online/api/',
-    MODE: 'Development',
+    MODE: 'Production', // Change here
   },
 };
 

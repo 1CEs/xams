@@ -35,6 +35,15 @@ const Form = (props: Props) => {
         if (props.isSignUp) {
             const signUpData = Object.fromEntries(formData.entries())
             
+            // Check terms of service acceptance
+            if (!signUpData.acceptedTerms) {
+                const errorMsg = 'You must accept the Terms of Service to continue'
+                toast.error(errorMsg)
+                setError(errorMsg)
+                setLoading(false)
+                return
+            }
+            
             // Validate required fields
             if (!signUpData.first_name) {
                 const errorMsg = AUTH_ERROR_MESSAGES.SIGNUP.FIRST_NAME_REQUIRED
