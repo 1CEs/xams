@@ -3,7 +3,8 @@ import { IExamSubmission, ISubmittedAnswer } from "./interface/iexam-submission"
 
 const { Schema } = mongoose;
 
-const SubmittedAnswerSchema = new Schema<ISubmittedAnswer>({
+// Define the schema recursively to handle nested answers
+const SubmittedAnswerSchema: mongoose.Schema = new Schema<ISubmittedAnswer>({
     question_id: {
         type: String,
         required: true
@@ -17,6 +18,10 @@ const SubmittedAnswerSchema = new Schema<ISubmittedAnswer>({
         enum: ['mc', 'tf', 'ses', 'les', 'nested'],
         required: true
     },
+    nested_answers: {
+        type: [Schema.Types.Mixed], // Will be defined as array of SubmittedAnswers
+        required: false // Only for nested questions
+    },
     submitted_choices: {
         type: [String],
         required: false // Only for multiple choice questions
@@ -29,6 +34,13 @@ const SubmittedAnswerSchema = new Schema<ISubmittedAnswer>({
         type: Boolean,
         required: false // Only for true/false questions
     },
+    original_choices: {
+        type: [{
+            content: { type: String },
+            isCorrect: { type: Boolean }
+        }],
+        required: false // For display purposes (MC questions)
+    },
     is_correct: {
         type: Boolean,
         required: false // Calculated after grading
@@ -40,7 +52,11 @@ const SubmittedAnswerSchema = new Schema<ISubmittedAnswer>({
     max_score: {
         type: Number,
         required: true
-    }
+    },
+    graded_nested_answers: {
+        type: [Schema.Types.Mixed], // Array of graded nested answers
+        required: false // Set after grading nested questions
+    },
 });
 
 const ExamSubmissionSchema = new Schema<IExamSubmission>({

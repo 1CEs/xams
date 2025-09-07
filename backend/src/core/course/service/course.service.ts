@@ -35,6 +35,11 @@ export class CourseService implements ICourseService {
         return courses
     }
 
+    async getCoursesByInstructorName (instructorName: string) {
+        const courses = await this._repository.getCoursesByInstructorName(instructorName)
+        return courses
+    }
+
     async getCourseByStudentId (student_id: string) {
         const courses = await this._repository.getCourseByStudentId(student_id)
         return courses

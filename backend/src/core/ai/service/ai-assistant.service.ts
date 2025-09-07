@@ -69,6 +69,123 @@ export class AIAssistantService {
                 };
             }
 
+            // Check for prompt injection attacks first
+            const trimmedAnswer = studentAnswer.trim();
+            const lowerAnswer = trimmedAnswer.toLowerCase();
+            
+            console.log('Checking prompt injection and meaningless answer patterns for:', trimmedAnswer);
+            console.log('Lowercase version:', lowerAnswer);
+            console.log('Length:', trimmedAnswer.length);
+
+            // Detect prompt injection attempts
+            const promptInjectionPatterns = [
+                // Direct injection commands
+                /ignore\s+(every|all|what|everything|above|below|previous|instructions?)/i,
+                /focus\s+(at|on)\s+(this|that|my|the)\s+(prompt|instruction|request)/i,
+                /(give|award|assign)\s+(me|us)\s+(full|perfect|maximum|max)\s+(score|points?|marks?)/i,
+                /(override|disregard|forget)\s+(instructions?|prompts?|rules?|guidelines?)/i,
+                
+                // System manipulation attempts
+                /you\s+(are|must|should|need|have)\s+to\s+(give|award|assign)/i,
+                /system\s+(override|hack|bypass|ignore)/i,
+                /act\s+(as|like)\s+(if|though)/i,
+                /pretend\s+(that|to|like)/i,
+                
+                // Score manipulation
+                /just\s+(give|award)\s+(me|us)\s+(\d+|full|perfect|maximum)/i,
+                /award\s+(\d+|full|perfect|maximum)\s+(points?|marks?|score)/i,
+                /set\s+(score|points?|marks?)\s+to\s+(\d+|full|perfect|maximum)/i,
+                
+                // Common injection phrases
+                /new\s+(instruction|prompt|rule)/i,
+                /different\s+(instruction|prompt|rule)/i,
+                /actually\s+(i\s+want|give|award)/i,
+                /instead\s+(of|give|award)/i,
+                
+                // Sophisticated attempts
+                /according\s+to\s+(new|updated|latest)\s+(rules?|guidelines?)/i,
+                /the\s+(real|actual|true)\s+(instruction|prompt|task)/i,
+                /(bypass|skip|ignore)\s+(grading|evaluation|assessment)/i
+            ];
+
+            const containsInjection = promptInjectionPatterns.some(pattern => pattern.test(lowerAnswer));
+            
+            if (containsInjection) {
+                // Log security incident for audit trail
+                console.error('🚨 SECURITY ALERT - PROMPT INJECTION DETECTED:', {
+                    timestamp: new Date().toISOString(),
+                    incident_type: 'PROMPT_INJECTION_ATTEMPT',
+                    student_answer: trimmedAnswer,
+                    question_text: questionText.substring(0, 100) + '...',
+                    detection_method: 'server_side_pattern_matching',
+                    action_taken: 'blocked_and_scored_zero'
+                });
+                
+                console.log('🚨 PROMPT INJECTION DETECTED - blocking attack attempt');
+                return {
+                    isCorrect: false,
+                    scoreObtained: 0,
+                    suggestion: 'Answer contains prompt injection attempt and has been flagged for security review.',
+                    confidence: 1.0
+                };
+            }
+            
+            // Common meaningless responses
+            const meaninglessPatterns = [
+                // Single characters or very short
+                /^.{1,2}$/,
+                // Punctuation only
+                /^[.!?@#$%^&*()_+=\-\[\]{}|\\:";'<>?,./]*$/,
+                // Common abbreviations/slang (exact match)
+                /^(wtf|idk|lol|lmao|rofl|omg|brb|ttyl|tbh|smh|fml|yolo|af|rip|nvm|ikr|imo|imho|gtg|asap|fyi)$/i,
+                // "I don't know" variations (simple)
+                /^i\s+dont?\s+know(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
+                /^i\s+don'?t\s+know(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
+                /^i\s+do\s+not\s+know(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
+                // "I still don't know" variations
+                /^i\s+still\s+dont?\s+know(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
+                /^i\s+still\s+don'?t\s+know(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
+                /^i\s+still\s+do\s+not\s+know(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
+                // Other "no idea" variations
+                /^(no\s+idea|i\s+have\s+no\s+(idea|clue)|dunno)(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
+                // Repeated characters
+                /^(.)\1{2,}$/,
+                // Random keyboard mashing
+                /^[qwertyuiopasdfghjklzxcvbnm]{3,}$/i,
+                // Numbers only
+                /^\d+$/,
+                // Common nonsensical responses (exact match)
+                /^(no|yes|maybe|ok|okay|fine|whatever|dunno|nope|yep|meh|ugh|huh|hmm|um|uh|ah|oh)$/i,
+                // Short meaningless phrases
+                /^(i\s*don'?t\s*care|whatever|no\s*comment|pass|skip|next)$/i,
+                // Expressions with emoticons/slang only
+                /^(lol|haha|xd|lmao|omg|wtf|rofl)(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*\s*$/i
+            ];
+
+            // Test each pattern individually for debugging
+            for (let i = 0; i < meaninglessPatterns.length; i++) {
+                const pattern = meaninglessPatterns[i];
+                const matches = pattern.test(lowerAnswer);
+                if (matches) {
+                    console.log(`Pattern ${i} matched: ${pattern}`);
+                }
+            }
+
+            const isInvalidAnswer = trimmedAnswer.length <= 2 || 
+                                  meaninglessPatterns.some(pattern => pattern.test(lowerAnswer));
+
+            console.log('Is invalid answer:', isInvalidAnswer);
+
+            if (isInvalidAnswer) {
+                console.log('CAUGHT MEANINGLESS ANSWER - returning 0%');
+                return {
+                    isCorrect: false,
+                    scoreObtained: 0,
+                    suggestion: `Answer "${trimmedAnswer}" appears to be meaningless, too short, or nonsensical to evaluate.`,
+                    confidence: 1.0
+                };
+            }
+
             // Strip HTML tags for clean comparison
             const cleanStudentAnswer = this.stripHtmlTags(studentAnswer);
             const cleanQuestionText = this.stripHtmlTags(questionText);
@@ -93,6 +210,8 @@ export class AIAssistantService {
                 hasExpectedAnswers
             );
 
+            console.log('AI Grading - Grading prompt:', gradingPrompt);
+
             // Call Hugging Face API
             const result = await this.hf.chatCompletion({
                 provider: "nebius",
@@ -111,10 +230,33 @@ export class AIAssistantService {
                 ...this.GRADING_CONFIG
             });
 
-            const suggestion = (result as any).generated_text || 'Unable to provide grading suggestion.';
+            const suggestion = result.choices?.[0]?.message?.content || 'Unable to provide grading suggestion.';
             console.log('AI Response:', suggestion);
 
-            // Simply trust the AI's assessment and extract the percentage/score
+            // Validate AI response for potential manipulation
+            const isManipulatedResponse = this.detectManipulatedAIResponse(suggestion, cleanStudentAnswer);
+            if (isManipulatedResponse) {
+                // Log security incident for audit trail
+                console.error('🚨 SECURITY ALERT - MANIPULATED AI RESPONSE DETECTED:', {
+                    timestamp: new Date().toISOString(),
+                    incident_type: 'AI_RESPONSE_MANIPULATION',
+                    student_answer: cleanStudentAnswer,
+                    ai_response: suggestion.substring(0, 200) + '...',
+                    question_text: cleanQuestionText.substring(0, 100) + '...',
+                    detection_method: 'ai_response_validation',
+                    action_taken: 'overridden_with_zero_score'
+                });
+                
+                console.log('🚨 MANIPULATED AI RESPONSE DETECTED - overriding with 0%');
+                return {
+                    isCorrect: false,
+                    scoreObtained: 0,
+                    suggestion: 'AI response appears to have been manipulated by prompt injection. Flagged for security review.',
+                    confidence: 1.0
+                };
+            }
+
+            // Parse the AI's assessment and extract the percentage/score
             const gradingResult = this.parseAIGradingResponse(suggestion, maxScore, hasExpectedAnswers);
             
             console.log('Final grading result:', {
@@ -294,6 +436,47 @@ export class AIAssistantService {
             scoreObtained: finalScore,
             confidence
         };
+    }
+
+    /**
+     * Detect if AI response appears to have been manipulated by prompt injection
+     */
+    private detectManipulatedAIResponse(aiResponse: string, originalStudentAnswer: string): boolean {
+        const lowerResponse = aiResponse.toLowerCase();
+        const lowerStudentAnswer = originalStudentAnswer.toLowerCase();
+        
+        // Check for suspicious AI responses that might indicate successful injection
+        const suspiciousResponsePatterns = [
+            // AI agreeing with injection attempts
+            /fulfills this criterion/i,
+            /contradicts? the stated grading guidelines/i,
+            /aligns with.*instruction.*award.*full/i,
+            /explicitly requested.*full score/i,
+            /implies? complete comprehension/i,
+            /would.*contradict.*guidelines/i,
+            
+            // AI being manipulated to ignore actual content
+            /while unusual.*aligns with/i,
+            /unconventional.*fulfills/i,
+            /meta-request.*understanding/i,
+            /directly requesting.*highest.*grade/i,
+            
+            // AI giving high scores for obvious injection attempts
+            /(?:90|95|100)%.*(?:ignore|focus|give.*full)/i,
+            /full.*score.*requested/i,
+        ];
+        
+        // Check if student answer contains injection patterns AND AI gives high score
+        const hasInjectionInAnswer = /ignore.*(?:above|below|every|what|all)|focus.*prompt|give.*(?:full|perfect).*score/i.test(lowerStudentAnswer);
+        const hasHighScore = /(?:90|95|100)%|score:\s*(?:0\.9|1)\/1/i.test(lowerResponse);
+        const hasSuspiciousReasoning = suspiciousResponsePatterns.some(pattern => pattern.test(lowerResponse));
+        
+        if (hasInjectionInAnswer && (hasHighScore || hasSuspiciousReasoning)) {
+            console.log('🚨 AI response appears manipulated - injection attempt with high score or suspicious reasoning');
+            return true;
+        }
+        
+        return false;
     }
 
     /**

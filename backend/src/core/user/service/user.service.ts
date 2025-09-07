@@ -22,22 +22,31 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
         this._repository = factory.createRepository(role)
     }
 
+    private _errorResponse(message: string, code: number, errorType: string, details?: any): ControllerResponse<null> {
+        return {
+            message,
+            code,
+            data: null,
+            success: false,
+            errorType,
+            details
+        }
+    }
+
     async register(payload: Partial<T>) {
         if (!payload.email || !payload.username || !payload.password) {
-            throw new Error("Email, username, and password are required fields.")
+            throw this._errorResponse("Email, username, and password are required fields.", 400, 'BadRequestError')
         }
 
-        // const [userFromEmail, userFromUsername] = await Promise.all([
-        //     this.getUserByEmail(payload.email),
-        //     this.getUserByUsername(payload.username)
-        // ])
+        const [userFromEmail, userFromUsername] = await Promise.all([
+            this.getUserByEmail(payload.email),
+            this.getUserByUsername(payload.username)
+        ])
 
-        // console.log(userFromEmail, userFromUsername)
-        // if (userFromEmail || userFromUsername) {
-        //     return {
-        //         message: `User with ${userFromEmail ? 'email' : 'username'} already exists.`
-        //     }
-        // }
+        console.log(userFromEmail, userFromUsername)
+        if (userFromEmail || userFromUsername) {
+            throw this._errorResponse(`${userFromEmail ? 'Email' : 'Username'} already exists. Please use different credentials.`, 400, 'ConflictError')
+        }
         const hashedPassword = await Bun.password.hash(payload.password, {
             algorithm: 'bcrypt',
             cost: 4,
@@ -62,12 +71,12 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
     }
 
     async getUserByEmail(email: string) {
-        const result = await (this._repository as UserRepository).findByEmail(email)
+        const result = await this._repository.findByEmail(email)
         return result as T | null
     }
 
     async getUserByUsername(username: string) {
-        const result = await (this._repository as UserRepository).findByUsername(username)
+        const result = await this._repository.findByUsername(username)
         console.log(result)
         return result as T | null
     }
@@ -94,9 +103,7 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
     async forgotPassword(email: string, jwt: JWTInstance) {
         const user = await this.getUserByEmail(email)
         if (!user) {
-            return {
-                message: "User not found"
-            }
+            return this._errorResponse("User not found", 404, 'NotFoundError')
         }
 
         // Generate reset token (valid for 1 hour)
@@ -106,6 +113,15 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
         }, '1h')
 
         // Send reset password email
+
+        const mode = process.env.Mode 
+
+        if (!mode) {
+            return this._errorResponse("Mode not found", 404, 'NotFoundError')
+        }
+
+        const url = mode === 'dev' ? 'http://localhost:8081' : 'https://xams.online'
+
         await sendEmail({
             to: user.email,
             subject: "Password Reset Request",
@@ -130,7 +146,7 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
                                 </tr>
                                 <tr>
                                     <td align="center" style="padding: 20px 0;">
-                                        <a href="${process.env.FRONTEND_URL}/member/reset-password?token=${resetToken}" 
+                                        <a href="${url}/member/reset-password?token=${resetToken}" 
                                            style="background-color: #82f4b1; color: #101010; padding: 12px 24px; text-decoration: none; 
                                                   border-radius: 4px; font-weight: bold; display: inline-block;">
                                             Reset Password
@@ -171,22 +187,19 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
         // Find user by ID from token
         const user = await this.getUserById(decoded.id)
         if (!user) {
-            throw new Error("User not found")
+            return this._errorResponse("User not found", 404, 'NotFoundError')
         }
 
-        // Hash the new password
-        const hashedPassword = await Bun.password.hash(newPassword, {
-            algorithm: 'bcrypt',
-            cost: 4,
-        })
+        console.log("Username: ", user.username)
+        console.log("New password: ", newPassword)
 
-        // Update user's password
+        // Update user's password - let updateUser handle the hashing
         const updated = await this.updateUser(String(user._id), { 
-            password: hashedPassword 
+            password: newPassword 
         } as Partial<T>)
 
         if (!updated) {
-            throw new Error("Failed to update password")
+            return this._errorResponse("Failed to update password", 400, 'BadRequestError')
         }
 
         return { message: "Password has been reset successfully" }

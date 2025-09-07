@@ -27,6 +27,7 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
             search: t.Optional(t.String())
         }))
     })
+    .get('/instructor-name/:instructorName', catchAsync(async ({ params, controller }: CourseContext & { params: { instructorName: string } }) => await controller.getCoursesByInstructorName(params.instructorName)))
     .use(tokenVerifier)
     .group('', (app) =>
         app

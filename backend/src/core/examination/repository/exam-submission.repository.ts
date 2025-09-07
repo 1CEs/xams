@@ -7,8 +7,10 @@ export class ExamSubmissionRepository implements IExamSubmissionRepository {
     
     async createSubmission(submission: IExamSubmission): Promise<IExamSubmission> {
         try {
+            console.log('Create submission');
             const newSubmission = new ExamSubmissionModel(submission);
             const savedSubmission = await newSubmission.save();
+            console.log('Saved submission:', savedSubmission.toObject());
             return savedSubmission.toObject();
         } catch (error) {
             console.error('Error creating exam submission:', error);
@@ -103,12 +105,20 @@ export class ExamSubmissionRepository implements IExamSubmissionRepository {
 
     async updateSubmission(id: string, updates: Partial<IExamSubmission>): Promise<IExamSubmission | null> {
         try {
+            // First check if the submission exists
+            const existingSubmission = await ExamSubmissionModel.findById(id).lean();
+            if (!existingSubmission) {
+                console.error('❌ Repository: Submission not found with ID:', id);
+                return null;
+            }
+            
             const updatedSubmission = await ExamSubmissionModel
-                .findByIdAndUpdate(id, updates, { new: true })
+                .findByIdAndUpdate(id, updates, { new: true, runValidators: true })
                 .lean();
+            
             return updatedSubmission;
         } catch (error) {
-            console.error('Error updating submission:', error);
+            console.error('❌ Repository: Error updating submission:', error);
             throw new Error('Failed to update submission');
         }
     }

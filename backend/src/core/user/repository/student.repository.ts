@@ -39,4 +39,12 @@ export class StudentRepository
                 }
             }
 
+            async findByUsername(username: string, projection?: any) {
+                return await this._model.findOne({ username }, projection).exec()
+            }
+
+            async findByEmail(email: string, projection?: any) {
+                return await this._model.findOne({ email }, projection).exec()
+            }
+
 }

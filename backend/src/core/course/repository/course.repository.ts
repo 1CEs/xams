@@ -6,6 +6,7 @@ import { CourseModel } from "../model/course.model";
 import { IGroup } from "../model/interface/igroup";
 import { ExaminationScheduleModel } from "../../examination/model/examination-schedule.model";
 import { UserModel } from "../../user/model/user.model";
+import { InstructorModel } from "../../user/model/instructor.model";
 
 export class CourseRepository extends BaseRepository<ICourse & Document> implements ICourseRepository {
     constructor() {
@@ -20,6 +21,45 @@ export class CourseRepository extends BaseRepository<ICourse & Document> impleme
     async getCourseByInstructorId (instructor_id: string) {
         console.log(instructor_id)
         const courses = await this._model.find({instructor_id}).exec()
+        return courses
+    }
+
+    async getCoursesByInstructorName (instructorName: string) {
+        console.log('🔍 Searching for instructor name:', instructorName)
+
+        // First, let's debug what instructors exist
+        const allInstructors = await UserModel.find({ role: 'instructor' }).limit(5).exec()
+        console.log('🔍 Sample instructors in DB:', allInstructors.map(i => ({ username: i.username, id: i._id, firstName: i.info?.first_name, lastName: i.info?.last_name })))
+
+        // Search for instructors with flexible matching
+        const instructors = await UserModel.find({
+            role: 'instructor',
+            $or: [
+                { username: { $regex: instructorName, $options: 'i' } },
+                { 'info.first_name': { $regex: instructorName, $options: 'i' } },
+                { 'info.last_name': { $regex: instructorName, $options: 'i' } }
+            ]
+        }).exec()
+
+        console.log('🔍 Found instructors:', instructors.map(i => ({ username: i.username, id: i._id, firstName: i.info?.first_name, lastName: i.info?.last_name })))
+
+        if (!instructors || instructors.length === 0) {
+            return []
+        }
+        
+        let courses: ICourse[] = []
+
+        for (let i = 0; i < instructors.length; i++) {
+            const instructorCourses = await this._model.find({instructor_id: instructors[i]._id.toString()}).exec()
+            console.log(`🔍 Found ${instructorCourses.length} courses for instructor ${instructors[i].username}`)
+            courses = [...courses, ...instructorCourses]
+        }
+        
+        console.log('🔍 Found courses:', courses.length)
+        if (courses.length > 0) {
+            console.log('🔍 Sample course:', courses[0].course_name)
+        }
+        
         return courses
     }
 
@@ -79,44 +119,15 @@ export class CourseRepository extends BaseRepository<ICourse & Document> impleme
     async searchCourses(search: string) {
         const searchLower = search.toLowerCase()
         
-        // Use aggregation pipeline to join with users collection and search
-        const courses = await this._model.aggregate([
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'instructor_id',
-                    foreignField: '_id',
-                    as: 'instructor'
-                }
-            },
-            {
-                $unwind: '$instructor'
-            },
-            {
-                $match: {
-                    $or: [
-                        { course_name: { $regex: searchLower, $options: 'i' } },
-                        { description: { $regex: searchLower, $options: 'i' } },
-                        { 'instructor.info.first_name': { $regex: searchLower, $options: 'i' } },
-                        { 'instructor.info.last_name': { $regex: searchLower, $options: 'i' } },
-                        { 'instructor.username': { $regex: searchLower, $options: 'i' } }
-                    ]
-                }
-            },
-            {
-                $project: {
-                    _id: 1,
-                    instructor_id: 1,
-                    background_src: 1,
-                    course_name: 1,
-                    description: 1,
-                    category: 1,
-                    groups: 1,
-                    createdAt: 1,
-                    updatedAt: 1
-                }
-            }
-        ]).exec()
+        const courses = await this._model.find({
+            $or: [
+                { course_name: { $regex: searchLower, $options: 'i' } },
+                { description: { $regex: searchLower, $options: 'i' } },
+                { 'instructor.info.first_name': { $regex: searchLower, $options: 'i' } },
+                { 'instructor.info.last_name': { $regex: searchLower, $options: 'i' } },
+                { 'instructor.username': { $regex: searchLower, $options: 'i' } }
+            ]
+        }).exec()
         
         return courses
     }

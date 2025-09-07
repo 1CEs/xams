@@ -4,17 +4,17 @@ export interface ISubmittedAnswer {
     question_id: string;
     submitted_question: string;
     question_type: 'mc' | 'tf' | 'ses' | 'les' | 'nested';
+    nested_answers?: ISubmittedAnswer[]; // For nested questions - array of sub-question answers
     submitted_choices?: string[]; // For multiple choice - array of selected choice contents
     submitted_answer?: string; // For text-based answers (short/long essay)
     submitted_boolean?: boolean; // For true/false questions
+    original_choices?: Array<{content: string, isCorrect: boolean}>; // For display purposes (MC questions)
     is_correct?: boolean; // Calculated after grading
     score_obtained?: number; // Score obtained for this question
     max_score: number; // Maximum possible score for this question
-    // Original question choices for display
-    original_choices?: Array<{
-        content: string;
-        isCorrect: boolean;
-    }>;
+    
+    // Graded nested answers (after grading process)
+    graded_nested_answers?: ISubmittedAnswer[];
 }
 
 export interface IExamSubmission {

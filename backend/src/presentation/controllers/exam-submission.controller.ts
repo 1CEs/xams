@@ -17,6 +17,7 @@ export class ExamSubmissionController {
         time_taken?: number;
     }) {
         try {
+            console.log(body.submitted_answers);
             const submission = await this._service.submitExam({
                 scheduleId: body.schedule_id,
                 studentId: body.student_id,

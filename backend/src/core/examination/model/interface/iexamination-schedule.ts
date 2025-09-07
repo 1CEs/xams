@@ -8,7 +8,6 @@ export interface IExaminationSchedule {
     title: string;
     description: string;
     questions: any[];
-    created_at: Date;
     
     // Exam settings
     open_time?: Date;

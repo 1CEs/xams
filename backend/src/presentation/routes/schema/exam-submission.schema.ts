@@ -3,6 +3,24 @@ import { t } from "elysia";
 export const SubmittedAnswerSchema = t.Object({
     question_id: t.String({ description: 'Question ID is required' }),
     submitted_question: t.String({ description: 'Question text is required' }),
+    nested_answers: t.Optional(t.Array(t.Object({
+        question_id: t.String({ description: 'Nested question ID is required' }),
+        submitted_question: t.String({ description: 'Nested question text is required' }),
+        question_type: t.Union([
+            t.Literal('mc'),
+            t.Literal('tf'),
+            t.Literal('ses'),
+            t.Literal('les')
+        ]),
+        choices: t.Optional(t.Array(t.Object({
+            content: t.String(),
+            isCorrect: t.Boolean()
+        }))),
+        submitted_choices: t.Optional(t.Array(t.String())),
+        submitted_answer: t.Optional(t.String()),
+        submitted_boolean: t.Optional(t.Boolean()),
+        max_score: t.Number()
+    }))),
     question_type: t.Union([
         t.Literal('mc'),
         t.Literal('tf'),
@@ -13,6 +31,10 @@ export const SubmittedAnswerSchema = t.Object({
     submitted_choices: t.Optional(t.Array(t.String(), { description: 'Selected choices for multiple choice questions' })),
     submitted_answer: t.Optional(t.String({ description: 'Text answer for essay questions' })),
     submitted_boolean: t.Optional(t.Boolean({ description: 'Boolean answer for true/false questions' })),
+    original_choices: t.Optional(t.Array(t.Object({
+        content: t.String(),
+        isCorrect: t.Boolean()
+    }), { description: 'Original question choices for display purposes (MC questions)' })),
     max_score: t.Number({ description: 'Maximum score for this question is required' })
 });
 

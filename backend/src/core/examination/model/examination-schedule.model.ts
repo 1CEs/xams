@@ -19,10 +19,6 @@ export const ExaminationScheduleSchema = new Schema<ExaminationScheduleDocument>
     },
     description: { type: String },
     questions: [Schema.Types.Mixed],
-    created_at: {
-        type: Date,
-        default: Date.now
-    },
     // Exam settings
     open_time: { type: Date },
     close_time: { type: Date },

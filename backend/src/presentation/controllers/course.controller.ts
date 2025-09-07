@@ -82,6 +82,11 @@ export class CourseController implements ICourseController {
         return this._response<typeof courses>('Done', 200, courses)
     }
 
+    async getCoursesByInstructorName (instructorName: string) {
+        const courses = await this._service.getCoursesByInstructorName(instructorName)
+        return this._response<typeof courses>('Done', 200, courses)
+    }
+
     async updateCourse(id: string, payload: Partial<ICourse>) {
         const updated = await this._service.updateCourse(id, payload)
         return this._response<typeof updated>('Update Course Successfully', 200, updated)

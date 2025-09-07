@@ -8,6 +8,7 @@ export interface ICourseService {
     searchCourses: (search: string) => Promise<ICourse[] | null>
     getCourseById: (id: string) => Promise<ICourse | null>
     getCourseByInstructorId: (instructor_id: string) => Promise<ICourse[] | null>
+    getCoursesByInstructorName: (instructorName: string) => Promise<ICourse[] | null>
     getCourseByStudentId: (student_id: string) => Promise<ICourse[] | null>
     updateCourse: (id: string, payload: Partial<ICourse>) => Promise<ICourse | null>
     deleteCourse: (id: string) => Promise<ICourse | null>

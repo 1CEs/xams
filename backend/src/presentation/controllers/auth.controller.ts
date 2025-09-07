@@ -129,7 +129,7 @@ export class AuthController implements IAuthController {
 
             let passwordIsValid: boolean
             try {
-                passwordIsValid = await Bun.password.verify(payload.body.password, user.password)
+                passwordIsValid = await Bun.password.verify(payload.body.password, user.password, "bcrypt")
             } catch (error) {
                 console.error('Password verification error:', error)
                 return this._errorResponse('Unable to verify password. Please try again.', 400, 'BadRequestError')
@@ -164,7 +164,6 @@ export class AuthController implements IAuthController {
             
             delete payload.body
             await this.setToken(String(user._id), { ...payload })
-
             return this._response<typeof user>(`Welcome back, ${user.username}! Sign-in successful.`, 200, user)
         } catch (error: any) {
             console.error('Signin error:', error)
