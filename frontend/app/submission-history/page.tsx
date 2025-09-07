@@ -25,16 +25,18 @@ interface SubmittedAnswer {
   question_id: string
   submitted_question: string
   question_type: 'mc' | 'tf' | 'ses' | 'les' | 'nested'
+  nested_answers?: SubmittedAnswer[] // For nested questions - array of sub-question answers
   submitted_choices?: string[]
   submitted_answer?: string
   submitted_boolean?: boolean
-  is_correct?: boolean
-  score_obtained?: number
-  max_score: number
-  original_choices?: Array<{
+  original_choices?: Array<{ // For display purposes (MC questions)
     content: string
     isCorrect: boolean
   }>
+  is_correct?: boolean
+  score_obtained?: number
+  max_score: number
+  graded_nested_answers?: SubmittedAnswer[] // Graded nested answers (after grading process)
 }
 
 interface ExamSubmission {
@@ -332,6 +334,7 @@ const SubmissionHistoryPage = () => {
       case 'tf': return 'True/False'
       case 'ses': return 'Short Essay'
       case 'les': return 'Long Essay'
+      case 'nested': return 'Nested Questions'
       default: return type.toUpperCase()
     }
   }
@@ -342,7 +345,8 @@ const SubmissionHistoryPage = () => {
     { key: 'mc', label: 'Multiple Choice (MC)' },
     { key: 'tf', label: 'True/False (TF)' },
     { key: 'ses', label: 'Short Essay (SES)' },
-    { key: 'les', label: 'Long Essay (LES)' }
+    { key: 'les', label: 'Long Essay (LES)' },
+    { key: 'nested', label: 'Nested Questions (NESTED)' }
   ]
 
   // Format date and time
@@ -659,7 +663,7 @@ const SubmissionHistoryPage = () => {
                 <h3 className="text-lg font-semibold text-default-600 mb-2">No Submissions Found</h3>
                 <p className="text-default-500">
                   {question_id
-                    ? 'No students have submitted answers for this question yet.'
+                    ? 'No learners have submitted answers for this question yet.'
                     : 'You haven\'t submitted this exam yet.'
                   }
                 </p>
@@ -694,7 +698,7 @@ const SubmissionHistoryPage = () => {
                         <div>
                           <h3 className="font-semibold">
                             {question_id ? (
-                              submission.student_info?.full_name || `Student ${submission.student_id}`
+                              submission.student_info?.full_name || `Learner ${submission.student_id}`
                             ) : (
                               `Attempt ${submission.attempt_number}`
                             )}
@@ -975,7 +979,7 @@ const SubmissionHistoryPage = () => {
                                                     title={
                                                       <div className="flex items-center gap-2">
                                                         <span className="text-sm font-medium">
-                                                          {user?.role === 'instructor' ? "Student answer:" : "Your answer:"}
+                                                          {user?.role === 'instructor' ? "Learner answer:" : "Your answer:"}
                                                         </span>
                                                         <span className="text-sm font-semibold text-primary">
                                                           {answer.submitted_choices?.join(', ') || 'No answer selected'}
@@ -991,7 +995,7 @@ const SubmissionHistoryPage = () => {
                                                           wrapper: "gap-3"
                                                         }}
                                                       >
-                                                        {answer.original_choices.map((choice, choiceIndex) => {
+                                                        {answer.original_choices.map((choice: {content: string, isCorrect: boolean}, choiceIndex: number) => {
                                                           const isSelected = answer.submitted_choices?.includes(choice.content)
                                                           const isCorrect = choice.isCorrect
                                                           const showCorrectAnswers = user?.role === 'instructor' || (examSchedule?.show_answer && examSchedule?.allowed_review)
@@ -1039,12 +1043,146 @@ const SubmissionHistoryPage = () => {
                                                     </div>
                                                   </AccordionItem>
                                                 </Accordion>
+                                              ) : answer.question_type === 'nested' ? (
+                                                /* Nested Questions */
+                                                <div className="space-y-4">
+                                                  <div className="text-sm font-medium text-primary mb-3">
+                                                    🔗 Nested Questions ({(answer.nested_answers || answer.graded_nested_answers)?.length || 0} sub-questions)
+                                                  </div>
+                                                  
+                                                  {/* Display nested answers */}
+                                                  {(answer.graded_nested_answers || answer.nested_answers)?.map((nestedAnswer, nestedIndex) => (
+                                                    <div key={nestedAnswer.question_id || nestedIndex} className="ml-4 border-l-2 border-primary/20 pl-4 space-y-2">
+                                                      {/* Sub-question header */}
+                                                      <div className="flex items-center justify-between">
+                                                        <span className="text-sm font-medium text-secondary">
+                                                          Sub-question {nestedIndex + 1}
+                                                        </span>
+                                                        <div className="flex items-center gap-2">
+                                                          {nestedAnswer.is_correct !== undefined && (
+                                                            <Chip size="sm" variant="flat" color={nestedAnswer.is_correct ? 'success' : 'danger'}>
+                                                              {nestedAnswer.is_correct ? 'Correct' : 'Incorrect'}
+                                                            </Chip>
+                                                          )}
+                                                          <span className="text-xs font-medium">
+                                                            {nestedAnswer.score_obtained !== undefined
+                                                              ? `${nestedAnswer.score_obtained}/${nestedAnswer.max_score} pts`
+                                                              : `Max: ${nestedAnswer.max_score} pts`
+                                                            }
+                                                          </span>
+                                                          <Chip size="sm" variant="bordered" color="default">
+                                                            {nestedAnswer.question_type.toUpperCase()}
+                                                          </Chip>
+                                                        </div>
+                                                      </div>
+                                                      
+                                                      {/* Sub-question text */}
+                                                      <div className="text-sm text-default-700 font-medium" dangerouslySetInnerHTML={{ __html: nestedAnswer.submitted_question }} />
+                                                      
+                                                      {/* Sub-question answer - Multiple Choice */}
+                                                      {nestedAnswer.question_type === 'mc' && nestedAnswer.original_choices ? (
+                                                        <Accordion variant="bordered">
+                                                          <AccordionItem
+                                                            key="nested-choices"
+                                                            aria-label="Sub-question Choices"
+                                                            title={
+                                                              <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-medium">
+                                                                  {user?.role === 'instructor' ? "Learner answer:" : "Your answer:"}
+                                                                </span>
+                                                                <span className="text-sm font-semibold text-primary">
+                                                                  {nestedAnswer.submitted_choices?.join(', ') || 'No answer selected'}
+                                                                </span>
+                                                              </div>
+                                                            }
+                                                          >
+                                                            <div className="pt-2">
+                                                              <RadioGroup
+                                                                value={nestedAnswer.submitted_choices?.[0] || ''}
+                                                                isReadOnly
+                                                                classNames={{
+                                                                  wrapper: "gap-3"
+                                                                }}
+                                                              >
+                                                                {nestedAnswer.original_choices.map((choice: {content: string, isCorrect: boolean}, choiceIndex: number) => {
+                                                                  const isSelected = nestedAnswer.submitted_choices?.includes(choice.content)
+                                                                  const isCorrect = choice.isCorrect
+                                                                  const showCorrectAnswers = user?.role === 'instructor' || (examSchedule?.show_answer && examSchedule?.allowed_review)
+
+                                                                  return (
+                                                                    <Radio
+                                                                      key={choiceIndex}
+                                                                      value={choice.content}
+                                                                      classNames={{
+                                                                        base: `max-w-full m-0 p-3 rounded-lg border-2 transition-colors ${showCorrectAnswers
+                                                                          ? isSelected
+                                                                            ? isCorrect
+                                                                              ? 'border-success bg-success/10'
+                                                                              : 'border-danger bg-danger/10'
+                                                                            : isCorrect
+                                                                              ? 'border-success/30 bg-success/5'
+                                                                              : 'border-default-200 bg-default-50'
+                                                                          : isSelected
+                                                                            ? 'border-primary bg-primary/10'
+                                                                            : 'border-default-200 bg-default-50'
+                                                                        }`,
+                                                                        wrapper: "hidden",
+                                                                        labelWrapper: "w-full"
+                                                                      }}
+                                                                    >
+                                                                      <div className="flex items-center justify-between w-full">
+                                                                        <span className="font-medium text-default-700">
+                                                                          {choice.content}
+                                                                        </span>
+                                                                        <div className="flex items-center gap-2">
+                                                                          {isSelected && (
+                                                                            <Chip size="sm" color="primary" variant="flat">
+                                                                              Selected
+                                                                            </Chip>
+                                                                          )}
+                                                                          {showCorrectAnswers && isCorrect && (
+                                                                            <Chip size="sm" color="success" variant="flat">
+                                                                              Correct
+                                                                            </Chip>
+                                                                          )}
+                                                                        </div>
+                                                                      </div>
+                                                                    </Radio>
+                                                                  )
+                                                                })}
+                                                              </RadioGroup>
+                                                            </div>
+                                                          </AccordionItem>
+                                                        </Accordion>
+                                                      ) : (
+                                                        /* Non-multiple choice nested answers */
+                                                        <div className="bg-default-100 rounded-md p-3">
+                                                          <span className="text-default-600 font-medium text-sm">
+                                                            {user?.role === 'instructor' ? "Learner answer: " : "Your answer: "}
+                                                          </span>
+                                                          <span className="font-medium text-default-800">
+                                                            {nestedAnswer.question_type === 'tf' && (
+                                                              <span className="text-primary">
+                                                                {nestedAnswer.submitted_boolean ? 'True' : 'False'}
+                                                              </span>
+                                                            )}
+                                                            {(nestedAnswer.question_type === 'ses' || nestedAnswer.question_type === 'les') && (
+                                                              <span className="text-primary">
+                                                                {nestedAnswer.submitted_answer || 'No answer provided'}
+                                                              </span>
+                                                            )}
+                                                          </span>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  ))}
+                                                </div>
                                               ) : (
-                                                /* Non-multiple choice answers */
+                                                /* Non-multiple choice, non-nested answers */
                                                 <div className="space-y-3">
                                                   <div className="text-sm rounded-md p-3 border border-default-200">
                                                     <span className="text-default-600 font-medium">
-                                                    {user?.role === 'instructor' ? "Student answer:" : "Your answer:"}
+                                                    {user?.role === 'instructor' ? "Learner answer:" : "Your answer:"}
                                                     </span>
                                                     <span className="font-medium text-default-800">
                                                       {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
@@ -1211,7 +1349,7 @@ const SubmissionHistoryPage = () => {
                                           title={
                                             <div className="flex items-center gap-2">
                                               <span className="text-sm font-medium">
-                                                {user?.role === 'instructor' ? "Student answer:" : "Your answer:"}
+                                                {user?.role === 'instructor' ? "Learner answer:" : "Your answer:"}
                                               </span>
                                               <span className="text-sm font-semibold text-primary">
                                                 {answer.submitted_choices?.join(', ') || 'No answer selected'}
@@ -1227,7 +1365,7 @@ const SubmissionHistoryPage = () => {
                                                 wrapper: "gap-3"
                                               }}
                                             >
-                                              {answer.original_choices.map((choice, choiceIndex) => {
+                                              {answer.original_choices.map((choice: {content: string, isCorrect: boolean}, choiceIndex: number) => {
                                                 const isSelected = answer.submitted_choices?.includes(choice.content)
                                                 const isCorrect = choice.isCorrect
                                                 const showCorrectAnswers = user?.role === 'instructor' || (examSchedule?.show_answer && examSchedule?.allowed_review)
@@ -1275,12 +1413,146 @@ const SubmissionHistoryPage = () => {
                                           </div>
                                         </AccordionItem>
                                       </Accordion>
+                                    ) : answer.question_type === 'nested' ? (
+                                      /* Nested Questions */
+                                      <div className="space-y-4">
+                                        <div className="text-sm font-medium text-primary mb-3">
+                                          🔗 Nested Questions ({(answer.nested_answers || answer.graded_nested_answers)?.length || 0} sub-questions)
+                                        </div>
+                                        
+                                        {/* Display nested answers */}
+                                        {(answer.graded_nested_answers || answer.nested_answers)?.map((nestedAnswer, nestedIndex) => (
+                                          <div key={nestedAnswer.question_id || nestedIndex} className="ml-4 border-l-2 border-primary/20 pl-4 space-y-2">
+                                            {/* Sub-question header */}
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-sm font-medium text-secondary">
+                                                Sub-question {nestedIndex + 1}
+                                              </span>
+                                              <div className="flex items-center gap-2">
+                                                {nestedAnswer.is_correct !== undefined && (
+                                                  <Chip size="sm" variant="flat" color={nestedAnswer.is_correct ? 'success' : 'danger'}>
+                                                    {nestedAnswer.is_correct ? 'Correct' : 'Incorrect'}
+                                                  </Chip>
+                                                )}
+                                                <span className="text-xs font-medium">
+                                                  {nestedAnswer.score_obtained !== undefined
+                                                    ? `${nestedAnswer.score_obtained}/${nestedAnswer.max_score} pts`
+                                                    : `Max: ${nestedAnswer.max_score} pts`
+                                                  }
+                                                </span>
+                                                <Chip size="sm" variant="bordered" color="default">
+                                                  {nestedAnswer.question_type.toUpperCase()}
+                                                </Chip>
+                                              </div>
+                                            </div>
+                                            
+                                            {/* Sub-question text */}
+                                            <div className="text-sm text-default-700 font-medium" dangerouslySetInnerHTML={{ __html: nestedAnswer.submitted_question }} />
+                                            
+                                            {/* Sub-question answer - Multiple Choice */}
+                                            {nestedAnswer.question_type === 'mc' && nestedAnswer.original_choices ? (
+                                              <Accordion variant="bordered">
+                                                <AccordionItem
+                                                  key="nested-choices"
+                                                  aria-label="Sub-question Choices"
+                                                  title={
+                                                    <div className="flex items-center gap-2">
+                                                      <span className="text-sm font-medium">
+                                                        {user?.role === 'instructor' ? "Learner answer:" : "Your answer:"}
+                                                      </span>
+                                                      <span className="text-sm font-semibold text-primary">
+                                                        {nestedAnswer.submitted_choices?.join(', ') || 'No answer selected'}
+                                                      </span>
+                                                    </div>
+                                                  }
+                                                >
+                                                  <div className="pt-2">
+                                                    <RadioGroup
+                                                      value={nestedAnswer.submitted_choices?.[0] || ''}
+                                                      isReadOnly
+                                                      classNames={{
+                                                        wrapper: "gap-3"
+                                                      }}
+                                                    >
+                                                      {nestedAnswer.original_choices.map((choice: {content: string, isCorrect: boolean}, choiceIndex: number) => {
+                                                        const isSelected = nestedAnswer.submitted_choices?.includes(choice.content)
+                                                        const isCorrect = choice.isCorrect
+                                                        const showCorrectAnswers = user?.role === 'instructor' || (examSchedule?.show_answer && examSchedule?.allowed_review)
+
+                                                        return (
+                                                          <Radio
+                                                            key={choiceIndex}
+                                                            value={choice.content}
+                                                            classNames={{
+                                                              base: `max-w-full m-0 p-3 rounded-lg border-2 transition-colors ${showCorrectAnswers
+                                                                ? isSelected
+                                                                  ? isCorrect
+                                                                    ? 'border-success bg-success/10'
+                                                                    : 'border-danger bg-danger/10'
+                                                                  : isCorrect
+                                                                    ? 'border-success/30 bg-success/5'
+                                                                    : 'border-default-200 bg-default-50'
+                                                                : isSelected
+                                                                  ? 'border-primary bg-primary/10'
+                                                                  : 'border-default-200 bg-default-50'
+                                                              }`,
+                                                              wrapper: "hidden",
+                                                              labelWrapper: "w-full"
+                                                            }}
+                                                          >
+                                                            <div className="flex items-center justify-between w-full">
+                                                              <span className="font-medium text-default-700">
+                                                                {choice.content}
+                                                              </span>
+                                                              <div className="flex items-center gap-2">
+                                                                {isSelected && (
+                                                                  <Chip size="sm" color="primary" variant="flat">
+                                                                    Selected
+                                                                  </Chip>
+                                                                )}
+                                                                {showCorrectAnswers && isCorrect && (
+                                                                  <Chip size="sm" color="success" variant="flat">
+                                                                    Correct
+                                                                  </Chip>
+                                                                )}
+                                                              </div>
+                                                            </div>
+                                                          </Radio>
+                                                        )
+                                                      })}
+                                                    </RadioGroup>
+                                                  </div>
+                                                </AccordionItem>
+                                              </Accordion>
+                                            ) : (
+                                              /* Non-multiple choice nested answers */
+                                              <div className="bg-default-100 rounded-md p-3">
+                                                <span className="text-default-600 font-medium text-sm">
+                                                  {user?.role === 'instructor' ? "Learner answer: " : "Your answer: "}
+                                                </span>
+                                                <span className="font-medium text-default-800">
+                                                  {nestedAnswer.question_type === 'tf' && (
+                                                    <span className="text-primary">
+                                                      {nestedAnswer.submitted_boolean ? 'True' : 'False'}
+                                                    </span>
+                                                  )}
+                                                  {(nestedAnswer.question_type === 'ses' || nestedAnswer.question_type === 'les') && (
+                                                    <span className="text-primary">
+                                                      {nestedAnswer.submitted_answer || 'No answer provided'}
+                                                    </span>
+                                                  )}
+                                                </span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
                                     ) : (
-                                      /* Non-multiple choice answers */
+                                      /* Non-multiple choice, non-nested answers */
                                       <div className="space-y-3">
                                         <div className="text-sm rounded-md p-3 border border-default-200">
                                           <span className="text-default-600 font-medium">
-                                            {user?.role === 'instructor' ? "Student answer:" : "Your answer:"}
+                                            {user?.role === 'instructor' ? "Learner answer:" : "Your answer:"}
                                           </span>
                                           <span className="font-medium text-default-800">
                                             {answer.question_type === 'tf' && (answer.submitted_boolean ? 'True' : 'False')}
@@ -1401,7 +1673,7 @@ const SubmissionHistoryPage = () => {
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-medium text-default-700 mb-2">Student Answer:</h4>
+                      <h4 className="text-sm font-medium text-default-700 mb-2">Learner Answer:</h4>
                       <div className="text-sm text-default-800 bg-default-50 p-3 rounded-lg border min-h-[80px]">
                         {gradingQuestion.answer.submitted_answer || 'No answer provided'}
                       </div>

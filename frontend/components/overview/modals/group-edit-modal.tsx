@@ -130,7 +130,7 @@ const GroupEditModal = ({ courseId, groupName, initialData }: Props) => {
             />
             
             <p className="text-sm text-foreground-400">
-              {groupForm.join_code ? "Students will use this code to join the group" : "Leave empty for open access (no code required)"}
+              {groupForm.join_code ? "Learners will use this code to join the group" : "Leave empty for open access (no code required)"}
             </p>
           </ModalBody>
           <ModalFooter>

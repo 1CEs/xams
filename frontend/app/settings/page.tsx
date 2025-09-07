@@ -63,7 +63,7 @@ export default function SettingsPage() {
         last_name: user?.info?.last_name || ""
       };
 
-      const response = await clientAPI.patch(`/users/${user?._id}`, payload);
+      const response = await clientAPI.patch(`/user/${user?._id}`, payload);
 
       if (response.status === 200 && user) {
         setUser({ 
@@ -91,7 +91,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex justify-center">]=
+    <div className="flex justify-center">
       <Card className="max-w-md w-full mt-16">
         <CardHeader className="font-bold text-xl flex justify-between items-center">
           User Settings

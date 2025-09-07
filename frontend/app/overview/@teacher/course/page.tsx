@@ -345,7 +345,7 @@ export default function CoursePage() {
                                                     </span>
                                                 )}
                                                 <span className="text-xs sm:text-sm bg-primary/20 px-2 py-1 rounded-full">
-                                                    {group.students.length} students
+                                                    {group.students.length} Learners
                                                 </span>
                                             </div>
                                         </div>
@@ -377,7 +377,7 @@ export default function CoursePage() {
                                     <div className="flex flex-col gap-6">
                                         <div className="mt-4">
                                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
-                                                <h3 className="text-base sm:text-lg font-semibold">Students</h3>
+                                                <h3 className="text-base sm:text-lg font-semibold">Learners</h3>
                                                 <Button
                                                     color="primary"
                                                     variant="flat"
@@ -391,7 +391,7 @@ export default function CoursePage() {
                                             {group.students.length > 0 ? (
                                                 <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl overflow-hidden shadow-sm border border-primary/10">
                                                     <div className="bg-secondary/10 px-3 sm:px-4 py-3">
-                                                        <h4 className="font-medium text-sm sm:text-base">Enrolled Students ({group.students.length})</h4>
+                                                        <h4 className="font-medium text-sm sm:text-base">Enrolled Learners ({group.students.length})</h4>
                                                     </div>
                                                     <div className="p-3 sm:p-4">
                                                         <LearnersTable 
@@ -404,7 +404,7 @@ export default function CoursePage() {
                                                 </div>
                                             ) : (
                                                 <div className="flex flex-col items-center justify-center p-6 sm:p-8 border border-dashed border-gray-300 rounded-lg">
-                                                    <p className="text-gray-500 mb-4 text-center text-sm sm:text-base">No students have joined this group yet</p>
+                                                    <p className="text-gray-500 mb-4 text-center text-sm sm:text-base">No Learners have joined this group yet</p>
                                                     {group.join_code ? (
                                                         <div className="flex flex-col sm:flex-row items-center gap-2 bg-secondary/10 px-3 sm:px-4 py-2 rounded-lg">
                                                             <span className="font-medium text-sm sm:text-base">Share join code:</span>
@@ -413,7 +413,7 @@ export default function CoursePage() {
                                                     ) : (
                                                         <div className="flex flex-col sm:flex-row items-center gap-2 bg-success/10 px-3 sm:px-4 py-2 rounded-lg">
                                                             <span className="font-medium text-success text-sm sm:text-base">✓ Open Access Group</span>
-                                                            <span className="text-xs sm:text-sm text-success/80 text-center">Students can join without a code</span>
+                                                            <span className="text-xs sm:text-sm text-success/80 text-center">Learners can join without a code</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -523,7 +523,7 @@ export default function CoursePage() {
                             // Show randomized student avatars with profile data
                             <>
                                 {studentProfiles.map((profile, idx) => (
-                                    <Tooltip key={`${profile._id}-${idx}`} content={`${profile.username} (Random Student)`} placement="top">
+                                    <Tooltip key={`${profile._id}-${idx}`} content={`${profile.username} (Random Learner)`} placement="top">
                                         <Avatar 
                                             src={profile.profile_url}
                                             name={profile.username.slice(0, 2).toUpperCase()}
@@ -533,7 +533,7 @@ export default function CoursePage() {
                                 ))}
                                 {/* Show total student count if there are more than 5 students */}
                                 {totalStudentCount > 5 && (
-                                    <Tooltip content={`${totalStudentCount - 5} more students`} placement="top">
+                                    <Tooltip content={`${totalStudentCount - 5} more Learners`} placement="top">
                                         <Avatar 
                                             name={`+${totalStudentCount - 5}`}
                                             className="bg-primary text-white text-xs cursor-pointer hover:scale-110 transition-transform"
@@ -544,7 +544,7 @@ export default function CoursePage() {
                         ) : (
                             // Show message when no students are enrolled
                             <div className="text-xs text-default-500 px-2 py-1 bg-default-100 rounded-lg">
-                                {totalStudentCount === 0 ? 'No students enrolled' : 'Loading student profiles...'}
+                                {totalStudentCount === 0 ? 'No Learners enrolled' : 'Loading Learner profiles...'}
                             </div>
                         )}
                     </AvatarGroup>
@@ -576,7 +576,7 @@ export default function CoursePage() {
                                                     Code: {group.join_code}
                                                 </span>
                                                 <span className="text-xs bg-primary/20 px-2 py-1 rounded-full">
-                                                    {group.students.length} students
+                                                    {group.students.length} Learners
                                                 </span>
                                                 <Tooltip content={`Delete ${group.group_name}`}>
                                                     <Button
@@ -612,7 +612,7 @@ export default function CoursePage() {
                     <ConfirmModal
                         header="Delete Group"
                         subHeader="Are you sure you want to delete this group?"
-                        content={`This will permanently delete the group "${groupToDelete}" and remove all students from it. This action cannot be undone.`}
+                        content={`This will permanently delete the group "${groupToDelete}" and remove all Learners from it. This action cannot be undone.`}
                         onAction={handleDeleteGroup}
                     />
                 </Modal>
@@ -632,7 +632,7 @@ export default function CoursePage() {
                     <ConfirmModal
                         header="Delete Course"
                         subHeader="Are you sure you want to delete this course?"
-                        content={`This will permanently delete the course "${data.data.course_name}" and all associated groups, exams, and student data. This action cannot be undone.`}
+                        content={`This will permanently delete the course "${data.data.course_name}" and all associated groups, exams, and Learner data. This action cannot be undone.`}
                         onAction={handleDeleteCourse}
                     />
                 </Modal>

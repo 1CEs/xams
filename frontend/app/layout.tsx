@@ -22,9 +22,84 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "XAMS",
-  description: "Xams is a platform service for student and instructor.",
-  icons: [{ rel: 'icon', url: Favicon.src }]
+  title: {
+    default: "XAMS - Online Learning Management System for Learners & Instructors",
+    template: "%s | XAMS"
+  },
+  description: "XAMS is a comprehensive online learning management platform connecting learners and instructors. Create courses, take exams, track progress, and enhance educational experiences with AI-powered grading.",
+  keywords: [
+    "online learning",
+    "learning management system",
+    "LMS",
+    "education platform",
+    "online courses",
+    "learner portal",
+    "instructor dashboard",
+    "exam system",
+    "AI grading",
+    "educational technology",
+    "e-learning",
+    "course management",
+    "academic platform"
+  ],
+  authors: [{ name: "XAMS Team" }],
+  creator: "XAMS",
+  publisher: "XAMS",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL('https://xams.online'), // Replace with your actual domain
+  alternates: {
+    canonical: '/',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  icons: [
+    { rel: 'icon', url: Favicon.src },
+    { rel: 'apple-touch-icon', url: Favicon.src }
+  ],
+  manifest: '/manifest.json', // Add if you have a PWA manifest
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: '/',
+    title: 'XAMS - Online Learning Management System',
+    description: 'Comprehensive online learning platform for learners and instructors. Create courses, take exams, and track academic progress with advanced features.',
+    siteName: 'XAMS',
+    images: [
+      {
+        url: '/og-image.png', // Add your Open Graph image
+        width: 1200,
+        height: 630,
+        alt: 'XAMS Learning Management System',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@xams', // Replace with your Twitter handle
+    creator: '@xams',
+    title: 'XAMS - Online Learning Management System',
+    description: 'Comprehensive online learning platform for learners and instructors with AI-powered features.',
+    images: ['/twitter-image.png'], // Add your Twitter card image
+  },
+  verification: {
+    google: 'your-google-verification-code', // Replace with actual verification code
+    // yandex: 'your-yandex-verification-code',
+    // yahoo: 'your-yahoo-verification-code',
+  },
+  category: 'education',
 };
 
 export default function RootLayout({

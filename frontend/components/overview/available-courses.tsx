@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import CourseCard from "../course/course-card";
 import { useUserStore } from "@/stores/user.store";
+import { useTrigger } from "@/stores/trigger.store";
 import { SolarRefreshLineDuotone, MdiSearch } from "../icons/icons";
 import { Alert, Input, Select, SelectItem, Button, Chip } from "@nextui-org/react";
 import { clientAPI } from "@/config/axios.config";
@@ -18,6 +19,7 @@ type Props = {};
 
 const AvailableCourses = (props: Props) => {
   const { user } = useUserStore();
+  const { trigger } = useTrigger();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortOrder, setSortOrder] = useState<'en' | 'th'>('en');
@@ -43,7 +45,7 @@ const AvailableCourses = (props: Props) => {
     };
     
     fetchCourses();
-  }, []);
+  }, [trigger]);
   
   // Filter courses where the user is not enrolled and apply search/filter/sort
   const availableCourses = useMemo(() => {

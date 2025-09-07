@@ -92,7 +92,7 @@ const ShortEssayForm = () => {
                 <ul className="text-sm text-blue-600 space-y-1">
                     <li>• At least one expected answer is required</li>
                     <li>• Add multiple expected answers to allow for different correct responses</li>
-                    <li>• Students can submit any answer that matches one of these expected answers</li>
+                    <li>• Learners can submit any answer that matches one of these expected answers</li>
                 </ul>
             </div>
         </div>

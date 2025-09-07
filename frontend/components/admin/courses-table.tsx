@@ -119,7 +119,7 @@ export function CoursesTable() {
             <TableColumn>COURSE</TableColumn>
             <TableColumn>DESCRIPTION</TableColumn>
             <TableColumn>GROUPS</TableColumn>
-            <TableColumn>STUDENTS</TableColumn>
+            <TableColumn>LEARNERS</TableColumn>
             <TableColumn>CREATED</TableColumn>
             <TableColumn>ACTIONS</TableColumn>
           </TableHeader>
@@ -154,7 +154,7 @@ export function CoursesTable() {
                     size="sm"
                     startContent={<PhStudentFill className="h-3 w-3" />}
                   >
-                    {course.groups?.reduce((total, group) => total + (group.students?.length || 0), 0) || 0} students
+                    {course.groups?.reduce((total, group) => total + (group.students?.length || 0), 0) || 0} learners
                   </Chip>
                 </TableCell>
                 <TableCell>

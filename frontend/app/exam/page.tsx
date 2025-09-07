@@ -53,6 +53,7 @@ interface ExamResult {
     userAnswer: string[]
     correctAnswer: string[]
     score: number
+    obtainedScore: number
   }[]
 }
 
@@ -496,39 +497,95 @@ const ExaminationPage = () => {
       }
 
       // Transform answers to the new submission format
-      const submittedAnswers = answers.map(answer => {
-        const question = findQuestionById(answer.questionId, exam.questions)
-        if (!question) {
-          throw new Error(`Question not found: ${answer.questionId}`)
-        }
+      const submittedAnswers: any[] = []
+      const processedQuestionIds = new Set<string>()
+      
+      exam.questions.forEach(question => {
+        if (question.type === 'nested' && question.questions) {
+          // Handle nested questions - group all sub-question answers under the parent
+          const nestedSubAnswers: any[] = []
+          let totalNestedScore = 0
+          
+          question.questions.forEach(subQuestion => {
+            const subAnswer = answers.find(a => a.questionId === subQuestion._id)
+            if (subAnswer) {
+              const submittedSubAnswer: any = {
+                question_id: subQuestion._id,
+                submitted_question: subQuestion.question,
+                question_type: subQuestion.type,
+                max_score: subQuestion.score
+              }
+              
+              // Add type-specific answer data for sub-questions
+              switch (subQuestion.type) {
+                case 'mc': // Multiple Choice
+                  submittedSubAnswer.submitted_choices = subAnswer.answers
+                  break
+                case 'tf': // True/False
+                  submittedSubAnswer.submitted_boolean = subAnswer.answers[0] === 'true'
+                  break
+                case 'ses': // Short Essay
+                case 'les': // Long Essay
+                  submittedSubAnswer.submitted_answer = subAnswer.essayAnswer || ''
+                  break
+              }
 
-        const submittedAnswer: any = {
-          question_id: answer.questionId,
-          submitted_question: question.question,
-          question_type: question.type,
-          max_score: question.score
-        }
+              // Add choices for all question types (for display and grading purposes)
+              if (subQuestion.choices) {
+                submittedSubAnswer.choices = subQuestion.choices.map(choice => ({
+                  content: choice.content,
+                  isCorrect: choice.isCorrect
+                }))
+              }
+              
+              nestedSubAnswers.push(submittedSubAnswer)
+              totalNestedScore += subQuestion.score
+              processedQuestionIds.add(subQuestion._id)
+            }
+          })
+          
+          // Create the parent nested question submission
+          const nestedSubmission: any = {
+            question_id: question._id,
+            submitted_question: question.question,
+            question_type: 'nested',
+            max_score: totalNestedScore,
+            nested_answers: nestedSubAnswers // Store sub-answers in a separate field
+          }
+          
+          submittedAnswers.push(nestedSubmission)
+          processedQuestionIds.add(question._id)
+        } else {
+          // Handle regular questions (non-nested)
+          if (!processedQuestionIds.has(question._id)) {
+            const answer = answers.find(a => a.questionId === question._id)
+            if (answer) {
+              const submittedAnswer: any = {
+                question_id: answer.questionId,
+                submitted_question: question.question,
+                question_type: question.type,
+                max_score: question.score
+              }
 
-        // Add type-specific answer data
-        switch (question.type) {
-          case 'mc': // Multiple Choice
-            submittedAnswer.submitted_choices = answer.answers
-            break
-          case 'tf': // True/False
-            submittedAnswer.submitted_boolean = answer.answers[0] === 'true'
-            break
-          case 'ses': // Short Essay
-          case 'les': // Long Essay
-            submittedAnswer.submitted_answer = answer.essayAnswer || ''
-            break
-          case 'nested': // Nested questions
-            // For nested questions, we might need to handle sub-questions differently
-            // For now, treat as essay
-            submittedAnswer.submitted_answer = answer.essayAnswer || ''
-            break
-        }
+              // Add type-specific answer data
+              switch (question.type) {
+                case 'mc': // Multiple Choice
+                  submittedAnswer.submitted_choices = answer.answers
+                  break
+                case 'tf': // True/False
+                  submittedAnswer.submitted_boolean = answer.answers[0] === 'true'
+                  break
+                case 'ses': // Short Essay
+                case 'les': // Long Essay
+                  submittedAnswer.submitted_answer = answer.essayAnswer || ''
+                  break
+              }
 
-        return submittedAnswer
+              submittedAnswers.push(submittedAnswer)
+              processedQuestionIds.add(question._id)
+            }
+          }
+        }
       })
 
       // Calculate time taken (if we have start time)
@@ -559,13 +616,18 @@ const ExaminationPage = () => {
           obtainedScore: submission.total_score || 0,
           correctAnswers: submission.submitted_answers?.filter((a: any) => a.is_correct).length || 0,
           totalQuestions: submission.submitted_answers?.length || 0,
-          details: submission.submitted_answers?.map((answer: any) => ({
-            questionId: answer.question_id,
-            isCorrect: answer.is_correct || false,
-            userAnswer: answer.submitted_choices || [answer.submitted_answer || String(answer.submitted_boolean)],
-            correctAnswer: [], // Will be populated by backend if needed
-            score: answer.score_obtained || 0
-          })) || []
+          details: submission.submitted_answers?.map((answer: any) => {
+            // Find the original question to get the max score
+            const question = findQuestionById(answer.question_id, exam.questions)
+            return {
+              questionId: answer.question_id,
+              isCorrect: answer.is_correct || false,
+              userAnswer: answer.submitted_choices || [answer.submitted_answer || String(answer.submitted_boolean)],
+              correctAnswer: [], // Will be populated by backend if needed
+              score: question?.score || answer.max_score || 0, // Use question max score, fallback to backend max_score
+              obtainedScore: answer.score_obtained || 0 // Add obtained score as separate field
+            }
+          }) || []
         }
         
         setExamResult(examResult)

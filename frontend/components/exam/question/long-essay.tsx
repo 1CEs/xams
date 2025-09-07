@@ -91,7 +91,7 @@ const LongEssayForm = () => {
             {expectedAnswers.length > 0 && (
                 <p className="text-sm text-gray-500">
                     Tip: Add multiple expected answers to allow for different correct responses. 
-                    Students can submit any answer that matches one of these expected answers.
+                    Learners can submit any answer that matches one of these expected answers.
                 </p>
             )}
         </div>

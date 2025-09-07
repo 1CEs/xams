@@ -84,7 +84,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
               ) : (
                 // Show randomized student avatars with profile data
                 studentProfiles.map((profile, idx) => (
-                  <Tooltip key={`${profile._id}-${idx}`} content={`${profile.username} (Random Student)`} placement="top">
+                  <Tooltip key={`${profile._id}-${idx}`} content={`${profile.username} (Random Learner)`} placement="top">
                     <Avatar 
                       src={profile.profile_url}
                       name={profile.username.slice(0, 2).toUpperCase()}
@@ -95,7 +95,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
               )}
               {/* Show total student count if there are more than 3 students */}
               {totalStudentCount > 3 && (
-                <Tooltip content={`${totalStudentCount - 3} more students`} placement="top">
+                <Tooltip content={`${totalStudentCount - 3} more learners`} placement="top">
                   <Avatar 
                     name={`+${totalStudentCount - 3}`}
                     className="bg-primary text-white text-xs cursor-pointer hover:scale-110 transition-transform"
@@ -105,7 +105,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
               {/* Show message when no students */}
               {totalStudentCount === 0 && (
                 <div className="text-xs text-default-500 px-2">
-                  No students enrolled
+                  No learners enrolled
                 </div>
               )}
             </AvatarGroup>

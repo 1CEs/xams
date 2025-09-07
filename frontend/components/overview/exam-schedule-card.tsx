@@ -63,10 +63,11 @@ export default function ExamScheduleCard({
 }: ExamScheduleCardProps) {
   const { isOpen, onOpen, onOpenChange } = useDisclosure()
   const { isOpen: isAttemptWarningOpen, onOpen: onAttemptWarningOpen, onOpenChange: onAttemptWarningChange } = useDisclosure()
+  const { isOpen: isRetakeModalOpen, onOpen: onRetakeModalOpen, onOpenChange: onRetakeModalChange } = useDisclosure()
   const router = useRouter()
   const { user } = useUserStore()
   const [isValidatingAttempt, setIsValidatingAttempt] = useState(false)
-  const [attemptInfo, setAttemptInfo] = useState<{ currentAttempts: number; maxAttempts: number } | null>(null)
+  const [attemptInfo, setAttemptInfo] = useState<{ currentAttempts: number; maxAttempts: number; hasCompleted: boolean } | null>(null)
 
   // Fetch exam schedule data using the schedule_id
   const { data: examSchedule, isLoading, error } = useFetch<{ data: ExamSchedule }>(`/exam-schedule/${setting.schedule_id}`)
@@ -146,9 +147,12 @@ export default function ExamScheduleCard({
     try {
       setIsValidatingAttempt(true)
       
-      // First get current attempt count
+      // First get current attempt count and check completion status
       const attemptCountResponse = await clientAPI.get(`/submission/attempts/${setting.schedule_id}/${user._id}`)
       const currentAttempts = attemptCountResponse.data.data?.count || 0
+      
+      // Check if student has completed the exam (has any submissions)
+      const hasCompleted = currentAttempts > 0
       
       // Then check if student can attempt
       const response = await clientAPI.post('/submission/can-attempt', {
@@ -158,12 +162,23 @@ export default function ExamScheduleCard({
       })
 
       if (response.data.success && response.data.data.canAttempt) {
+        // If student has completed but still can attempt, show retake modal
+        if (hasCompleted && schedule.allowed_attempts > 1) {
+          setAttemptInfo({
+            currentAttempts: currentAttempts,
+            maxAttempts: schedule.allowed_attempts,
+            hasCompleted: true
+          })
+          onRetakeModalOpen()
+          return false // Don't proceed directly, let user confirm retake
+        }
         return true
       } else {
-        // Set attempt info and show modal instead of toast
+        // Set attempt info and show limit reached modal
         setAttemptInfo({
           currentAttempts: currentAttempts,
-          maxAttempts: schedule.allowed_attempts
+          maxAttempts: schedule.allowed_attempts,
+          hasCompleted: hasCompleted
         })
         onAttemptWarningOpen()
         return false
@@ -400,7 +415,7 @@ export default function ExamScheduleCard({
         <div className="flex justify-end gap-1 sm:gap-2 flex-wrap pt-2 border-t border-default-200">
           {!isStudent && (
             <>
-              <Tooltip content="View student submissions">
+              <Tooltip content="View learner submissions">
                 <Button
                   isIconOnly
                   size="sm"
@@ -612,6 +627,108 @@ export default function ExamScheduleCard({
                     className="w-full"
                   >
                     I Understand
+                  </Button>
+                </div>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* Retake Confirmation Modal */}
+      <Modal 
+        isOpen={isRetakeModalOpen} 
+        onOpenChange={onRetakeModalChange}
+        size="xl"
+        backdrop="blur"
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-warning to-warning/70 rounded-xl flex items-center justify-center text-white text-xl">
+                    🔄
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-warning">Retake Exam</h3>
+                    <p className="text-sm text-default-500">You have already completed this exam</p>
+                  </div>
+                </div>
+              </ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
+                    <h4 className="font-semibold text-warning mb-2">Exam Status</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-default-600">Exam Title:</span>
+                        <span className="font-medium">{schedule.title}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-default-600">Previous Attempts:</span>
+                        <span className="font-medium text-warning">{attemptInfo?.currentAttempts || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-default-600">Maximum Allowed:</span>
+                        <span className="font-medium">{attemptInfo?.maxAttempts || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-default-600">Remaining Attempts:</span>
+                        <span className="font-medium text-success">
+                          {(attemptInfo?.maxAttempts || 0) - (attemptInfo?.currentAttempts || 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+                    <h4 className="font-semibold text-success mb-2">Good news!</h4>
+                    <p className="text-sm text-default-600">
+                      Your instructor has allowed multiple attempts for this exam. You can retake it to improve your score.
+                    </p>
+                  </div>
+
+                  <div className="bg-default-50 border border-default-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-default-700 mb-2">Important Notes:</h4>
+                    <ul className="text-sm text-default-600 space-y-1">
+                      <li>• Your new submission may replace your previous score</li>
+                      <li>• Make sure you have adequate time to complete the exam</li>
+                      <li>• Review the exam settings before proceeding</li>
+                    </ul>
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <div className="flex gap-2 w-full">
+                  <Button 
+                    color="secondary" 
+                    variant="light"
+                    onPress={() => {
+                      router.push(`/submission-history?schedule_id=${setting.schedule_id}&student_id=${user?._id}`)
+                      onClose()
+                    }}
+                    className="flex-1"
+                  >
+                    View Previous Attempts
+                  </Button>
+                  <Button 
+                    color="danger" 
+                    variant="light"
+                    onPress={onClose}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    color="warning"
+                    onPress={() => {
+                      router.push(`/exam?schedule_id=${setting.schedule_id}`)
+                      onClose()
+                    }}
+                    className="flex-1"
+                  >
+                    Retake Exam
                   </Button>
                 </div>
               </ModalFooter>

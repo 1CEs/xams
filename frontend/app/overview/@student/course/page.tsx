@@ -118,7 +118,7 @@ export default function StudentCoursePage() {
                                                 </span>
                                             )}
                                             <span className="text-xs sm:text-sm bg-primary/20 px-2 py-1 rounded-full">
-                                                {group.students.length} students
+                                                {group.students.length} Learners
                                             </span>
                                         </div>
                                     </div>

@@ -18,7 +18,7 @@ export default function HelpPage() {
 
   const navigationItems = [
     { key: 'overview', label: 'Overview', icon: <MaterialSymbolsListAlt className="w-4 h-4" /> },
-    { key: 'student', label: 'Student Guide', icon: <PhStudentFill className="w-4 h-4" /> },
+    { key: 'Learner', label: 'Learner Guide', icon: <PhStudentFill className="w-4 h-4" /> },
     { key: 'instructor', label: 'Instructor Guide', icon: <FaGroup className="w-4 h-4" /> },
     { key: 'technical', label: 'Technical', icon: <FluentSettings16Filled className="w-4 h-4" /> }
   ]
@@ -33,7 +33,7 @@ export default function HelpPage() {
             <h2 className="text-2xl font-bold mb-4">XAMS - Examination and Assignment Management System</h2>
             <p className="text-default-600 mb-4">
               <strong>XAMS (きょういくざむす)</strong> is a comprehensive web-based examination and assignment management system 
-              designed to streamline educational processes for both instructors and students.
+              designed to streamline educational processes for both instructors and Learners.
             </p>
           </div>
           
@@ -69,7 +69,7 @@ export default function HelpPage() {
               <div className="flex items-start gap-3">
                 <IconParkOutlineCheckCorrect className="w-5 h-5 text-success mt-0.5" />
                 <div>
-                  <strong>Role-based Access Control:</strong> Separate interfaces for students, instructors, and administrators
+                  <strong>Role-based Access Control:</strong> Separate interfaces for Learners, instructors, and administrators
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -142,15 +142,15 @@ export default function HelpPage() {
         </div>
       )
     },
-    student: {
-      title: "Student Guide",
+    Learner: {
+      title: "Learner Guide",
       icon: <PhStudentFill className="w-5 h-5" />,
       content: (
         <div className="space-y-6">
           <div>
-            <h2 className="text-2xl font-bold mb-4">Student/Learner Guide</h2>
+            <h2 className="text-2xl font-bold mb-4">Learner/Learner Guide</h2>
             <p className="text-default-600 mb-4">
-              Complete guide for students to navigate the XAMS platform effectively.
+              Complete guide for Learners to navigate the XAMS platform effectively.
             </p>
           </div>
 
@@ -256,7 +256,7 @@ export default function HelpPage() {
           <div>
             <h2 className="text-2xl font-bold mb-4">Instructor/Teacher Guide</h2>
             <p className="text-default-600 mb-4">
-              Comprehensive guide for instructors to manage courses, create exams, and track student progress.
+              Comprehensive guide for instructors to manage courses, create exams, and track Learner progress.
             </p>
           </div>
 
@@ -299,20 +299,20 @@ export default function HelpPage() {
                     <li>Save the course</li>
                   </ol>
                 </AccordionItem>
-                <AccordionItem key="groups" title="Managing Student Groups">
+                <AccordionItem key="groups" title="Managing Learner Groups">
                   <ol className="list-decimal list-inside space-y-2 text-sm">
                     <li>Open your course</li>
                     <li>Click <strong>"Add Group"</strong></li>
-                    <li>Add students manually or via import</li>
+                    <li>Add Learners manually or via import</li>
                     <li>Configure group settings</li>
                   </ol>
                 </AccordionItem>
-                <AccordionItem key="enrollment" title="Student Enrollment">
+                <AccordionItem key="enrollment" title="Learner Enrollment">
                   <div className="space-y-3 text-sm">
                     <div>
                       <strong>Manual Enrollment:</strong>
                       <ul className="list-disc list-inside ml-4 mt-1">
-                        <li>Add students individually</li>
+                        <li>Add Learners individually</li>
                         <li>Import from user lists</li>
                       </ul>
                     </div>
@@ -571,7 +571,7 @@ export default function HelpPage() {
             <CardBody>
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-semibold mb-3 text-success">For Students</h4>
+                  <h4 className="font-semibold mb-3 text-success">For Learners</h4>
                   <ul className="list-disc list-inside space-y-1 text-sm">
                     <li>Test your system before exam day</li>
                     <li>Find a quiet, stable internet location</li>
@@ -585,7 +585,7 @@ export default function HelpPage() {
                   <ul className="list-disc list-inside space-y-1 text-sm">
                     <li>Set up exams well before deadline</li>
                     <li>Test your own exams thoroughly</li>
-                    <li>Clearly explain procedures to students</li>
+                    <li>Clearly explain procedures to Learners</li>
                     <li>Have backup plans for technical issues</li>
                     <li>Be available during exam periods</li>
                   </ul>

@@ -67,7 +67,7 @@ const ResetPasswordPage = (props: Props) => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background px-4 sm:px-8">
+    <div className="flex items-center justify-center bg-background px-4 sm:px-8">
       <Card className="w-full max-w-sm sm:max-w-md">
         <CardHeader className="flex flex-col gap-1 px-4 sm:px-6">
           <h1 className="text-xl sm:text-2xl font-bold">Reset Password</h1>

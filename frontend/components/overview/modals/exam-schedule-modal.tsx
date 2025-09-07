@@ -235,7 +235,7 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
                     setExamSettingForm(prev => ({ ...prev, schedule_name }))}
                   className="mb-4"
                   isRequired
-                  description="This name will be displayed to students"
+                  description="This name will be displayed to learners"
                 />
                 
                 <Divider className="my-2" />
@@ -364,7 +364,7 @@ const ExamScheduleModal = ({ courseId, groups, initialGroupName }: Props) => {
                     onValueChange={(allowed_review) => 
                       setExamSettingForm(prev => ({ ...prev, allowed_review }))}
                   >
-                    Allow students to review their answers
+                    Allow learners to review their answers
                   </Switch>
                   
                   <Switch

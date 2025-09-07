@@ -171,8 +171,8 @@ export default function QuestionRandomizationModal({
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                         <h4 className="font-medium text-blue-800 mb-2">ℹ️ About Choice Randomization</h4>
                         <ul className="text-sm text-blue-700 space-y-1">
-                            <li>• <strong>Randomized:</strong> Answer choices will be shuffled for each student</li>
-                            <li>• <strong>Fixed:</strong> Answer choices will appear in the same order for all students</li>
+                            <li>• <strong>Randomized:</strong> Answer choices will be shuffled for each learner</li>
+                            <li>• <strong>Fixed:</strong> Answer choices will appear in the same order for all learners</li>
                             <li>• You can change these settings later when editing individual questions</li>
                         </ul>
                     </div>

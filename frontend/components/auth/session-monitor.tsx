@@ -248,6 +248,24 @@ export default function SessionMonitor({
     return () => clearInterval(interval)
   }, [user, checkSession, checkIntervalSeconds])
 
+  // Set up countdown timer for real-time display updates
+  useEffect(() => {
+    if (!user || !isOpen || timeLeft <= 0) return
+
+    const countdownInterval = setInterval(() => {
+      setTimeLeft(prev => {
+        const newTime = Math.max(0, prev - 1)
+        if (newTime <= 0) {
+          // Time expired, trigger session check to handle expiration
+          checkSession()
+        }
+        return newTime
+      })
+    }, 1000) // Update every second
+
+    return () => clearInterval(countdownInterval)
+  }, [user, isOpen, timeLeft > 0, checkSession])
+
   // Format time for display
   const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60)

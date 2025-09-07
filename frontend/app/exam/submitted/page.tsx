@@ -400,7 +400,7 @@ export default function SubmittedExamPage() {
           <p className="mt-4 text-default-500">
             {isLoadingSchedule && "Loading exam schedule..."}
             {isLoadingSubmissionsData && "Loading submissions..."}
-            {isLoadingStudents && "Loading student data..."}
+            {isLoadingStudents && "Loading learner data..."}
           </p>
         </div>
       </div>
@@ -469,7 +469,7 @@ export default function SubmittedExamPage() {
         <div className="flex-1">
           <h1 className="text-xl sm:text-2xl font-bold">{examSchedule?.data?.title}</h1>
           <p className="text-sm sm:text-base text-default-500">
-            All Students ({submissions.length} total)
+            All Learners ({submissions.length} total)
             {courseData && ` - ${courseData.course_name}`}
           </p>
         </div>
@@ -483,7 +483,7 @@ export default function SubmittedExamPage() {
             </Chip>
           </div>
           <Chip color="secondary" variant="flat" className="self-start sm:self-end">
-            {submissions.length} Total Students
+            {submissions.length} Total Learners
           </Chip>
         </div>
 
@@ -515,7 +515,7 @@ export default function SubmittedExamPage() {
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full gap-4">
-            <h3 className="text-lg font-semibold">Student Submissions</h3>
+            <h3 className="text-lg font-semibold">Learner Submissions</h3>
             <Button
               onPress={() => setViewMode(viewMode === 'students' ? 'questions' : 'students')}
               variant="bordered"
@@ -523,7 +523,7 @@ export default function SubmittedExamPage() {
               size="sm"
               className="self-start sm:self-auto"
             >
-              {viewMode === 'students' ? 'Question View' : 'Student View'}
+              {viewMode === 'students' ? 'Question View' : 'Learner View'}
             </Button>
           </div>
         </CardHeader>
@@ -540,7 +540,7 @@ export default function SubmittedExamPage() {
               <div className="text-center py-8">
                 <p className="text-default-600 mb-4">No submissions found for this exam</p>
                 <p className="text-sm text-default-500">
-                  Students haven't submitted any attempts yet.
+                  Learners haven't submitted any attempts yet.
                 </p>
               </div>
             )
@@ -592,7 +592,7 @@ export default function SubmittedExamPage() {
               <div className="max-h-[50vh] sm:max-h-[60vh] overflow-y-auto">
                 <div className="mb-4 p-3 bg-primary-50 rounded-lg border border-primary-200">
                   <p className="text-sm text-primary-700">
-                    💡 Only students who have submitted their exams are shown below.
+                    💡 Only learners who have submitted their exams are shown below.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -628,7 +628,7 @@ export default function SubmittedExamPage() {
                   ))}
                   {submissions.filter(learner => learner.status !== 'unsubmitted').length === 0 && (
                     <div className="text-center py-8 text-default-500">
-                      <p>No students have submitted their exams yet.</p>
+                      <p>No learners have submitted their exams yet.</p>
                     </div>
                   )}
                 </div>
@@ -731,7 +731,7 @@ export default function SubmittedExamPage() {
                 <span className="text-base sm:text-lg">AI Essay Grading Suggestions</span>
               </div>
               <Chip size="sm" color="secondary" variant="flat">
-                {aiResults.length} Student{aiResults.length !== 1 ? 's' : ''}
+                {aiResults.length} Learner{aiResults.length !== 1 ? 's' : ''}
               </Chip>
             </div>
           </ModalHeader>

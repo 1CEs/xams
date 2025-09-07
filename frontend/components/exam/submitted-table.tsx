@@ -31,7 +31,7 @@ const statusColorMap = {
 
 export const SubmittedTable = ({ submissions, onView, onGrade, totalScore = 100 }: SubmittedTableProps) => {
   const columns = [
-    { name: 'STUDENT', uid: 'name' },
+    { name: 'LEARNER', uid: 'name' },
     { name: 'STATUS', uid: 'status' },
     { name: 'SCORE', uid: 'score' },
     { name: 'SUBMISSION TIME', uid: 'submissionDate' },

@@ -79,7 +79,7 @@ const ExploreCourseCard: React.FC<ExploreCourseCardProps> = ({ id, title, descri
               {/* Show message when no students */}
               {totalStudentCount === 0 && (
                 <div className="text-xs text-default-500 px-2">
-                  No students enrolled
+                  No learners enrolled
                 </div>
               )}
             </AvatarGroup>

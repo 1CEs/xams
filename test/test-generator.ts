@@ -63,7 +63,7 @@ export class XAMSTestGenerator {
   private generateAuthTestCases(): TestCase[] {
     return [
       {
-        id: 'AUTH_001', category: 'Authentication', subcategory: 'Registration',
+        id: 'AUTH_001', category: '🔐 Authentication', subcategory: '📝 Registration',
         name: 'Valid User Registration', description: 'Verify successful user registration with valid credentials',
         priority: 'Critical', testType: 'Functional', userRole: 'Anonymous', environment: 'End-to-End', automatable: true,
         preconditions: ['User is not logged in', 'Registration form is accessible'],
@@ -76,7 +76,7 @@ export class XAMSTestGenerator {
         expectedResult: 'User successfully registered and redirected to dashboard'
       },
       {
-        id: 'AUTH_002', category: 'Authentication', subcategory: 'Login',
+        id: 'AUTH_002', category: '🔐 Authentication', subcategory: '🚪 Login',
         name: 'Valid User Login', description: 'Verify registered user can login with correct credentials',
         priority: 'Critical', testType: 'Functional', userRole: 'Anonymous', environment: 'End-to-End', automatable: true,
         preconditions: ['User account exists', 'User is not logged in'],
@@ -94,7 +94,7 @@ export class XAMSTestGenerator {
   private generateCourseTestCases(): TestCase[] {
     return [
       {
-        id: 'COURSE_001', category: 'Course Management', subcategory: 'Course Creation',
+        id: 'COURSE_001', category: '📚 Course Management', subcategory: '✨ Course Creation',
         name: 'Create New Course', description: 'Verify teacher can create a new course',
         priority: 'Critical', testType: 'Functional', userRole: 'Teacher', environment: 'End-to-End', automatable: true,
         preconditions: ['Teacher user is logged in'],
@@ -112,7 +112,7 @@ export class XAMSTestGenerator {
   private generateExamTestCases(): TestCase[] {
     return [
       {
-        id: 'EXAM_001', category: 'Examination', subcategory: 'Exam Creation',
+        id: 'EXAM_001', category: '📋 Examination', subcategory: '🎯 Exam Creation',
         name: 'Create New Examination', description: 'Verify teacher can create examination',
         priority: 'Critical', testType: 'Functional', userRole: 'Teacher', environment: 'End-to-End', automatable: true,
         preconditions: ['Teacher logged in', 'Course exists'],
@@ -130,7 +130,7 @@ export class XAMSTestGenerator {
   private generateBankTestCases(): TestCase[] {
     return [
       {
-        id: 'BANK_001', category: 'Question Bank', subcategory: 'Bank Creation',
+        id: 'BANK_001', category: '🏦 Question Bank', subcategory: '💰 Bank Creation',
         name: 'Create Question Bank', description: 'Verify teacher can create question bank',
         priority: 'High', testType: 'Functional', userRole: 'Teacher', environment: 'Backend', automatable: true,
         preconditions: ['Teacher logged in', 'Exam exists'],
@@ -146,7 +146,7 @@ export class XAMSTestGenerator {
   private generateAITestCases(): TestCase[] {
     return [
       {
-        id: 'AI_001', category: 'AI Assistant', subcategory: 'Answer Validation',
+        id: 'AI_001', category: '🤖 AI Assistant', subcategory: '✅ Answer Validation',
         name: 'AI Answer Validation', description: 'Verify AI can validate student answers',
         priority: 'High', testType: 'Integration', userRole: 'Teacher', environment: 'Backend', automatable: true,
         preconditions: ['AI service available', 'Teacher logged in'],
@@ -162,7 +162,7 @@ export class XAMSTestGenerator {
   private generateSecurityTestCases(): TestCase[] {
     return [
       {
-        id: 'SEC_001', category: 'Security', subcategory: 'Authentication',
+        id: 'SEC_001', category: '🛡️ Security', subcategory: '🔒 Authentication',
         name: 'SQL Injection Protection', description: 'Verify system protects against SQL injection',
         priority: 'Critical', testType: 'Security', userRole: 'Anonymous', environment: 'Backend', automatable: true,
         preconditions: ['Login form accessible'],
@@ -204,41 +204,52 @@ export class XAMSTestGenerator {
     };
   }
 
+  private getPriorityWithEmoji(priority: string): string {
+    switch (priority) {
+      case 'Critical': return '🔴 Critical';
+      case 'High': return '🟠 High';
+      case 'Medium': return '🟡 Medium';
+      case 'Low': return '🟢 Low';
+      default: return priority;
+    }
+  }
+
   public generateExcelReport(): void {
     const report = this.generateTestReport();
     const workbook = XLSX.utils.book_new();
 
-    // Summary Sheet
+    // Summary Sheet with emojis and beautiful formatting
     const summaryData = [
-      ['Test Report Summary', ''],
-      ['Generated At', report.generatedAt.toISOString()],
+      ['📊 XAMS Test Report Summary', ''],
+      ['📅 Generated At', report.generatedAt.toLocaleString()],
       ['', ''],
-      ['Total Test Cases', report.summary.totalTests],
-      ['Critical Priority', report.summary.criticalIssues],
-      ['High Priority', report.summary.highIssues],
-      ['Medium Priority', report.summary.mediumIssues],
-      ['Low Priority', report.summary.lowIssues],
+      ['📈 Test Statistics', ''],
+      ['📝 Total Test Cases', report.summary.totalTests],
+      ['🔴 Critical Priority', report.summary.criticalIssues],
+      ['🟠 High Priority', report.summary.highIssues],
+      ['🟡 Medium Priority', report.summary.mediumIssues],
+      ['🟢 Low Priority', report.summary.lowIssues],
       ['', ''],
-      ['Test Execution Status', ''],
-      ['Passed', report.summary.passedTests],
-      ['Failed', report.summary.failedTests],
-      ['Blocked', report.summary.blockedTests],
-      ['Not Executed', report.summary.notExecuted],
-      ['Pass Rate', `${report.summary.passRate.toFixed(2)}%`]
+      ['🎯 Test Execution Status', ''],
+      ['✅ Passed', report.summary.passedTests],
+      ['❌ Failed', report.summary.failedTests],
+      ['🚫 Blocked', report.summary.blockedTests],
+      ['⏳ Not Executed', report.summary.notExecuted],
+      ['📊 Pass Rate', `${report.summary.passRate.toFixed(2)}%`]
     ];
     const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+    XLSX.utils.book_append_sheet(workbook, summarySheet, '📊 Summary');
 
-    // Test Cases Sheet
-    const testCaseHeaders = ['Test ID', 'Category', 'Subcategory', 'Test Name', 'Description', 
-      'Priority', 'Test Type', 'User Role', 'Environment', 'Automatable', 'Expected Result'];
+    // Test Cases Sheet with beautiful headers
+    const testCaseHeaders = ['🆔 Test ID', '📂 Category', '📁 Subcategory', '📝 Test Name', '📄 Description', 
+      '⚡ Priority', '🔧 Test Type', '👤 User Role', '🌐 Environment', '🤖 Automatable', '🎯 Expected Result'];
     const testCaseData = [testCaseHeaders];
     
     report.suites.forEach(suite => {
       suite.testCases.forEach(testCase => {
         testCaseData.push([
           testCase.id, testCase.category, testCase.subcategory, testCase.name,
-          testCase.description, testCase.priority, testCase.testType,
+          testCase.description, this.getPriorityWithEmoji(testCase.priority), testCase.testType,
           testCase.userRole || '', testCase.environment, 
           testCase.automatable ? 'Yes' : 'No', testCase.expectedResult
         ]);
@@ -246,10 +257,10 @@ export class XAMSTestGenerator {
     });
 
     const testCaseSheet = XLSX.utils.aoa_to_sheet(testCaseData);
-    XLSX.utils.book_append_sheet(workbook, testCaseSheet, 'Test Cases');
+    XLSX.utils.book_append_sheet(workbook, testCaseSheet, '📋 Test Cases');
 
-    // Test Steps Sheet
-    const testStepHeaders = ['Test ID', 'Step Number', 'Action', 'Test Data', 'Expected Outcome'];
+    // Test Steps Sheet with emojis
+    const testStepHeaders = ['🆔 Test ID', '🔢 Step Number', '🎭 Action', '📊 Test Data', '🎯 Expected Outcome'];
     const testStepData = [testStepHeaders];
     
     report.suites.forEach(suite => {
@@ -264,10 +275,10 @@ export class XAMSTestGenerator {
     });
 
     const testStepSheet = XLSX.utils.aoa_to_sheet(testStepData);
-    XLSX.utils.book_append_sheet(workbook, testStepSheet, 'Test Steps');
+    XLSX.utils.book_append_sheet(workbook, testStepSheet, '👣 Test Steps');
 
-    // Write the file
-    XLSX.writeFile(workbook, 'XAMS_Test_Report.xlsx');
-    console.log('Excel test report generated: XAMS_Test_Report.xlsx');
+    // Write the beautiful file
+    XLSX.writeFile(workbook, 'XAMS_Testing_Tables.xlsx');
+    console.log('✨ Beautiful Excel test report generated: XAMS_Testing_Tables.xlsx 🎉');
   }
 }

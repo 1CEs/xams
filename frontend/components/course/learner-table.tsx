@@ -304,7 +304,7 @@ export const LearnersTable = ({ studentIds, courseId, groupName, onStudentRemove
           return {
             label: 'Active',
             color: 'success',
-            description: 'Student is active'
+            description: 'Learner is active'
           };
         };
         
@@ -371,14 +371,14 @@ export const LearnersTable = ({ studentIds, courseId, groupName, onStudentRemove
   if (students.length === 0) {
     return (
       <div className="text-gray-500 p-4 text-center">
-        No student data available
+        No learner data available
       </div>
     );
   }
 
   return (
     <>
-      <Table removeWrapper aria-label="Students table with custom cells">
+      <Table removeWrapper aria-label="Learners table with custom cells">
         <TableHeader columns={columns}>
           {(column) => (
             <TableColumn key={column.uid} align={column.uid === "actions" ? "center" : "start"}>
@@ -401,7 +401,7 @@ export const LearnersTable = ({ studentIds, courseId, groupName, onStudentRemove
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                <h3 className="text-lg font-semibold text-danger">Remove Student</h3>
+                <h3 className="text-lg font-semibold text-danger">Remove Learner</h3>
               </ModalHeader>
               <ModalBody>
                 <p className="text-default-600">
@@ -415,7 +415,7 @@ export const LearnersTable = ({ studentIds, courseId, groupName, onStudentRemove
                   </span>?
                 </p>
                 <p className="text-sm text-warning mt-2">
-                  This action will remove the student from this group and they will lose access to all group resources and exams.
+                  This action will remove the learner from this group and they will lose access to all group resources and exams.
                 </p>
               </ModalBody>
               <ModalFooter>
@@ -433,7 +433,7 @@ export const LearnersTable = ({ studentIds, courseId, groupName, onStudentRemove
                   isLoading={isRemoving}
                   disabled={isRemoving}
                 >
-                  {isRemoving ? "Removing..." : "Remove Student"}
+                  {isRemoving ? "Removing..." : "Remove Learner"}
                 </Button>
               </ModalFooter>
             </>

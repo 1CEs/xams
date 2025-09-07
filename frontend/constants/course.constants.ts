@@ -73,7 +73,7 @@ export type SearchType = 'all' | 'course_name' | 'instructor' | 'category';
 export const SEARCH_TYPE_LABELS: Record<SearchType, string> = {
     all: 'All Fields',
     course_name: 'Course Name',
-    instructor: 'Instructor ID',
+    instructor: 'Instructor Name',
     category: 'Category'
 };
 
@@ -87,14 +87,16 @@ export const searchCourses = (courses: CourseResponse[], searchQuery: string, se
             case 'course_name':
                 return course.course_name.toLowerCase().includes(query);
             case 'instructor':
+                // Instructor search is now handled by API, this is just fallback for client-side filtering
                 return course.instructor_id.toLowerCase().includes(query);
             case 'category':
                 return COURSE_CATEGORY_LABELS[course.category as CourseCategory]?.toLowerCase().includes(query);
             case 'all':
             default:
+                // For 'all' search, only search course name and description on client side
+                // Instructor search is handled by API
                 return course.course_name.toLowerCase().includes(query) ||
                        course.description.toLowerCase().includes(query) ||
-                       course.instructor_id.toLowerCase().includes(query) ||
                        COURSE_CATEGORY_LABELS[course.category as CourseCategory]?.toLowerCase().includes(query);
         }
     });

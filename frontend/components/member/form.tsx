@@ -279,9 +279,9 @@ const Form = (props: Props) => {
                         <Button isDisabled={loading} isLoading={loading} type='submit' className='hero-background text-background' color='primary'>{loading ? null : props.buttonContent}</Button>
                         {props.isSignUp ?
                             <div className='flex justify-between items-center gap-x-5'>
-                                <span className='text-tiny text-white/50'>Sign up as a </span>
+                                <span className='max-sm:hidden text-tiny text-white/50'>Sign up as a </span>
                                 <RadioGroup name='role' size='sm' defaultValue='student' orientation='horizontal'>
-                                    <Radio value='student'>Student</Radio>
+                                    <Radio value='student'>Learner</Radio>
                                     <Radio value='instructor'>Instructor</Radio>
                                 </RadioGroup>
                             </div>

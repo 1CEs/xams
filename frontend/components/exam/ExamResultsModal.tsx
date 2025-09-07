@@ -11,6 +11,7 @@ interface ExamResult {
     userAnswer: string[]
     correctAnswer: string[]
     score: number
+    obtainedScore: number
   }[]
 }
 
@@ -81,7 +82,7 @@ const ExamResultsModal = ({
                         <p className={`text-md ${detail.isCorrect ? 'text-success' : 'text-danger'}`}>
                           {detail.isCorrect ? '✓' : '✗'}
                         </p>
-                        <p className="text-xs text-foreground/50">{detail.isCorrect ? detail.score : 0}/{detail.score}</p>
+                        <p className="text-xs text-foreground/50">{detail.obtainedScore}/{detail.score}</p>
                       </div>
                     </Card>
                   ))}

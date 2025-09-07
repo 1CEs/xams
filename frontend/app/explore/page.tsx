@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import ExploreCourseCard from "@/components/course/explore-course-card";
 import { useUserStore } from "@/stores/user.store";
 import { SolarRefreshLineDuotone, MdiSearch } from "@/components/icons/icons";
@@ -29,32 +29,69 @@ const ExplorePage = (props: Props) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Fetch courses
-  useEffect(() => {
-    const fetchCourses = async () => {
+  // Simple debounce function
+  const debounce = (func: (...args: any[]) => void, delay: number) => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    return (...args: any[]) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func.apply(null, args), delay);
+    };
+  };
+
+  // Debounced fetch function
+  const debouncedFetchCourses = useCallback(
+    debounce(async (query: string, type: SearchType) => {
       setIsLoading(true);
       setError(null);
       
       try {
-        const response = await clientAPI.get('course');
-        setCourses(response.data.data);
+        let response;
+        
+        // Use specific endpoint for instructor name search
+        if (type === 'instructor' && query.trim()) {
+          console.log('🔍 Frontend: Searching instructor name:', query.trim());
+          console.log('🔍 Frontend: API URL:', `course/instructor-name/${encodeURIComponent(query.trim())}`);
+          response = await clientAPI.get(`course/instructor-name/${encodeURIComponent(query.trim())}`);
+          console.log('🔍 Frontend: Instructor search response:', response.data);
+        } else if (query.trim() && (type === 'all' || type === 'course_name')) {
+          // Use general search for other types
+          console.log('🔍 Frontend: General search:', query.trim());
+          response = await clientAPI.get(`course?search=${encodeURIComponent(query.trim())}`);
+          console.log('🔍 Frontend: General search response:', response.data);
+        } else {
+          // Fetch all courses
+          console.log('🔍 Frontend: Fetching all courses');
+          response = await clientAPI.get('course');
+          console.log('🔍 Frontend: All courses response:', response.data);
+        }
+        
+        setCourses(response.data.data || []);
+        console.log('🔍 Frontend: Final courses set:', response.data.data?.length || 0, 'courses');
       } catch (err) {
         errorHandler(err);
         setError("Failed to fetch courses");
+        setCourses([]);
       } finally {
         setIsLoading(false);
       }
-    };
-    
-    fetchCourses();
-  }, []);
+    }, 2000), // 500ms debounce
+    []
+  );
+  
+  // Fetch courses with search functionality
+  useEffect(() => {
+    debouncedFetchCourses(searchQuery, searchType);
+  }, [searchQuery, searchType, debouncedFetchCourses]);
   
   // Apply search, filter, and sort to courses
   const processedCourses = useMemo(() => {
     let filtered = courses;
     
-    // Apply search
-    filtered = searchCourses(filtered, searchQuery, searchType);
+    // Only apply client-side search for category searches or when not using API search
+    if (searchType === 'category' && searchQuery.trim()) {
+      filtered = searchCourses(filtered, searchQuery, searchType);
+    }
+    // Note: For instructor and general searches, filtering is already done by the API
     
     // Apply category filter
     filtered = filterCoursesByCategory(filtered, selectedCategory);
@@ -80,21 +117,6 @@ const ExplorePage = (props: Props) => {
       </div>
     );
   }
-
-  if (!courses || courses.length === 0) {
-    return (
-      <div className="min-h-[400px] flex flex-col items-center justify-center space-y-4">
-        <div className="text-center space-y-4">
-          <div className="text-8xl mb-4">📚</div>
-          <h2 className="text-2xl font-bold text-default-700">No Courses Available</h2>
-          <p className="text-default-500 text-lg max-w-md">
-            There are no courses available at the moment. Please check back later.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full p-6 space-y-6">
       {/* Header */}

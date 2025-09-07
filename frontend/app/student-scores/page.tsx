@@ -241,7 +241,7 @@ const StudentScoresPage = () => {
   // Create dynamic columns based on available exam schedules
   const columns = useMemo(() => {
     const baseColumns = [
-      { name: "STUDENT", uid: "student" },
+      { name: "LEARNER", uid: "learner" },
     ]
     
     // Add columns for each exam schedule
@@ -264,7 +264,7 @@ const StudentScoresPage = () => {
   const exportToExcel = () => {
     try {
       // Define column headers in the desired order
-      const headers = ['Student Name', ...examSchedules.filter(schedule => schedule && schedule.title).map(schedule => schedule.title), 'Total Score']
+      const headers = ['Learner Name', ...examSchedules.filter(schedule => schedule && schedule.title).map(schedule => schedule.title), 'Total Score']
       
       // Prepare data for export with explicit column order
       const exportData = filteredStudentScores.map(student => {
@@ -321,11 +321,11 @@ const StudentScoresPage = () => {
       ws['!cols'] = colWidths
       
       // Add worksheet to workbook
-      XLSX.utils.book_append_sheet(wb, ws, 'Student Scores')
+      XLSX.utils.book_append_sheet(wb, ws, 'Learner Scores')
       
       // Generate filename with current date
       const date = new Date().toISOString().split('T')[0]
-      const filename = `student-scores-${courseData?.course_name || 'course'}-${date}.xlsx`
+      const filename = `learner-scores-${courseData?.course_name || 'course'}-${date}.xlsx`
       
       // Save file
       XLSX.writeFile(wb, filename)
@@ -339,7 +339,7 @@ const StudentScoresPage = () => {
 
   const renderCell = React.useCallback((student: StudentScore, columnKey: string) => {
     switch (columnKey) {
-      case "student":
+      case "learner":
         return (
           <User
             avatarProps={{ radius: "lg", src: student.profile_url }}
@@ -456,7 +456,7 @@ const StudentScoresPage = () => {
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Student Scores</h1>
+          <h1 className="text-2xl font-bold">Learner Scores</h1>
           <p className="text-default-600">
             {courseData?.course_name}
           </p>
@@ -492,7 +492,7 @@ const StudentScoresPage = () => {
               <FileDocument className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-default-600">Total Students</p>
+              <p className="text-sm text-default-600">Total Learners</p>
               <p className="text-lg font-semibold">{overallStats.totalStudents}</p>
             </div>
           </CardBody>
@@ -526,7 +526,7 @@ const StudentScoresPage = () => {
       {/* Students Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <h3 className="text-lg font-semibold">Student Performance</h3>
+          <h3 className="text-lg font-semibold">Learner Performance</h3>
           <Button
             color="success"
             variant="flat"
@@ -538,12 +538,12 @@ const StudentScoresPage = () => {
         </CardHeader>
         <Divider />
         <CardBody>
-          <Table aria-label="Student scores table">
+          <Table aria-label="Learner scores table">
             <TableHeader columns={columns}>
               {(column) => (
                 <TableColumn 
                   key={column.uid} 
-                  align={column.uid === "student" ? "start" : "center"}
+                  align={column.uid === "learner" ? "start" : "center"}
                 >
                   {column.name}
                 </TableColumn>
@@ -555,7 +555,7 @@ const StudentScoresPage = () => {
                   {columns.map((column) => (
                     <TableCell 
                       key={column.uid}
-                      className={column.uid === "student" ? "text-left" : "text-center"}
+                      className={column.uid === "learner" ? "text-left" : "text-center"}
                     >
                       {renderCell(item, column.uid)}
                     </TableCell>

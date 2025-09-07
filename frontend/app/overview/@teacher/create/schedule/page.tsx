@@ -1335,7 +1335,7 @@ export default function CreateSchedulePage() {
                         <div className="flex items-center justify-between p-3 bg-default-100 rounded-xl">
                           <div>
                             <h4 className="font-medium text-sm">Exam Access Code</h4>
-                            <p className="text-xs text-default-500">Require a code for students to access the exam</p>
+                            <p className="text-xs text-default-500">Require a code for Learners to access the exam</p>
                           </div>
                           <Switch
                             color="secondary"
@@ -1352,7 +1352,7 @@ export default function CreateSchedulePage() {
                           <Input
                             type="datetime-local"
                             label="Open Time"
-                            description="When students can start taking the exam"
+                            description="When Learners can start taking the exam"
                             value={formatDateForInput(examSettingForm.open_time)}
                             onChange={(e) => setExamSettingForm({ ...examSettingForm, open_time: new Date(e.target.value) })}
                             isRequired={enableScheduling}
@@ -1379,7 +1379,7 @@ export default function CreateSchedulePage() {
                       {!enableScheduling && (
                         <div className="p-3 bg-success-50 border border-success-200 rounded-lg">
                           <p className="text-sm text-success-700">
-                            📅 <strong>Immediate Access:</strong> Students can access this exam immediately after creation with no time restrictions.
+                            📅 <strong>Immediate Access:</strong> Learners can access this exam immediately after creation with no time restrictions.
                           </p>
                         </div>
                       )}
@@ -1427,7 +1427,7 @@ export default function CreateSchedulePage() {
                       {!enableExamCode && (
                         <div className="p-3 bg-success-50 border border-success-200 rounded-lg">
                           <p className="text-sm text-success-700">
-                            🔓 <strong>Open Access:</strong> Students can access this exam without needing an access code.
+                            🔓 <strong>Open Access:</strong> Learners can access this exam without needing an access code.
                           </p>
                         </div>
                       )}
@@ -1529,7 +1529,7 @@ export default function CreateSchedulePage() {
                           {/* Information */}
                           <div className="p-3 bg-warning-50 border border-warning-200 rounded-lg">
                             <p className="text-xs text-warning-700">
-                              ⚠️ <strong>Note:</strong> Students will only be able to access the exam from the specified IP addresses or ranges. Make sure to include all necessary IP addresses for your students.
+                              ⚠️ <strong>Note:</strong> Learners will only be able to access the exam from the specified IP addresses or ranges. Make sure to include all necessary IP addresses for your Learners.
                             </p>
                           </div>
                         </div>
@@ -1538,7 +1538,7 @@ export default function CreateSchedulePage() {
                       {!enableIpRestriction && (
                         <div className="p-3 bg-success-50 border border-success-200 rounded-lg">
                           <p className="text-sm text-success-700">
-                            🌐 <strong>No IP Restriction:</strong> Students can access this exam from any IP address.
+                            🌐 <strong>No IP Restriction:</strong> Learners can access this exam from any IP address.
                           </p>
                         </div>
                       )}
@@ -1603,7 +1603,7 @@ export default function CreateSchedulePage() {
                           </Button>
                         </div>
                         <p className="text-xs text-default-500">
-                          Number of attempts allowed per student (1-10)
+                          Number of attempts allowed per Learner (1-10)
                         </p>
                       </div>
                     </div>
@@ -1740,7 +1740,7 @@ export default function CreateSchedulePage() {
                         onValueChange={(value) => setExamSettingForm({ ...examSettingForm, allowed_review: value })}
                         isDisabled={submitting}
                       >
-                        Allow students to review their answers after submission
+                        Allow Learners to review their answers after submission
                       </Switch>
 
                       <Switch
@@ -1983,11 +1983,112 @@ export default function CreateSchedulePage() {
       >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1 px-6 py-4">
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold">Configure Question Selection</h2>
-              <Badge color="secondary" variant="flat">
-                {selectedExams.length} exam{selectedExams.length > 1 ? 's' : ''}
-              </Badge>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold">Configure Question Selection</h2>
+                <Badge color="secondary" variant="flat">
+                  {selectedExams.length} exam{selectedExams.length > 1 ? 's' : ''}
+                </Badge>
+              </div>
+              
+              {/* Select All Checkbox */}
+              {(() => {
+                const allQuestionsFromManualExams = selectedExams.flatMap(examId => {
+                  const selectionMethod = examSelectionMethods[examId] || 'manual';
+                  if (selectionMethod === 'manual') {
+                    return examQuestions[examId] || [];
+                  }
+                  return [];
+                });
+                
+                const allSelectedFromManualExams = selectedQuestions.filter(q => {
+                  const selectionMethod = examSelectionMethods[q.examId] || 'manual';
+                  return selectionMethod === 'manual';
+                });
+                
+                const hasManualExams = selectedExams.some(examId => 
+                  (examSelectionMethods[examId] || 'manual') === 'manual'
+                );
+                
+                if (!hasManualExams || allQuestionsFromManualExams.length === 0) return null;
+                
+                const isAllSelected = allQuestionsFromManualExams.length > 0 && 
+                  allQuestionsFromManualExams.every(question => 
+                    allSelectedFromManualExams.some(sq => sq._id === question._id)
+                  );
+                  
+                const isIndeterminate = !isAllSelected && allSelectedFromManualExams.length > 0;
+                
+                return (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      isSelected={isAllSelected}
+                      isIndeterminate={isIndeterminate}
+                      onValueChange={(checked) => {
+                        if (checked) {
+                          // Select all questions from manual selection exams
+                          const questionsToAdd: SelectedQuestion[] = [];
+                          
+                          selectedExams.forEach(examId => {
+                            const selectionMethod = examSelectionMethods[examId] || 'manual';
+                            if (selectionMethod === 'manual') {
+                              const exam = examinations.find(e => e._id === examId);
+                              const questions = examQuestions[examId] || [];
+                              
+                              questions.forEach(question => {
+                                const isAlreadySelected = selectedQuestions.some(
+                                  sq => sq._id === question._id && sq.examId === examId
+                                );
+                                
+                                if (!isAlreadySelected && exam) {
+                                  questionsToAdd.push({
+                                    ...question,
+                                    examId,
+                                    examTitle: exam.title
+                                  });
+                                }
+                              });
+                            }
+                          });
+                          
+                          setSelectedQuestions(prev => [...prev, ...questionsToAdd]);
+                          
+                          // Update selection mode
+                          const hasManualSelections = true; // We're adding manual selections
+                          const hasRandomSelections = Object.values(examSelectionMethods).some(method => method === 'random');
+                          
+                          if (hasManualSelections && hasRandomSelections) {
+                            setSelectionMode('hybrid');
+                          } else {
+                            setSelectionMode('manual');
+                          }
+                          
+                          // Add to selection history
+                          setSelectionHistory(prev => [...prev, {
+                            mode: 'manual',
+                            timestamp: Date.now()
+                          }]);
+                          
+                        } else {
+                          // Deselect all questions from manual selection exams
+                          setSelectedQuestions(prev => 
+                            prev.filter(q => {
+                              const selectionMethod = examSelectionMethods[q.examId] || 'manual';
+                              return selectionMethod !== 'manual';
+                            })
+                          );
+                        }
+                      }}
+                      size="sm"
+                    >
+                      <span className="text-sm font-medium">Select All</span>
+                    </Checkbox>
+                    <span className="text-xs text-default-500">
+                      ({allQuestionsFromManualExams.length} questions)
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
             <p className="text-sm text-default-500">
               Choose how to select questions for each examination. You can mix manual and random selection methods.

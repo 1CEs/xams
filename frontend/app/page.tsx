@@ -24,7 +24,7 @@ export default function Home() {
           </span>
           <div className="mt-6 sm:mt-8 p-4 sm:p-6 lg:p-8 border-l-4 border-primary bg-black/20 cursor-pointer transition duration-500 hover:text-primary hover:-translate-y-2 lg:hover:-translate-y-5 max-w-lg lg:max-w-none">
             <p className="text-sm sm:text-base indent-4 sm:indent-8 leading-relaxed">
-              Our <span className="text-highlight">website</span> offers an intuitive and efficient platform for managing <span className="text-highlight">exams</span> and <span className="text-highlight">assignments</span>, providing educators and students with all the tools they need for seamless academic engagement. Instructors can <span className="text-highlight">easily</span> create, schedule, and grade exams, set clear guidelines for assignments, and monitor student progress.
+              Our <span className="text-highlight">website</span> offers an intuitive and efficient platform for managing <span className="text-highlight">exams</span> and <span className="text-highlight">assignments</span>, providing educators and learners with all the tools they need for seamless academic engagement. Instructors can <span className="text-highlight">easily</span> create, schedule, and grade exams, set clear guidelines for assignments, and monitor learner progress.
             </p>
           </div>
         </div>
