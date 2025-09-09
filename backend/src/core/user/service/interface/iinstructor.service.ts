@@ -2,7 +2,6 @@ import { UpdateWriteOpResult } from "mongoose"
 import { CategoryPayload } from "../../../../types/user"
 import { IInstructor } from "../../model/interface/iintructor"
 export interface IInstructorService {
-    getCategory: (instructor_id: string) => Promise<IInstructor['categories'] | undefined>
     getBank: (instructor_id: string) => Promise<IInstructor['bank'] | undefined>
     updateExam: (instructor_id: string, examination_id: string) => Promise<UpdateWriteOpResult>
     updateBank: (instructor_id: string, bank_id: string) => Promise<UpdateWriteOpResult>

@@ -8,11 +8,6 @@ export class InstructorService extends UserService<IInstructor> implements IInst
     constructor(role: UserRole) {
         super(role)
     }
-
-    async getCategory(instructor_id: string) {
-        const result = await (this._repository as InstructorRepository).getCategory(instructor_id)
-        return result
-    }
     
     async getBank(instructor_id: string) {
         const result = await (this._repository as InstructorRepository).getBank(instructor_id)

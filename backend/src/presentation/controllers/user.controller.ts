@@ -69,10 +69,6 @@ export class UserController implements IUserController {
     }
 
     // Instructor-Only methods
-    async getCategory (instructor_id: string) {
-        const categories = await (this._factory.createService('instructor') as InstructorService).getCategory(instructor_id)
-        return this._response<typeof categories>('Done', 200, categories)
-    }
     
     async getBank (instructor_id: string) {
         const banks = await (this._factory.createService('instructor') as InstructorService).getBank(instructor_id)

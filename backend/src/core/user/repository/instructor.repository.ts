@@ -10,11 +10,6 @@ export class InstructorRepository
     constructor() {
         super(InstructorModel)
     }
-
-    async getCategory (instructor_id: string) {
-        const result = await this._model.findById(instructor_id).exec()
-        return result?.categories
-    }
     
     async getBank (instructor_id: string) {
         const result = await this._model.findById(instructor_id).populate('bank').exec()
