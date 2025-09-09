@@ -291,7 +291,7 @@ const Form = (props: Props) => {
                     </div>
                     <Divider />
                     <div className='flex gap-x-4 pb-3 text-sm items-center'>
-                        <span className='text-white/30'>{props.isSignUp ? 'Already have an account?' : `Don't have an accounr?`}</span>
+                        <span className='text-white/30'>{props.isSignUp ? 'Already have an account?' : `Don't have an account?`}</span>
                         <Link className='hero-foreground' href={`/member/${props.isSignUp ? 'sign-in' : 'sign-up'}`}>{props.isSignUp ? 'Sign In' : 'Sign Up'}</Link>
                     </div>
                 </CardFooter>

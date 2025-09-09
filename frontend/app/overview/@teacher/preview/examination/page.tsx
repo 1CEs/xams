@@ -51,6 +51,7 @@ interface ExamResult {
     userAnswer: string[]
     correctAnswer: string[]
     score: number
+    obtainedScore: number
   }[]
 }
 
@@ -312,7 +313,8 @@ const PreviewExaminationPage = () => {
                     : ''
               )
               : [],
-        score: questionScore
+        score: question.score,
+        obtainedScore: questionScore
       }
     })
 

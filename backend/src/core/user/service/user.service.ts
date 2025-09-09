@@ -122,7 +122,7 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
 
         const url = mode === 'dev' ? 'http://localhost:8081' : 'https://xams.online'
 
-        await sendEmail({
+        const { isSent } = await sendEmail({
             to: user.email,
             subject: "Password Reset Request",
             html: `
@@ -177,6 +177,9 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
             `
         })
 
+        if (!isSent) {
+            return this._errorResponse("Failed to send email", 500, 'InternalServerError')
+        }
         return { message: "Password reset email sent successfully" }
     }
 

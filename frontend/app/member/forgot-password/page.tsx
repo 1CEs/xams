@@ -38,15 +38,19 @@ const ForgotPasswordPage = (props: Props) => {
 
     try {
       const response = await clientAPI.post('/auth/forgot-password', { email })
-      toast.success(response.data.message || AUTH_ERROR_MESSAGES.FORGOT_PASSWORD.SUCCESS)
-      router.push('/member/sign-in')
+      if (response.data.data.message === 'User not found') {
+        toast.error("This email is not registered please try again.")
+      } else {
+        toast.success(response.data.message)
+        router.push('/member/sign-in')
+      }
     } catch (error) {
       if (isAxiosError(error)) {
         const errorData = error.response?.data
         let userFriendlyMessage = ''
         
         // Use centralized error message handling
-        userFriendlyMessage = getAuthErrorMessage(errorData, false)
+        userFriendlyMessage = errorData.data?.message
         
         // Handle specific forgot password errors
         if (userFriendlyMessage === 'An unexpected error occurred') {
@@ -91,6 +95,7 @@ const ForgotPasswordPage = (props: Props) => {
               isDisabled={isLoading}
               size="sm"
             />
+            <span className="block mt-1 text-xs sm:text-tiny text-center">May take a few minutes to receive the email or check your spam folder.</span>
           </CardBody>
           <Divider />
           <CardFooter className="flex flex-col gap-4 px-4 sm:px-6">
@@ -110,6 +115,7 @@ const ForgotPasswordPage = (props: Props) => {
               </Link>
             </div>
           </CardFooter>
+          
         </form>
       </Card>
     </div>

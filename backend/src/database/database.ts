@@ -10,10 +10,9 @@ export class Database implements IDatabase {
 
     async connect(connectionString: string) {
         try {
-            return { db: await this.database.connect(connectionString), err: null }
+            return { db: await this.database.connect(connectionString, { authSource: 'admin', dbName: 'xams-db' }), err: null }
         } catch (error) {
             return { db: null, err: error as string }
         }
-        
     }
 }

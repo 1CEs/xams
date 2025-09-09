@@ -367,6 +367,12 @@ const SubmissionHistoryPage = () => {
   }
 
   // Format time taken
+  // Strip HTML tags from content
+  const stripHtmlTags = (content: string): string => {
+    if (!content) return ''
+    return content.replace(/<[^>]*>/g, '').trim()
+  }
+
   const formatTimeTaken = (seconds?: number) => {
     if (!seconds) return 'N/A'
     const hours = Math.floor(seconds / 3600)
@@ -621,7 +627,7 @@ const SubmissionHistoryPage = () => {
                       {targetQuestion.type?.toUpperCase()} Question
                     </Chip>
                     <p className="text-sm text-default-500 mt-1">
-                      {targetQuestion.question.replace(/<[^>]*>/g, '').substring(0, 100)}...
+                      {stripHtmlTags(targetQuestion.question).substring(0, 100)}...
                     </p>
                   </div>
                 )}
@@ -968,7 +974,9 @@ const SubmissionHistoryPage = () => {
                                               </div>
 
                                               {/* Question Text */}
-                                              <p className="text-sm text-default-700 mb-3 font-medium" dangerouslySetInnerHTML={{ __html: answer.submitted_question }}></p>
+                                              <p className="text-sm text-default-700 mb-3 font-medium">
+                                                {stripHtmlTags(answer.submitted_question)}
+                                              </p>
 
                                               {/* Answer Section with Accordion */}
                                               {answer.question_type === 'mc' && answer.original_choices ? (
@@ -1022,7 +1030,7 @@ const SubmissionHistoryPage = () => {
                                                               }}
                                                             >
                                                               <div className="flex items-center justify-between w-full">
-                                                                <span className="text-sm">{choice.content}</span>
+                                                                <span className="text-sm">{stripHtmlTags(choice.content)}</span>
                                                                 <div className="flex items-center gap-2">
                                                                   {isSelected && (
                                                                     <Chip size="sm" className='bg-blue-400/40' variant="flat">
@@ -1077,7 +1085,9 @@ const SubmissionHistoryPage = () => {
                                                       </div>
                                                       
                                                       {/* Sub-question text */}
-                                                      <div className="text-sm text-default-700 font-medium" dangerouslySetInnerHTML={{ __html: nestedAnswer.submitted_question }} />
+                                                      <div className="text-sm text-default-700 font-medium">
+                                                        {stripHtmlTags(nestedAnswer.submitted_question)}
+                                                      </div>
                                                       
                                                       {/* Sub-question answer - Multiple Choice */}
                                                       {nestedAnswer.question_type === 'mc' && nestedAnswer.original_choices ? (
@@ -1132,7 +1142,7 @@ const SubmissionHistoryPage = () => {
                                                                     >
                                                                       <div className="flex items-center justify-between w-full">
                                                                         <span className="font-medium text-default-700">
-                                                                          {choice.content}
+                                                                          {stripHtmlTags(choice.content)}
                                                                         </span>
                                                                         <div className="flex items-center gap-2">
                                                                           {isSelected && (
@@ -1212,10 +1222,9 @@ const SubmissionHistoryPage = () => {
                                                             <span className="text-xs font-medium text-foreground  px-2 py-1 rounded-full min-w-fit">
                                                               {expectedAnswers.length > 1 ? `${index + 1}.` : '✓'}
                                                             </span>
-                                                            <div
-                                                              className="text-sm text-foreground flex-1"
-                                                              dangerouslySetInnerHTML={{ __html: expectedAnswer }}
-                                                            />
+                                                            <div className="text-sm text-foreground flex-1">
+                                                              {stripHtmlTags(expectedAnswer)}
+                                                            </div>
                                                           </div>
                                                         </div>
                                                       ))}

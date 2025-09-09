@@ -12,6 +12,7 @@
     "@huggingface/inference": "^4.0.6",
     "elysia": "^1.2.25",
     "mongoose": "^8.8.0",
+    "node-mailjet": "^6.0.9",
     "nodemailer": "^6.10.0"
   },
   "devDependencies": {

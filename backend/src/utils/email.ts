@@ -6,24 +6,24 @@ interface EmailOptions {
     html: string
 }
 
-export const sendEmail = async (options: EmailOptions): Promise<void> => {
-    if (!process.env.EMAIL_HOST || !process.env.EMAIL_PORT || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+export const sendEmail = async (options: EmailOptions): Promise<{ isSent: boolean }> => {
+    if (!process.env.NAMECHEAP_HOST || !process.env.NAMECHEAP_PORT || !process.env.NAMECHEAP_USER || !process.env.NAMECHEAP_PASS) {
         throw new Error('Email configuration is not complete')
     }
 
     const transporter = nodemailer.createTransport({
-        service: 'Gmail',
-        host: process.env.EMAIL_HOST,
-        port: parseInt(process.env.EMAIL_PORT),
-        secure: process.env.EMAIL_PORT === '465',
+        host: process.env.NAMECHEAP_HOST,
+        port: parseInt(process.env.NAMECHEAP_PORT),
+        secure: true,
         auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-        }
-    })
+          user: process.env.NAMECHEAP_USER,
+          pass: process.env.NAMECHEAP_PASS
+        },
+        logger: true
+    });
 
     const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: process.env.NAMECHEAP_USER,
         to: options.to,
         subject: options.subject,
         html: options.html
@@ -31,7 +31,10 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
 
     try {
         await transporter.sendMail(mailOptions)
+        transporter.close()
+        return { isSent: true }
     } catch (error) {
+        transporter.close()
         console.error('Error sending email:', error)
         throw new Error('Failed to send email')
     }
