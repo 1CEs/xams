@@ -20,8 +20,8 @@ export const ExamScheduleRoute = new Elysia({ prefix: '/exam-schedule' })
                 await controller.getAllExaminationSchedules()))
             
             // Get exam schedule by ID
-            .get('/:id', catchAsync(async ({ params, controller }: ExamScheduleContext & { params: { id: string } }) => 
-                await controller.getExaminationScheduleById(params.id)))
+            .get('/:id', catchAsync(async ({ params, controller, user }: ExamScheduleContext & { params: { id: string }, user: any }) => 
+                await controller.getExaminationScheduleById(params.id, user)))
             
             // Verify exam password
             .post('/:id/verify', catchAsync(async ({ params, body, controller }: ExamScheduleContext & { 

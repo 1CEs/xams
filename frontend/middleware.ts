@@ -40,6 +40,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   // Define all protected routes that require authentication
   matcher: [
+    '/feedback',
     '/overview/:path*',  // Matches /overview and all its subpaths
   ]
 }

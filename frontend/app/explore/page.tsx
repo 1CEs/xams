@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import ExploreCourseCard from "@/components/course/explore-course-card";
 import { useUserStore } from "@/stores/user.store";
 import { SolarRefreshLineDuotone, MdiSearch } from "@/components/icons/icons";
-import { Alert, Divider, Input, Select, SelectItem, Button, Chip } from "@nextui-org/react";
+import { Alert, Divider, Input, Select, SelectItem, Button, Chip, Pagination } from "@nextui-org/react";
 import { clientAPI } from "@/config/axios.config";
 import { errorHandler } from "@/utils/error";
 import Loading from "@/components/state/loading";
@@ -28,6 +28,10 @@ const ExplorePage = (props: Props) => {
   const [courses, setCourses] = useState<CourseResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12; // Show 12 courses per page
   
   // Simple debounce function
   const debounce = (func: (...args: any[]) => void, delay: number) => {
@@ -101,6 +105,17 @@ const ExplorePage = (props: Props) => {
     
     return filtered;
   }, [courses, searchQuery, searchType, selectedCategory, sortOrder]);
+
+  // Calculate pagination data
+  const totalPages = Math.ceil(processedCourses.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCourses = processedCourses.slice(startIndex, endIndex);
+  
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, searchType, selectedCategory, courses]);
 
   if (isLoading) {
     return (
@@ -202,7 +217,7 @@ const ExplorePage = (props: Props) => {
       {/* Results Info */}
       {(searchQuery || selectedCategory !== 'all' || searchType !== 'all') && (
         <div className="flex items-center gap-2 text-sm text-default-500">
-          <span>Showing {processedCourses.length} of {courses.length} courses</span>
+          <span>Showing {paginatedCourses.length} of {processedCourses.length} courses (Page {currentPage} of {totalPages || 1})</span>
           {searchQuery && (
             <Chip size="sm" variant="flat" color="primary">
               {SEARCH_TYPE_LABELS[searchType]}: "{searchQuery}"
@@ -241,7 +256,7 @@ const ExplorePage = (props: Props) => {
           </div>
         ) : (
           <div className="flex flex-wrap justify-start gap-4">
-            {processedCourses.map((course: CourseResponse, idx: number) => (
+            {paginatedCourses.map((course: CourseResponse, idx: number) => (
               <div key={course._id} className="transform transition-all duration-300 hover:scale-105">
                 <ExploreCourseCard
                   id={course._id}
@@ -257,11 +272,27 @@ const ExplorePage = (props: Props) => {
         )}
       </div>
       
+      {/* Pagination */}
+      {processedCourses.length > itemsPerPage && (
+        <div className="flex justify-center mt-8">
+          <Pagination
+            total={totalPages}
+            page={currentPage}
+            onChange={setCurrentPage}
+            showControls
+            showShadow
+            color="primary"
+            size="md"
+            className="gap-2"
+          />
+        </div>
+      )}
+      
       {/* Results count */}
       {processedCourses.length > 0 && (
-        <div className="text-center mt-8">
+        <div className="text-center mt-4">
           <p className="text-default-500">
-            Showing {processedCourses.length} course{processedCourses.length !== 1 ? 's' : ''}
+            Showing {startIndex + 1}-{Math.min(endIndex, processedCourses.length)} of {processedCourses.length} course{processedCourses.length !== 1 ? 's' : ''}
           </p>
         </div>
       )}

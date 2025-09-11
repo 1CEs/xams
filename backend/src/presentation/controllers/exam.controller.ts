@@ -42,30 +42,49 @@ export class ExaminationController implements IExaminationController {
     private _sanitizeExamData(exam: IExamination | IExaminationSchedule | IExamination[] | IExaminationSchedule[] | null, user?: IInstructor): any {
         if (!exam) return null;
 
+        const sanitizeQuestion = (question: IQuestion): IQuestion => {
+            // If user is an instructor, return the full question with all data
+            if (user && user.role === 'instructor') {
+                // Also handle nested questions for instructors
+                if (question.type === 'nested' && question.questions) {
+                    return {
+                        ...question,
+                        questions: question.questions.map(subQ => sanitizeQuestion(subQ))
+                    };
+                }
+                return question;
+            }
+
+            // For students, censor sensitive answer-revealing properties
+            const sanitized: any = {
+                ...question,
+                // Remove answer-revealing properties
+                isTrue: undefined,
+                expectedAnswers: []
+            };
+
+            // Censor choices by removing isCorrect and score
+            if (question.choices && Array.isArray(question.choices)) {
+                sanitized.choices = question.choices.map((choice: any) => ({
+                    content: choice.content,
+                    _id: choice._id
+                    // Remove isCorrect and score properties
+                }));
+            }
+
+            // Handle nested questions recursively
+            if (question.type === 'nested' && question.questions) {
+                sanitized.questions = question.questions.map((subQ: IQuestion) => sanitizeQuestion(subQ));
+            }
+
+            return sanitized;
+        };
+
         const sanitizeExam = (examination: IExamination | IExaminationSchedule) => {
             const sanitized = JSON.parse(JSON.stringify(examination));
             
             if (sanitized.questions && sanitized.questions.length > 0) {
-                sanitized.questions = sanitized.questions.map((question: IQuestion) => {
-                    if (user && user.role === 'instructor') {
-                        return {
-                            ...question,
-                        };
-                    }
-                    const sanitizedQuestion = {
-                        ...question,
-                        choices: question.choices?.map((choice: typeof question.choices[0]) => ({
-                            ...choice,
-                            isCorrect: "Wow this is correct? LOL",
-                            score: "Just do the exam newbie."
-                        })),
-                        isMultiAnswer: question.choices ? question.choices.filter(choice => choice.isCorrect).length > 1 : false
-                    };
-
-                    console.log(sanitizedQuestion)
-
-                    return sanitizedQuestion
-                });
+                sanitized.questions = sanitized.questions.map((question: IQuestion) => sanitizeQuestion(question));
             }
             
             return sanitized;
@@ -166,7 +185,7 @@ export class ExaminationController implements IExaminationController {
         }
     }
 
-    async getExaminationScheduleById(id: string) {
+    async getExaminationScheduleById(id: string, user?: IInstructor) {
         try {
             const schedule = await this._scheduleService.getExaminationScheduleById(id);
             
@@ -174,7 +193,7 @@ export class ExaminationController implements IExaminationController {
                 return this._response('Examination schedule not found', 404, null);
             }
             
-            return this._response<typeof schedule>('Done', 200, schedule);
+            return this._response<typeof schedule>('Done', 200, this._sanitizeExamData(schedule, user));
         } catch (error: any) {
             console.error('Error getting examination schedule:', error);
             return this._response(`Error getting examination schedule: ${error.message || 'Unknown error'}`, 500, null);

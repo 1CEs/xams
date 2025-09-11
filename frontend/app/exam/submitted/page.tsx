@@ -559,18 +559,6 @@ export default function SubmittedExamPage() {
         </CardBody>
       </Card>
 
-      {/* Floating Action Button */}
-      <Button
-        isIconOnly
-        color="secondary"
-        radius="full"
-        className="fixed animate-bounce bottom-4 right-4 sm:bottom-8 sm:right-8 z-50 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
-        size="lg"
-        aria-label="AI Essay Grading Assistant"
-        onPress={openModal}
-      >
-        <MdiRobot className="w-6 h-6" />
-      </Button>
 
       {/* AI Validation Modal */}
       <Modal 
