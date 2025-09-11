@@ -4,6 +4,7 @@ interface EmailOptions {
     to: string
     subject: string
     html: string
+    replyTo?: string
 }
 
 export const sendEmail = async (options: EmailOptions): Promise<{ isSent: boolean }> => {
@@ -23,10 +24,16 @@ export const sendEmail = async (options: EmailOptions): Promise<{ isSent: boolea
     });
 
     const mailOptions = {
-        from: process.env.NAMECHEAP_USER,
+        from: `"XAMS Support" <${process.env.NAMECHEAP_USER}>`,
         to: options.to,
         subject: options.subject,
-        html: options.html
+        html: options.html,
+        replyTo: options.replyTo || process.env.NAMECHEAP_USER,
+        headers: {
+            'X-Mailer': 'XAMS',
+            'X-Priority': '1',
+            'List-Unsubscribe': `<mailto:${process.env.NAMECHEAP_USER}?subject=Unsubscribe>`
+        }
     }
 
     try {
