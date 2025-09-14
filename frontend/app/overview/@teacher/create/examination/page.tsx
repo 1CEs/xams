@@ -695,7 +695,7 @@ export default function CreateExaminationPage() {
                                 
                                 {/* Pagination Controls */}
                                 {totalPages > 1 && (
-                                    <div className="flex flex-col sm:flex-row gap-2 mt-4 items-center">
+                                    <div className="flex flex-col sm:flex-row gap-2 mt-4 mb-8 items-center justify-center">
                                         <Button
                                             size="sm"
                                             variant="flat"

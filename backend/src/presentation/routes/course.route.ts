@@ -63,16 +63,16 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
     }), {
         body: AddGroupSchema
     })
-    .patch('/:id/group/:groupName', catchAsync(async ({ params, body, controller }: CourseContext & { params: { id: string, groupName: string }, body: UpdateGroupBody }) => {
-        return await controller.updateGroup(params.id, params.groupName, body);
+    .patch('/:id/group/:groupId', catchAsync(async ({ params, body, controller }: CourseContext & { params: { id: string, groupId: string }, body: UpdateGroupBody }) => {
+        return await controller.updateGroup(params.id, params.groupId, body);
     }), {
         body: UpdateGroupSchema
     })
-    .delete('/:id/group/:groupName', catchAsync(async ({ params, controller }: CourseContext & { params: { id: string, groupName: string } }) => {
-        return await controller.deleteGroup(params.id, params.groupName);
+    .delete('/:id/group/:groupId', catchAsync(async ({ params, controller }: CourseContext & { params: { id: string, groupId: string } }) => {
+        return await controller.deleteGroup(params.id, params.groupId);
     }))
     // Exam setting routes
-    .post('/:id/group/:groupName/exam-setting', catchAsync(async ({ params, body, controller }: CourseContext & { params: { id: string, groupName: string }, body: ExamSettingBody }) => {
+    .post('/:id/group/:groupId/exam-setting', catchAsync(async ({ params, body, controller }: CourseContext & { params: { id: string, groupId: string }, body: ExamSettingBody }) => {
         // Convert date strings to Date objects and pass all exam setting data
         console.log('=== EXAM SETTING CREATION DEBUG ===');
         console.log('Received total_score from frontend:', body.total_score);
@@ -94,17 +94,18 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
             question_count: body.question_count,
             total_score: body.total_score,
             assistant_grading: body.assistant_grading,
-            selected_questions: body.selected_questions
+            selected_questions: body.selected_questions,
+            time_taken: body.time_taken
         };
         
         console.log('Passing total_score to controller:', examSettingData.total_score);
         console.log('Passing assistant_grading to controller:', examSettingData.assistant_grading);
         console.log('Full examSettingData object:', JSON.stringify(examSettingData, null, 2));
-        return await controller.addGroupExamSetting(params.id, params.groupName, examSettingData);
+        return await controller.addGroupExamSetting(params.id, params.groupId, examSettingData);
     }), {
         body: ExamSettingSchema
     })
-    .put('/:id/group/:groupName/exam-setting/:scheduleId', catchAsync(async ({ params, body, controller }: CourseContext & { params: { id: string, groupName: string, scheduleId: string }, body: ExamSettingBody }) => {
+    .put('/:id/group/:groupId/exam-setting/:scheduleId', catchAsync(async ({ params, body, controller }: CourseContext & { params: { id: string, groupId: string, scheduleId: string }, body: ExamSettingBody }) => {
         // Convert date strings to Date objects and pass all exam setting data
         console.log('=== EXAM SETTING UPDATE DEBUG ===');
         console.log('Received schedule ID:', params.scheduleId);
@@ -126,21 +127,22 @@ export const CourseRoute = new Elysia({ prefix: '/course' })
             question_count: body.question_count,
             total_score: body.total_score,
             assistant_grading: body.assistant_grading,
-            selected_questions: body.selected_questions
+            selected_questions: body.selected_questions,
+            time_taken: body.time_taken
         };
         
         console.log('Passing total_score to controller:', examSettingData.total_score);
-        return await controller.updateGroupExamSetting(params.id, params.groupName, params.scheduleId, examSettingData);
+        return await controller.updateGroupExamSetting(params.id, params.groupId, params.scheduleId, examSettingData);
     }), {
         body: ExamSettingSchema
     })
-    .delete('/:id/group/:groupName/exam-setting/:examSettingIndex', catchAsync(async ({ params, controller }: CourseContext & { params: { id: string, groupName: string, examSettingIndex: string } }) => {
+    .delete('/:id/group/:groupId/exam-setting/:examSettingIndex', catchAsync(async ({ params, controller }: CourseContext & { params: { id: string, groupId: string, examSettingIndex: string } }) => {
         // Parse the index parameter as a number
         const index = parseInt(params.examSettingIndex, 10);
         if (isNaN(index)) {
             throw new Error('Invalid exam setting index');
         }
-        return await controller.deleteGroupExamSetting(params.id, params.groupName, index);
+        return await controller.deleteGroupExamSetting(params.id, params.groupId, index);
     }))
     .get('setting', catchAsync(async ({ query, controller }: CourseContext & { query: { course_id: string, group_id: string, setting_id: string } }) => await controller.getSetting(query.course_id, query.group_id, query.setting_id)), {
         query: t.Object({

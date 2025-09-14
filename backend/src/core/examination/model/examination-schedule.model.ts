@@ -31,7 +31,8 @@ export const ExaminationScheduleSchema = new Schema<ExaminationScheduleDocument>
     randomize_choice: { type: Boolean },
     question_count: { type: Number },
     total_score: { type: Number }, // Total score for the exam schedule
-    assistant_grading: { type: Boolean } // Enable AI assistant grading
+    assistant_grading: { type: Boolean }, // Enable AI assistant grading
+    time_taken: { type: Number } // Time limit for the exam in minutes
 }, { timestamps: true })
 
 export const ExaminationScheduleModel = model('examination_schedules', ExaminationScheduleSchema)

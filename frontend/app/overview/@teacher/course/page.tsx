@@ -10,7 +10,6 @@ import { clientAPI } from "@/config/axios.config"
 import { errorHandler } from "@/utils/error"
 import { toast } from "react-toastify"
 import { useTrigger } from "@/stores/trigger.store"
-
 import GroupFormModal from "@/components/overview/modals/group-form-modal"
 import GroupEditModal from "@/components/overview/modals/group-edit-modal"
 import ExamScheduleModal from "@/components/overview/modals/exam-schedule-modal"
@@ -96,8 +95,8 @@ export default function CoursePage() {
 
     // State for modals
     const [groupToDelete, setGroupToDelete] = useState<string | null>(null)
-    const [groupToEdit, setGroupToEdit] = useState<{ groupName: string, group_name: string, join_code?: string } | null>(null)
-    const [examToDelete, setExamToDelete] = useState<{ groupName: string, examSettingIndex: number } | null>(null)
+    const [groupToEdit, setGroupToEdit] = useState<{ groupId: string, group_name: string, join_code?: string } | null>(null)
+    const [examToDelete, setExamToDelete] = useState<{ groupId: string, examSettingIndex: number } | null>(null)
     
     // State for bulk exam schedule deletion
     const [selectedExamSchedules, setSelectedExamSchedules] = useState<Set<string>>(new Set())
@@ -111,28 +110,28 @@ export default function CoursePage() {
     const { isOpen: isUpdateModalOpen, onOpen: onUpdateModalOpen, onOpenChange: onUpdateModalOpenChange } = useDisclosure()
     const { isOpen: isEditGroupModalOpen, onOpen: onEditGroupModalOpen, onOpenChange: onEditGroupModalOpenChange } = useDisclosure()
 
-    const openDeleteConfirmation = (groupName: string) => {
-        setGroupToDelete(groupName)
+    const openDeleteConfirmation = (groupId: string) => {
+        setGroupToDelete(groupId)
         onDeleteModalOpen()
     }
 
     const openEditGroupModal = (group: IGroup) => {
         setGroupToEdit({
-            groupName: group.group_name,
+            groupId: group._id,
             group_name: group.group_name,
             join_code: group.join_code
         })
         onEditGroupModalOpen()
     }
 
-    const openDeleteExamConfirmation = (groupName: string, examSettingIndex: number) => {
-        setExamToDelete({ groupName, examSettingIndex })
+    const openDeleteExamConfirmation = (groupId: string, examSettingIndex: number) => {
+        setExamToDelete({ groupId, examSettingIndex })
         onDeleteExamModalOpen()
     }
     
     // Handle individual exam schedule selection
-    const handleExamScheduleSelect = (scheduleId: string, groupName: string, index: number) => {
-        const selectionKey = `${groupName}-${index}-${scheduleId}`
+    const handleExamScheduleSelect = (scheduleId: string, groupId: string, index: number) => {
+        const selectionKey = `${groupId}-${index}-${scheduleId}`
         const newSelected = new Set(selectedExamSchedules)
         
         if (newSelected.has(selectionKey)) {
@@ -166,7 +165,7 @@ export default function CoursePage() {
             // Select all
             data.data.groups.forEach(group => {
                 group.schedule_ids?.forEach((scheduleId, index) => {
-                    const selectionKey = `${group.group_name}-${index}-${scheduleId}`
+                    const selectionKey = `${group._id}-${index}-${scheduleId}`
                     newSelected.add(selectionKey)
                 })
             })
@@ -189,26 +188,26 @@ export default function CoursePage() {
         try {
             const deletePromises: Promise<any>[] = []
             
-            // Group selections by group name for efficient processing
+            // Group selections by group ID for efficient processing
             const selectionsByGroup = new Map<string, Array<{ index: number; scheduleId: string }>>()
             
             selectedExamSchedules.forEach(selectionKey => {
-                const [groupName, indexStr, scheduleId] = selectionKey.split('-')
+                const [groupId, indexStr, scheduleId] = selectionKey.split('-')
                 const index = parseInt(indexStr, 10)
                 
-                if (!selectionsByGroup.has(groupName)) {
-                    selectionsByGroup.set(groupName, [])
+                if (!selectionsByGroup.has(groupId)) {
+                    selectionsByGroup.set(groupId, [])
                 }
-                selectionsByGroup.get(groupName)!.push({ index, scheduleId })
+                selectionsByGroup.get(groupId)!.push({ index, scheduleId })
             })
             
             // Sort by index in descending order to avoid index shifting issues
-            selectionsByGroup.forEach((selections, groupName) => {
+            selectionsByGroup.forEach((selections, groupId) => {
                 selections.sort((a, b) => b.index - a.index)
                 
                 selections.forEach(({ index }) => {
                     deletePromises.push(
-                        clientAPI.delete(`/course/${_id}/group/${groupName}/exam-setting/${index}`)
+                        clientAPI.delete(`/course/${_id}/group/${groupId}/exam-setting/${index}`)
                     )
                 })
             })
@@ -233,7 +232,7 @@ export default function CoursePage() {
         if (!groupToDelete) return
 
         try {
-            const res = await clientAPI.delete(`/course/${_id}/group/${encodeURIComponent(groupToDelete)}`)
+            const res = await clientAPI.delete(`/course/${_id}/group/${groupToDelete}`)
             toast.success('Group deleted successfully')
             setTrigger(!trigger)
             setGroupToDelete(null)
@@ -248,7 +247,7 @@ export default function CoursePage() {
 
         try {
             const res = await clientAPI.delete(
-                `/course/${_id}/group/${encodeURIComponent(examToDelete.groupName)}/exam-setting/${examToDelete.examSettingIndex}`
+                `/course/${_id}/group/${examToDelete.groupId}/exam-setting/${examToDelete.examSettingIndex}`
             )
             toast.success('Examination schedule deleted successfully')
             setTrigger(!trigger)
@@ -366,7 +365,7 @@ export default function CoursePage() {
                                                 variant="light"
                                                 size="sm"
                                                 startContent={<MdiBin />}
-                                                onPress={() => openDeleteConfirmation(group.group_name)}
+                                                onPress={() => openDeleteConfirmation(group._id)}
                                                 className="w-full sm:w-auto"
                                             >
                                                 <span className="hidden sm:inline">Delete Group</span>
@@ -459,7 +458,7 @@ export default function CoursePage() {
                                                 </div>
                                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                                                     {group.schedule_ids.map((scheduleId, idx) => {
-                                                        const selectionKey = `${group.group_name}-${idx}-${scheduleId}`
+                                                        const selectionKey = `${group._id}-${idx}-${scheduleId}`
                                                         return (
                                                              <ExamScheduleCard
                                                                  courseId={_id as string}
@@ -471,13 +470,13 @@ export default function CoursePage() {
                                                                  }}
                                                                  index={idx}
                                                                  groupName={group.group_name}
-                                                                 onDelete={openDeleteExamConfirmation}
-                                                                 onEdit={(scheduleId, courseId, groupName) => {
-                                                                     router.push(`/overview/create/schedule?courseId=${courseId}&groupId=${encodeURIComponent(groupName)}&scheduleId=${scheduleId}&mode=edit`)
+                                                                 onDelete={(groupId, examSettingIndex) => openDeleteExamConfirmation(groupId, examSettingIndex)}
+                                                                 onEdit={(scheduleId, courseId, groupId) => {
+                                                                     router.push(`/overview/create/schedule?courseId=${courseId}&groupId=${groupId}&scheduleId=${scheduleId}&mode=edit`)
                                                                  }}
                                                                  // Selection props
                                                                  isSelected={selectedExamSchedules.has(selectionKey)}
-                                                                 onSelectionChange={() => handleExamScheduleSelect(scheduleId, group.group_name, idx)}
+                                                                 onSelectionChange={() => handleExamScheduleSelect(scheduleId, group._id, idx)}
                                                                  showCheckbox={true}
                                                              />
                                                         )
@@ -584,7 +583,7 @@ export default function CoursePage() {
                                                         size="sm"
                                                         variant="light"
                                                         color="danger"
-                                                        onPress={() => openDeleteConfirmation(group.group_name)}
+                                                        onPress={() => openDeleteConfirmation(group._id)}
                                                     >
                                                         <MdiBin fontSize={16} />
                                                     </Button>
@@ -622,7 +621,7 @@ export default function CoursePage() {
                     <ConfirmModal
                         header="Delete Examination Schedule"
                         subHeader="Are you sure you want to delete this examination schedule?"
-                        content={`This will permanently delete the examination schedule from the group "${examToDelete?.groupName}". This action cannot be undone.`}
+                        content={`This will permanently delete the examination schedule from the selected group. This action cannot be undone.`}
                         onAction={handleDeleteExam}
                     />
                 </Modal>
@@ -707,7 +706,7 @@ export default function CoursePage() {
                     {groupToEdit && (
                         <GroupEditModal
                             courseId={_id as string}
-                            groupName={groupToEdit.groupName}
+                            groupId={groupToEdit.groupId}
                             initialData={{
                                 group_name: groupToEdit.group_name,
                                 join_code: groupToEdit.join_code

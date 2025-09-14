@@ -80,14 +80,6 @@ const ExaminationPage = () => {
   const [clientIP, setClientIP] = useState<string | null>(null)
   const questionsPerPage = 5
 
-  // Calculate initial time based on exam settings
-  const initialTime = useMemo(() => {
-    if (!setting?.close_time) return 60 * 60; // Default to 1 hour if no setting
-    const now = new Date();
-    const closeTime = new Date(setting.close_time);
-    const diffInSeconds = Math.floor((closeTime.getTime() - now.getTime()) / 1000);
-    return Math.max(diffInSeconds, 0); // Ensure non-negative time
-  }, [setting?.close_time]);
 
   // Check if user is loaded from localStorage
   useEffect(() => {
@@ -265,6 +257,10 @@ const ExaminationPage = () => {
     if (exam?._id) {
       localStorage.removeItem(`exam_answers_${exam._id}`)
       localStorage.removeItem(`exam_page_${exam._id}`) // Also clear saved page
+      // Clear exam start time
+      if (schedule_id) {
+        localStorage.removeItem(`exam_start_time_${schedule_id}`)
+      }
       // Also clear randomized choices from localStorage
       if (exam && schedule_id) {
         // Clear all randomized choices and question order for this exam
@@ -588,10 +584,15 @@ const ExaminationPage = () => {
         }
       })
 
-      // Calculate time taken (if we have start time)
-      const timeTaken = setting.open_time ? 
-        Math.floor((new Date().getTime() - new Date(setting.open_time).getTime()) / 1000) : 
-        undefined
+      // Calculate time taken based on stored start time
+      let timeTaken: number | undefined = undefined
+      if (schedule_id) {
+        const startTimeStr = localStorage.getItem(`exam_start_time_${schedule_id}`)
+        if (startTimeStr) {
+          const startTime = parseInt(startTimeStr)
+          timeTaken = Math.floor((new Date().getTime() - startTime) / 1000)
+        }
+      }
 
       // Get course and group info from validation response
       const validationResponse = await clientAPI.get(`/course/validate-exam-access/${user._id}/${schedule_id}`)
@@ -796,6 +797,7 @@ const ExaminationPage = () => {
         questions={exam.questions}
         questionsPerPage={questionsPerPage}
         setCurrentPage={setCurrentPage}
+        setting={setting}
       />
 
       <Card className="mb-8">
@@ -814,7 +816,7 @@ const ExaminationPage = () => {
         <CardBody>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-4">
             <p className="text-foreground/50 text-sm sm:text-base">Total Questions: {exam.questions.length}</p>
-            <p className="text-foreground/50 text-sm sm:text-base">Total Score: {exam.questions.reduce((acc, q) => acc + q.score, 0)}</p>
+            <p className="text-foreground/50 text-sm sm:text-base">Total Score: {setting?.total_score || 0}</p>
           </div>
         </CardBody>
       </Card>
@@ -825,7 +827,12 @@ const ExaminationPage = () => {
             questions={exam.questions}
             currentPage={currentPage}
             questionsPerPage={questionsPerPage}
-            timeRemaining={<ExamTimer initialTime={initialTime} onTimeout={handleTimeout} hasSubmitted={hasSubmitted} />}
+            timeRemaining={<ExamTimer 
+              onTimeout={handleTimeout} 
+              hasSubmitted={hasSubmitted}
+              scheduleId={schedule_id || undefined}
+              timeLimitMinutes={setting?.time_taken || 60}
+            />}
             isQuestionAnswered={isQuestionAnswered}
             handleQuestionNavigation={handleQuestionNavigation}
           />

@@ -8,6 +8,8 @@ interface EmailOptions {
 }
 
 export const sendEmail = async (options: EmailOptions): Promise<{ isSent: boolean }> => {
+    console.log("Sending email.")
+    console.log(process.env.NAMECHEAP_HOST, process.env.NAMECHEAP_PORT, process.env.NAMECHEAP_USER, process.env.NAMECHEAP_PASS)
     if (!process.env.NAMECHEAP_HOST || !process.env.NAMECHEAP_PORT || !process.env.NAMECHEAP_USER || !process.env.NAMECHEAP_PASS) {
         throw new Error('Email configuration is not complete')
     }
@@ -29,16 +31,21 @@ export const sendEmail = async (options: EmailOptions): Promise<{ isSent: boolea
         subject: options.subject,
         html: options.html,
         replyTo: options.replyTo || process.env.NAMECHEAP_USER,
-        headers: {
-            'X-Mailer': 'XAMS',
-            'X-Priority': '1',
-            'List-Unsubscribe': `<mailto:${process.env.NAMECHEAP_USER}?subject=Unsubscribe>`
-        }
     }
 
     try {
-        await transporter.sendMail(mailOptions)
-        transporter.close()
+        new Promise<void>((resolve, reject) => {
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                    reject(error)
+                } else {
+                    resolve()
+                }
+            })
+            transporter.close()
+            console.log("Email sent successfully.")
+            resolve()
+        })
         return { isSent: true }
     } catch (error) {
         transporter.close()

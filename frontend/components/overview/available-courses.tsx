@@ -225,6 +225,7 @@ const AvailableCourses = (props: Props) => {
                   description={course.description}
                   bgSrc={course.background_src}
                   groups={course.groups}
+                  category={course.category}
                 />
               </div>
             ))}

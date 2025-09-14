@@ -244,9 +244,10 @@ const StudentScoresPage = () => {
       { name: "LEARNER", uid: "learner" },
     ]
     
-    // Add columns for each exam schedule
+    // Add columns for each exam schedule - filter by selected schedule if not 'all'
     const examColumns = examSchedules
       .filter(schedule => schedule && schedule.title) // Filter out null/undefined schedules or schedules without title
+      .filter(schedule => selectedSchedule === 'all' || schedule._id === selectedSchedule) // Filter by selected schedule
       .map(schedule => ({
         name: schedule.title.toUpperCase(),
         uid: `exam_${schedule._id}`,
@@ -258,13 +259,18 @@ const StudentScoresPage = () => {
     ]
     
     return [...baseColumns, ...examColumns, ...endColumns]
-  }, [examSchedules])
+  }, [examSchedules, selectedSchedule])
 
   // Export to Excel function
   const exportToExcel = () => {
     try {
+      // Filter exam schedules based on selected schedule
+      const filteredExamSchedules = examSchedules
+        .filter(schedule => schedule && schedule.title)
+        .filter(schedule => selectedSchedule === 'all' || schedule._id === selectedSchedule)
+      
       // Define column headers in the desired order
-      const headers = ['Learner Name', ...examSchedules.filter(schedule => schedule && schedule.title).map(schedule => schedule.title), 'Total Score']
+      const headers = ['Learner Name', ...filteredExamSchedules.map(schedule => schedule.title), 'Total Score']
       
       // Prepare data for export with explicit column order
       const exportData = filteredStudentScores.map(student => {
@@ -273,8 +279,8 @@ const StudentScoresPage = () => {
         // Add student name as first column
         row.push(student.student_name)
         
-        // Add scores for each exam in order
-        examSchedules.filter(schedule => schedule && schedule.title).forEach(schedule => {
+        // Add scores for each exam in order (filtered)
+        filteredExamSchedules.forEach(schedule => {
           const examSubmissions = student.submissions.filter(sub => sub.schedule_id === schedule._id)
           if (examSubmissions.length > 0) {
             const bestSubmission = examSubmissions.reduce((best, current) => {
@@ -315,7 +321,7 @@ const StudentScoresPage = () => {
       // Set column widths
       const colWidths = [
         { wch: 25 }, // Student Name
-        ...examSchedules.map(() => ({ wch: 18 })), // Exam columns
+        ...filteredExamSchedules.map(() => ({ wch: 18 })), // Exam columns
         { wch: 20 }, // Total Score
       ]
       ws['!cols'] = colWidths
@@ -538,12 +544,26 @@ const StudentScoresPage = () => {
         </CardHeader>
         <Divider />
         <CardBody>
-          <Table aria-label="Learner scores table">
+          <Table 
+            aria-label="Learner scores table"
+            className={columns.length <= 3 ? 'w-full' : 'w-fit'}
+          >
             <TableHeader columns={columns}>
               {(column) => (
                 <TableColumn 
                   key={column.uid} 
                   align={column.uid === "learner" ? "start" : "center"}
+                  className={
+                    columns.length <= 3 
+                      ? column.uid === "learner" 
+                        ? "w-1/2" 
+                        : "w-1/4"
+                      : column.uid === "learner" 
+                      ? "min-w-[200px]" 
+                      : column.uid === "total"
+                      ? "min-w-[150px]"
+                      : "min-w-[120px]"
+                  }
                 >
                   {column.name}
                 </TableColumn>

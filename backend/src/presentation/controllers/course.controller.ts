@@ -152,7 +152,7 @@ export class CourseController implements ICourseController {
         return this._response('Group added successfully', 200, updated)
     }
 
-    async deleteGroup(courseId: string, groupName: string) {
+    async deleteGroup(courseId: string, groupId: string) {
         const course = await this._service.getCourseById(courseId)
         
         if (!course) {
@@ -164,9 +164,9 @@ export class CourseController implements ICourseController {
             return this._response('No groups found in this course', 404, null)
         }
 
-        // Find the index of the group with the given name
+        // Find the index of the group with the given ID
         const groupIndex = course.groups.findIndex(group => 
-            group.group_name === groupName
+            group._id?.toString() === groupId
         )
 
         // If group not found
@@ -200,7 +200,7 @@ export class CourseController implements ICourseController {
         return this._response('Group deleted successfully', 200, updated)
     }
 
-    async updateGroup(courseId: string, groupName: string, updateData: { group_name: string; join_code?: string }) {
+    async updateGroup(courseId: string, groupId: string, updateData: { group_name: string; join_code?: string }) {
         const course = await this._service.getCourseById(courseId)
         
         if (!course) {
@@ -212,9 +212,9 @@ export class CourseController implements ICourseController {
             return this._response('No groups found in this course', 404, null)
         }
 
-        // Find the index of the group with the given name
+        // Find the index of the group with the given ID
         const groupIndex = course.groups.findIndex(group => 
-            group.group_name === groupName
+            group._id?.toString() === groupId
         )
 
         // If group not found
@@ -223,9 +223,10 @@ export class CourseController implements ICourseController {
         }
 
         // Check if the new group name already exists (if it's different from current name)
-        if (updateData.group_name !== groupName) {
+        const currentGroupName = course.groups[groupIndex].group_name
+        if (updateData.group_name !== currentGroupName) {
             const existingGroup = course.groups.find(group => 
-                group.group_name === updateData.group_name
+                group.group_name === updateData.group_name && group._id?.toString() !== groupId
             )
             
             if (existingGroup) {
@@ -241,6 +242,7 @@ export class CourseController implements ICourseController {
         }
         
         console.log('Updating group at index:', groupIndex)
+        console.log('Group ID:', groupId)
         console.log('Original group name:', course.groups[groupIndex].group_name)
         console.log('New group name:', updateData.group_name)
         console.log('Students count before update:', course.groups[groupIndex].students?.length || 0)
@@ -253,7 +255,7 @@ export class CourseController implements ICourseController {
     }
 
     // Setting methods
-    async addGroupExamSetting(courseId: string, groupName: string, examSettingData: any) {
+    async addGroupExamSetting(courseId: string, groupId: string, examSettingData: any) {
         const course = await this._service.getCourseById(courseId)
         
         if (!course) {
@@ -265,9 +267,9 @@ export class CourseController implements ICourseController {
             return this._response('No groups found in this course', 404, null)
         }
 
-        // Find the group with the given name
+        // Find the group with the given ID
         const groupIndex = course.groups.findIndex(group => 
-            group.group_name === groupName
+            group._id?.toString() === groupId
         )
 
         // If group not found
@@ -325,7 +327,7 @@ export class CourseController implements ICourseController {
         }
     }
 
-    async deleteGroupExamSetting(courseId: string, groupName: string, examSettingIndex: number) {
+    async deleteGroupExamSetting(courseId: string, groupId: string, examSettingIndex: number) {
         const course = await this._service.getCourseById(courseId)
         
         if (!course) {
@@ -337,9 +339,9 @@ export class CourseController implements ICourseController {
             return this._response('No groups found in this course', 404, null)
         }
 
-        // Find the group with the given name
+        // Find the group with the given ID
         const groupIndex = course.groups.findIndex(group => 
-            group.group_name === groupName
+            group._id?.toString() === groupId
         )
 
         // If group not found
@@ -389,11 +391,11 @@ export class CourseController implements ICourseController {
         return this._response('Exam setting deleted successfully', 200, updated)
     }
 
-    async updateGroupExamSetting(courseId: string, groupName: string, scheduleId: string, examSettingData: any) {
+    async updateGroupExamSetting(courseId: string, groupId: string, scheduleId: string, examSettingData: any) {
         try {
             console.log('=== UPDATE GROUP EXAM SETTING DEBUG ===');
             console.log('Course ID:', courseId);
-            console.log('Group Name:', groupName);
+            console.log('Group ID:', groupId);
             console.log('Schedule ID:', scheduleId);
             console.log('Exam Setting Data:', examSettingData);
             

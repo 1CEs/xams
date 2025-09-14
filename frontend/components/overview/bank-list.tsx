@@ -43,9 +43,11 @@ type BreadcrumbItem = BankBreadcrumb;
 
 type Props = {
     examId?: string;
+    searchQuery?: string;
+    sortBy?: string;
 };
 
-const BankList = ({ examId }: Props) => {
+const BankList = ({ examId, searchQuery = "", sortBy = "" }: Props) => {
     const router = useRouter();
     const { user } = useUserStore();
     const { data, error, isLoading, mutate } = useFetch<ServerResponse<BankResponse[]>>(examId ? `bank/by-exam/${examId}` : user ? `user/bank/${user._id}` : `bank`);
@@ -61,6 +63,8 @@ const BankList = ({ examId }: Props) => {
     } = useBankNavigation();
 
     const [currentBanks, setCurrentBanks] = useState<Bank[]>([]);
+    const [filteredBanks, setFilteredBanks] = useState<Bank[]>([]);
+    const [filteredExams, setFilteredExams] = useState<Examination[]>([]);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isCreatingBank, setIsCreatingBank] = useState(false);
     const [newBankName, setNewBankName] = useState("");
@@ -114,6 +118,63 @@ const BankList = ({ examId }: Props) => {
             setDepthValidationReason(undefined);
         }
     }, [data, currentBankId]);
+
+    // Filter and sort banks based on search query and sort option
+    useEffect(() => {
+        let banks = [...currentBanks];
+        let exams = [...currentExams];
+        
+        // Apply search filter to banks
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            banks = banks.filter(bank => 
+                bank.bank_name.toLowerCase().includes(query)
+            );
+            
+            // Also filter exams
+            exams = exams.filter(exam => 
+                exam.title.toLowerCase().includes(query) ||
+                exam.description?.toLowerCase().includes(query)
+            );
+        }
+        
+        // Apply sorting to banks
+        if (sortBy) {
+            banks.sort((a, b) => {
+                switch (sortBy) {
+                    case "name_asc":
+                        return a.bank_name.localeCompare(b.bank_name);
+                    case "name_desc":
+                        return b.bank_name.localeCompare(a.bank_name);
+                    case "created_newest":
+                    case "created_oldest":
+                        // Since creation date is not available, sort by name as fallback
+                        return a.bank_name.localeCompare(b.bank_name);
+                    default:
+                        return 0;
+                }
+            });
+            
+            // Apply sorting to exams
+            exams.sort((a, b) => {
+                switch (sortBy) {
+                    case "name_asc":
+                        return a.title.localeCompare(b.title);
+                    case "name_desc":
+                        return b.title.localeCompare(a.title);
+                    case "created_newest":
+                        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+                    case "created_oldest":
+                        return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+                    default:
+                        return 0;
+                }
+            });
+        }
+        
+        setFilteredBanks(banks);
+        setFilteredExams(exams);
+    }, [currentBanks, currentExams, searchQuery, sortBy]);
     
     // Separate effect to handle depth validation when navigation changes without currentBankId
     useEffect(() => {
@@ -843,6 +904,16 @@ const BankList = ({ examId }: Props) => {
     );
 }
 
+// Show search results message
+if (searchQuery.trim() && filteredBanks.length === 0 && filteredExams.length === 0) {
+    return (
+        <div className="size-full flex flex-col gap-4 justify-center items-center">
+            <h1 className="font-semibold">No banks or exams found</h1>
+            <p className="text-sm text-gray-500">Try adjusting your search terms</p>
+        </div>
+    );
+}
+
 return (
     <div className="w-full p-4">
         {/* Breadcrumb navigation - always show root */}
@@ -920,10 +991,10 @@ return (
                     <p className="text-gray-500">Loading folder contents...</p>
                 </div>
             </div>
-        ) : (currentBanks.length > 0 || currentExams.length > 0) ? (
+        ) : (filteredBanks.length > 0 || filteredExams.length > 0) ? (
             <div className="flex flex-wrap justify-start gap-4">
                 {/* Display all the bank cards */}
-                {currentBanks.map((bank, idx) => {
+                {filteredBanks.map((bank, idx) => {
                     // Log each bank to debug what's being rendered
                     console.log(`Rendering bank ${idx}:`, bank.bank_name, 'with sub-banks:', 
                         bank.sub_banks ? bank.sub_banks.length : 0);
@@ -949,7 +1020,7 @@ return (
                         <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-secondary"></div>
                     </div>
                 ) : (
-                    currentExams.map((exam, idx) => (
+                    filteredExams.map((exam, idx) => (
                         <ExamCard
                             key={`exam-${idx}`}
                             id={exam._id}

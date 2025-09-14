@@ -31,6 +31,7 @@ interface ExamSchedule {
   randomize_question: boolean
   randomize_choice: boolean
   question_count: number
+  time_taken?: number
 }
 
 interface ExamScheduleCardProps {
@@ -40,8 +41,8 @@ interface ExamScheduleCardProps {
   index: number
   groupName: string
   isStudent?: boolean
-  onDelete?: (groupName: string, examSettingIndex: number) => void
-  onEdit?: (scheduleId: string, courseId: string, groupName: string) => void
+  onDelete?: (groupId: string, examSettingIndex: number) => void
+  onEdit?: (scheduleId: string, courseId: string, groupId: string) => void
   // Selection props for bulk operations
   isSelected?: boolean
   onSelectionChange?: () => void
@@ -61,7 +62,7 @@ export default function ExamScheduleCard({
   onSelectionChange,
   showCheckbox = false
 }: ExamScheduleCardProps) {
-  const { isOpen, onOpen, onOpenChange } = useDisclosure()
+  const { isOpen: isDetailModalOpen, onOpen: onDetailModalOpen, onOpenChange: onDetailModalChange } = useDisclosure()
   const { isOpen: isAttemptWarningOpen, onOpen: onAttemptWarningOpen, onOpenChange: onAttemptWarningChange } = useDisclosure()
   const { isOpen: isRetakeModalOpen, onOpen: onRetakeModalOpen, onOpenChange: onRetakeModalChange } = useDisclosure()
   const router = useRouter()
@@ -195,13 +196,7 @@ export default function ExamScheduleCard({
   const handleCardClick = async () => {
     // For instructors who created the exam, always allow access regardless of timing
     if (isInstructor) {
-      // If exam has no password, navigate directly
-      if (!schedule.exam_code || schedule.exam_code.trim() === '') {
-        router.push(`/exam?schedule_id=${setting.schedule_id}`)
-        return
-      }
-      // If exam has password, open the password modal
-      onOpen()
+      onDetailModalOpen()
       return
     }
     
@@ -210,6 +205,11 @@ export default function ExamScheduleCard({
       return
     }
     
+    // Always open detail modal first for students
+    onDetailModalOpen()
+  }
+
+  const handleProceedToExam = async () => {
     // Validate attempt eligibility for students
     if (isStudent) {
       const canAttempt = await validateAttemptEligibility()
@@ -218,15 +218,8 @@ export default function ExamScheduleCard({
       }
     }
     
-    // If exam has no password (exam_code is null/empty), navigate directly
-    if (!schedule.exam_code || schedule.exam_code.trim() === '') {
-      // For open access exams, navigate directly to the exam
-      router.push(`/exam?schedule_id=${setting.schedule_id}`)
-      return
-    }
-    
-    // If exam has password, open the password modal
-    onOpen()
+    // Navigate directly to exam
+    router.push(`/exam?schedule_id=${setting.schedule_id}`)
   }
 
   // Format date and time for better readability
@@ -434,7 +427,7 @@ export default function ExamScheduleCard({
                     size="sm"
                     variant="light"
                     color="warning"
-                    onPress={() => onEdit(setting.schedule_id, courseId, groupName)}
+                    onPress={() => onEdit(setting.schedule_id, courseId, groupId)}
                     className="min-w-unit-8 w-8 h-8 sm:min-w-unit-10 sm:w-10 sm:h-10"
                   >
                     <FluentSettings16Filled className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -447,7 +440,7 @@ export default function ExamScheduleCard({
                   size="sm"
                   variant="light"
                   color="danger"
-                  onPress={() => onDelete?.(groupName, index)}
+                  onPress={() => onDelete?.(groupId, index)}
                   className="min-w-unit-8 w-8 h-8 sm:min-w-unit-10 sm:w-10 sm:h-10"
                 >
                   <MdiBin className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -474,42 +467,181 @@ export default function ExamScheduleCard({
         </div>
       </CardBody>
 
-      {/* Password Modal */}
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="sm" className="mx-2 sm:mx-0">
+      {/* Exam Detail Modal */}
+      <Modal isOpen={isDetailModalOpen} onOpenChange={onDetailModalChange} size="2xl" className="mx-2 sm:mx-0">
         <ModalContent>
           {(onClose) => (
             <>
               <ModalHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
-                <h3 className="text-base sm:text-lg font-semibold">Enter Exam Code</h3>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <UisSchedule className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-semibold">{schedule.title}</h3>
+                    <p className="text-sm text-default-500">Exam Schedule Details</p>
+                  </div>
+                </div>
               </ModalHeader>
               <ModalBody className="px-4 sm:px-6 py-2">
-                <Input
-                  autoFocus
-                  label="Exam Code"
-                  placeholder="Enter access code"
-                  variant="bordered"
-                  size="sm"
-                  onKeyDown={async (e) => {
-                    if (e.key === 'Enter') {
-                      const input = e.target as HTMLInputElement
-                      if (input.value.trim() === schedule.exam_code) {
-                        // Validate attempt eligibility for students
-                        if (isStudent) {
-                          const canAttempt = await validateAttemptEligibility()
-                          if (!canAttempt) {
-                            return
+                <div className="space-y-6">
+                  {/* Exam Description */}
+                  {schedule.description && (
+                    <div>
+                      <h4 className="font-semibold text-default-700 mb-2">Description</h4>
+                      <p className="text-sm text-default-600">{schedule.description}</p>
+                    </div>
+                  )}
+
+                  {/* Exam Status */}
+                  <div>
+                    <h4 className="font-semibold text-default-700 mb-2">Status</h4>
+                    <div className="flex items-center gap-2">
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        color={examStatus.status === 'open' ? 'success' : examStatus.status === 'upcoming' ? 'warning' : 'danger'}
+                      >
+                        {examStatus.status.toUpperCase()}
+                      </Chip>
+                      <span className="text-sm text-default-600">{examStatus.message}</span>
+                    </div>
+                  </div>
+
+                  {/* Schedule Information */}
+                  <div>
+                    <h4 className="font-semibold text-default-700 mb-3">Schedule</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {schedule.open_time ? (
+                        <div className="flex items-center gap-3 p-3 bg-success/10 rounded-lg">
+                          <UisSchedule className="h-4 w-4 text-success flex-shrink-0" />
+                          <div>
+                            <p className="text-xs text-success font-medium">Opens</p>
+                            <p className="text-sm font-medium">{formatDateTime(schedule.open_time).date}</p>
+                            <p className="text-xs text-default-600">{formatDateTime(schedule.open_time).time}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 p-3 bg-success/10 rounded-lg">
+                          <UisSchedule className="h-4 w-4 text-success flex-shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium text-success">Always Available</p>
+                            <p className="text-xs text-default-600">No start time restriction</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {schedule.close_time ? (
+                        <div className="flex items-center gap-3 p-3 bg-danger/10 rounded-lg">
+                          <UisSchedule className="h-4 w-4 text-danger flex-shrink-0" />
+                          <div>
+                            <p className="text-xs text-danger font-medium">Closes</p>
+                            <p className="text-sm font-medium">{formatDateTime(schedule.close_time).date}</p>
+                            <p className="text-xs text-default-600">{formatDateTime(schedule.close_time).time}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg">
+                          <UisSchedule className="h-4 w-4 text-primary flex-shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium text-primary">No End Time</p>
+                            <p className="text-xs text-default-600">Available indefinitely</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Exam Settings */}
+                  <div>
+                    <h4 className="font-semibold text-default-700 mb-3">Exam Settings</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                      <div className="text-center p-3 bg-default-50 rounded-lg">
+                        <p className="text-2xl font-bold text-primary">{schedule.question_count}</p>
+                        <p className="text-xs text-default-600">Questions</p>
+                      </div>
+                      <div className="text-center p-3 bg-default-50 rounded-lg">
+                        <p className="text-2xl font-bold text-secondary">{schedule.allowed_attempts}</p>
+                        <p className="text-xs text-default-600">Attempts</p>
+                      </div>
+                      <div className="text-center p-3 bg-default-50 rounded-lg">
+                        <p className="text-2xl font-bold text-orange-500">{schedule.time_taken || 60}</p>
+                        <p className="text-xs text-default-600">Minutes</p>
+                      </div>
+                      <div className="text-center p-3 bg-default-50 rounded-lg">
+                        <p className="text-lg font-bold text-success">{schedule.allowed_review ? '✓' : '✗'}</p>
+                        <p className="text-xs text-default-600">Review</p>
+                      </div>
+                      <div className="text-center p-3 bg-default-50 rounded-lg">
+                        <p className="text-lg font-bold text-warning">{schedule.show_answer ? '✓' : '✗'}</p>
+                        <p className="text-xs text-default-600">Show Answers</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Features */}
+                  <div>
+                    <h4 className="font-semibold text-default-700 mb-3">Features</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {schedule.randomize_question && (
+                        <Chip size="sm" variant="flat" color="warning">
+                          Randomized Questions
+                        </Chip>
+                      )}
+                      {schedule.randomize_choice && (
+                        <Chip size="sm" variant="flat" color="secondary">
+                          Randomized Choices
+                        </Chip>
+                      )}
+                      {schedule.ip_range && (
+                        <Chip size="sm" variant="flat" color="danger">
+                          IP Restricted
+                        </Chip>
+                      )}
+                      {schedule.exam_code && (
+                        <Chip size="sm" variant="flat" color="primary">
+                          Password Protected
+                        </Chip>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* IP Restriction Details */}
+                  {schedule.ip_range && (
+                    <div className="p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                      <h4 className="font-semibold text-warning mb-2">IP Restriction</h4>
+                      <p className="text-sm text-default-600 mb-1">This exam can only be accessed from:</p>
+                      <p className="text-sm font-mono bg-white/50 p-2 rounded border">{schedule.ip_range}</p>
+                    </div>
+                  )}
+
+                  {/* Exam Code Input */}
+                  {schedule.exam_code && schedule.exam_code.trim() !== '' && (
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold text-default-700 mb-3">Access Code Required</h4>
+                      <Input
+                        autoFocus
+                        label="Exam Code"
+                        placeholder="Enter access code to proceed"
+                        variant="bordered"
+                        size="sm"
+                        id="exam-access-code"
+                        onKeyDown={async (e) => {
+                          if (e.key === 'Enter') {
+                            const input = e.target as HTMLInputElement
+                            if (input.value.trim() === schedule.exam_code) {
+                              await handleProceedToExam()
+                              onClose()
+                            } else {
+                              toast.error("Invalid code")
+                              input.value = ''
+                            }
                           }
-                        }
-                        
-                        router.push(`/exam?schedule_id=${setting.schedule_id}`)
-                        onClose()
-                      } else {
-                        toast.error("Invalid code")
-                        input.value = ''
-                      }
-                    }
-                  }}
-                />
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
               </ModalBody>
               <ModalFooter className="px-4 sm:px-6 pb-4 sm:pb-6 pt-2">
                 <Button 
@@ -517,36 +649,42 @@ export default function ExamScheduleCard({
                   variant="light" 
                   onPress={onClose}
                   size="sm"
-                  className="text-xs sm:text-sm"
                 >
                   Cancel
                 </Button>
-                <Button 
-                  color="secondary"
-                  isLoading={isValidatingAttempt}
-                  size="sm"
-                  className="text-xs sm:text-sm"
-                  onPress={async () => {
-                    const input = document.querySelector('input[placeholder="Enter access code"]') as HTMLInputElement
-                    if (input?.value.trim() === schedule.exam_code) {
-                      // Validate attempt eligibility for students
-                      if (isStudent) {
-                        const canAttempt = await validateAttemptEligibility()
-                        if (!canAttempt) {
-                          return
-                        }
+                
+                {schedule.exam_code && schedule.exam_code.trim() !== '' ? (
+                  <Button 
+                    color="secondary"
+                    isLoading={isValidatingAttempt}
+                    size="sm"
+                    onPress={async () => {
+                      const input = document.getElementById('exam-access-code') as HTMLInputElement
+                      if (input?.value.trim() === schedule.exam_code) {
+                        await handleProceedToExam()
+                        onClose()
+                      } else {
+                        toast.error("Invalid code")
+                        if (input) input.value = ''
                       }
-                      
-                      router.push(`/exam?schedule_id=${setting.schedule_id}`)
+                    }}
+                  >
+                    {isValidatingAttempt ? 'Validating...' : 'Start Exam'}
+                  </Button>
+                ) : (
+                  <Button 
+                    color="secondary"
+                    isLoading={isValidatingAttempt}
+                    size="sm"
+                    disabled={examStatus.status !== 'open' && !isInstructor}
+                    onPress={async () => {
+                      await handleProceedToExam()
                       onClose()
-                    } else {
-                      toast.error("Invalid code")
-                      if (input) input.value = ''
-                    }
-                  }}
-                >
-                  {isValidatingAttempt ? 'Validating...' : 'Access'}
-                </Button>
+                    }}
+                  >
+                    {isValidatingAttempt ? 'Validating...' : 'Start Exam'}
+                  </Button>
+                )}
               </ModalFooter>
             </>
           )}

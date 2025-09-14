@@ -7,14 +7,14 @@ import { toast } from 'react-toastify'
 
 type Props = {
   courseId: string
-  groupName: string
+  groupId: string
   initialData: {
     group_name: string
     join_code?: string
   }
 }
 
-const GroupEditModal = ({ courseId, groupName, initialData }: Props) => {
+const GroupEditModal = ({ courseId, groupId, initialData }: Props) => {
   const { trigger, setTrigger } = useTrigger()
   const [groupForm, setGroupForm] = useState<{
     group_name: string
@@ -66,7 +66,7 @@ const GroupEditModal = ({ courseId, groupName, initialData }: Props) => {
         ? { ...groupForm, join_code: generateJoinCode() } 
         : groupForm
 
-      const res = await clientAPI.patch(`/course/${courseId}/group/${groupName}`, finalForm)
+      const res = await clientAPI.patch(`/course/${courseId}/group/${groupId}`, finalForm)
       console.log(res)
       toast.success('Group updated successfully')
       setTrigger(!trigger)

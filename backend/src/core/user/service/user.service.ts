@@ -114,7 +114,7 @@ export class UserService<T extends IUser | IStudent | IInstructor> implements IU
 
         // Send reset password email
 
-        const mode = process.env.Mode 
+        const mode = process.env.MODE
 
         if (!mode) {
             return this._errorResponse("Mode not found", 404, 'NotFoundError')

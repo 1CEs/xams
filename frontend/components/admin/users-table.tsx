@@ -22,10 +22,13 @@ import {
   ModalFooter,
   Input,
   Textarea,
-  useDisclosure
+  useDisclosure,
+  Pagination,
+  Select,
+  SelectItem
 } from '@nextui-org/react'
 import { toast } from 'react-toastify'
-import { MdiBin, PhStudentFill, FluentSettings16Filled, FeEdit, SolarRefreshLineDuotone, FaGroup } from '@/components/icons/icons'
+import { MdiBin, PhStudentFill, FluentSettings16Filled, FeEdit, SolarRefreshLineDuotone, FaGroup, MdiSearch } from '@/components/icons/icons'
 
 interface User {
   _id: string
@@ -47,7 +50,13 @@ interface User {
 
 export function UsersTable() {
   const [users, setUsers] = useState<User[]>([])
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [banUntil, setBanUntil] = useState('')
   const [banReason, setBanReason] = useState('')
@@ -69,11 +78,50 @@ export function UsersTable() {
     fetchUsers()
   }, [])
 
+  useEffect(() => {
+    filterUsers()
+  }, [users, searchQuery, roleFilter, statusFilter])
+
+  const filterUsers = () => {
+    let filtered = users
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(user => 
+        user.username.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query) ||
+        (user.info?.first_name?.toLowerCase().includes(query)) ||
+        (user.info?.last_name?.toLowerCase().includes(query)) ||
+        `${user.info?.first_name} ${user.info?.last_name}`.toLowerCase().includes(query)
+      )
+    }
+
+    // Apply role filter
+    if (roleFilter !== 'all') {
+      filtered = filtered.filter(user => user.role === roleFilter)
+    }
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'active') {
+        filtered = filtered.filter(user => !user.status?.is_banned)
+      } else if (statusFilter === 'banned') {
+        filtered = filtered.filter(user => user.status?.is_banned)
+      }
+    }
+
+    setFilteredUsers(filtered)
+    setCurrentPage(1) // Reset to first page when filters change
+  }
+
   const fetchUsers = async () => {
     try {
       setLoading(true)
       const response = await clientAPI.get('/user')
-      setUsers(response.data.data || [])
+      const userData = response.data.data || []
+      setUsers(userData)
+      setFilteredUsers(userData)
     } catch (error) {
       console.error('Error fetching users:', error)
       toast.error('Failed to fetch users')
@@ -229,7 +277,10 @@ export function UsersTable() {
               </div>
               <div>
                 <h3 className="text-lg sm:text-xl font-bold text-foreground">Users Management</h3>
-                <p className="text-sm text-default-500">{users.length} total users</p>
+                <p className="text-sm text-default-500">
+                  {filteredUsers.length} of {users.length} users
+                  {searchQuery && ` (filtered by "${searchQuery}")`}
+                </p>
               </div>
             </div>
             <Button 
@@ -241,6 +292,60 @@ export function UsersTable() {
             >
               Refresh
             </Button>
+          </div>
+
+          {/* Search and Filters */}
+          <div className="px-4 sm:px-6 py-4 space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Input
+                className="flex-1"
+                placeholder="Search users by name, email, or username..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                startContent={<MdiSearch className="h-4 w-4 text-default-400" />}
+                isClearable
+                onClear={() => setSearchQuery('')}
+              />
+              <div className="flex gap-2">
+                <Select
+                  className="w-32"
+                  placeholder="Role"
+                  selectedKeys={[roleFilter]}
+                  onSelectionChange={(keys) => setRoleFilter(Array.from(keys)[0] as string)}
+                >
+                  <SelectItem key="all" value="all">All Roles</SelectItem>
+                  <SelectItem key="student" value="student">Student</SelectItem>
+                  <SelectItem key="instructor" value="instructor">Instructor</SelectItem>
+                  <SelectItem key="admin" value="admin">Admin</SelectItem>
+                </Select>
+                <Select
+                  className="w-32"
+                  placeholder="Status"
+                  selectedKeys={[statusFilter]}
+                  onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0] as string)}
+                >
+                  <SelectItem key="all" value="all">All Status</SelectItem>
+                  <SelectItem key="active" value="active">Active</SelectItem>
+                  <SelectItem key="banned" value="banned">Suspended</SelectItem>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-default-500">Show:</span>
+                <Select
+                  className="w-20"
+                  selectedKeys={[rowsPerPage.toString()]}
+                  onSelectionChange={(keys) => setRowsPerPage(Number(Array.from(keys)[0]))}
+                >
+                  <SelectItem key="5" value="5">5</SelectItem>
+                  <SelectItem key="10" value="10">10</SelectItem>
+                  <SelectItem key="25" value="25">25</SelectItem>
+                  <SelectItem key="50" value="50">50</SelectItem>
+                </Select>
+                <span className="text-sm text-default-500">per page</span>
+              </div>
+            </div>
           </div>
 
           <Table 
@@ -260,8 +365,10 @@ export function UsersTable() {
               <TableColumn>CREATED</TableColumn>
               <TableColumn>ACTIONS</TableColumn>
             </TableHeader>
-            <TableBody emptyContent="No users found">
-              {users.map((user) => (
+            <TableBody emptyContent={searchQuery || roleFilter !== 'all' || statusFilter !== 'all' ? "No users match the current filters" : "No users found"}>
+              {filteredUsers
+                .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+                .map((user) => (
                 <TableRow key={user._id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -356,6 +463,20 @@ export function UsersTable() {
               ))}
             </TableBody>
           </Table>
+          
+          {/* Pagination */}
+          {filteredUsers.length > rowsPerPage && (
+            <div className="flex justify-center items-center p-4">
+              <Pagination
+                total={Math.ceil(filteredUsers.length / rowsPerPage)}
+                page={currentPage}
+                onChange={setCurrentPage}
+                showControls
+                showShadow
+                color="primary"
+              />
+            </div>
+          )}
         </CardBody>
       </Card>
 

@@ -449,7 +449,7 @@ export default function CreateSchedulePage() {
     exam_ids: [] as string[],  // Multiple exam IDs
     schedule_name: '',  // Custom name for the schedule
     open_time: new Date(),
-    close_time: new Date(Date.now() + 1 * 60 * 60 * 1000), // Default to 1 hour later
+    close_time: new Date(Date.now() + 24 * 60 * 60 * 1000), // Default to 1 day later
     ip_range: '',
     exam_code: '',
     allowed_attempts: 1,
@@ -458,7 +458,8 @@ export default function CreateSchedulePage() {
     randomize_question: true,
     randomize_choice: true,
     assistant_grading: true,  // Enable AI assistant grading
-    question_count: 0  // Number of questions to randomly select
+    question_count: 0,  // Number of questions to randomly select
+    time_taken: 60  // Default time limit of 60 minutes
   })
 
   // IP Blocker state
@@ -524,16 +525,16 @@ export default function CreateSchedulePage() {
                 const foundGroup = groups.find((g: any) => g._id === groupId)
                 if (foundGroup) {
                   console.log('Found specific group:', foundGroup)
-                  setSelectedGroups([foundGroup.group_name])
+                  setSelectedGroups([foundGroup._id])
                 } else {
                   console.log('Group not found, selecting all groups')
-                  setSelectedGroups(groups.map((g: any) => g.group_name))
+                  setSelectedGroups(groups.map((g: any) => g._id).filter(Boolean))
                 }
               } else {
                 console.log('No specific groupId, selecting all groups')
-                const allGroupNames = groups.map((g: any) => g.group_name)
-                console.log('Selected group names:', allGroupNames)
-                setSelectedGroups(allGroupNames)
+                const allGroupIds = groups.map((g: any) => g._id).filter(Boolean)
+                console.log('Selected group IDs:', allGroupIds)
+                setSelectedGroups(allGroupIds)
               }
             }
           }
@@ -578,7 +579,8 @@ export default function CreateSchedulePage() {
           randomize_question: schedule.randomize_question ?? true,
           randomize_choice: schedule.randomize_choice ?? true,
           assistant_grading: schedule.assistant_grading,
-          question_count: schedule.question_count || 0
+          question_count: schedule.question_count || 0,
+          time_taken: schedule.time_taken || 60
         })
         
         // Set optional features based on existing data
@@ -896,6 +898,7 @@ export default function CreateSchedulePage() {
         assistant_grading: formattedForm.assistant_grading,
         question_count: selectedQuestions.length,
         total_score: enableManualScore ? manualTotalScore : selectedQuestions.reduce((total, q) => total + q.score, 0),
+        time_taken: formattedForm.time_taken,
 
         // Enhanced data for multi-exam and question selection support
         exam_ids: formattedForm.exam_ids, // All selected exam IDs
@@ -964,16 +967,16 @@ export default function CreateSchedulePage() {
       const results = []
       
       for (let index = 0; index < selectedGroups.length; index++) {
-        const groupName = selectedGroups[index]
+        const groupId = selectedGroups[index]
+        const group = groups.find(g => g._id === groupId)
+        const groupName = group?.group_name
         
         const scheduleData = {
           ...enhancedData,
-          schedule_name: selectedGroups.length > 1
-            ? `${enhancedData.schedule_name} - ${groupName}`
-            : enhancedData.schedule_name
+          schedule_name: enhancedData.schedule_name
         };
 
-        console.log(`Creating schedule ${index + 1}/${selectedGroups.length} for group: ${groupName}`);
+        console.log(`Creating schedule ${index + 1}/${selectedGroups.length} for group: ${groupName} (ID: ${groupId})`);
         console.log('Schedule data:', {
           schedule_name: scheduleData.schedule_name,
           selected_questions_count: scheduleData.selected_questions?.length || 0,
@@ -985,14 +988,14 @@ export default function CreateSchedulePage() {
           if (isEditMode && scheduleId) {
             // Update existing schedule
             result = await clientAPI.put(
-              `/course/${courseId}/group/${encodeURIComponent(groupName)}/exam-setting/${scheduleId}`,
+              `/course/${courseId}/group/${groupId}/exam-setting/${scheduleId}`,
               scheduleData
             );
             console.log(`✅ Successfully updated schedule for group ${groupName}:`, result.data);
           } else {
             // Create new schedule
             result = await clientAPI.post(
-              `/course/${courseId}/group/${encodeURIComponent(groupName)}/exam-setting`,
+              `/course/${courseId}/group/${groupId}/exam-setting`,
               scheduleData
             );
             console.log(`✅ Successfully created schedule for group ${groupName}:`, result.data);
@@ -1150,7 +1153,7 @@ export default function CreateSchedulePage() {
                                 if (selectedGroups.length === groups.length) {
                                   setSelectedGroups([])
                                 } else {
-                                  setSelectedGroups(groups.map(g => g.group_name))
+                                  setSelectedGroups(groups.map(g => g._id!).filter(Boolean))
                                 }
                               }}
                               isDisabled={submitting || groups.length === 0}
@@ -1180,7 +1183,7 @@ export default function CreateSchedulePage() {
                         >
                           {groups.length > 0 ? (
                             groups.map((group) => (
-                              <SelectItem key={group.group_name} value={group.group_name}>
+                              <SelectItem key={group._id!} value={group._id!}>
                                 {group.group_name}
                               </SelectItem>
                             ))
@@ -1193,19 +1196,23 @@ export default function CreateSchedulePage() {
 
                         {selectedGroups.length > 0 && (
                           <div className="flex flex-wrap gap-1">
-                            {selectedGroups.map((groupName) => (
-                              <Chip
-                                key={groupName}
-                                size="sm"
-                                variant="flat"
-                                color="primary"
-                                onClose={() => {
-                                  setSelectedGroups(prev => prev.filter(g => g !== groupName))
-                                }}
-                              >
-                                {groupName}
-                              </Chip>
-                            ))}
+                            {selectedGroups.map((groupId) => {
+                              const group = groups.find(g => g._id === groupId);
+                              const groupName = group?.group_name;
+                              return (
+                                <Chip
+                                  key={groupId}
+                                  size="sm"
+                                  variant="flat"
+                                  color="primary"
+                                  onClose={() => {
+                                    setSelectedGroups(prev => prev.filter(g => g !== groupId))
+                                  }}
+                                >
+                                  {groupName}
+                                </Chip>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -1604,6 +1611,69 @@ export default function CreateSchedulePage() {
                         </div>
                         <p className="text-xs text-default-500">
                           Number of attempts allowed per Learner (1-10)
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">
+                          Time Limit (Minutes)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="bordered"
+                            onPress={() => {
+                              const newValue = Math.max(5, examSettingForm.time_taken - 5);
+                              setExamSettingForm({
+                                ...examSettingForm,
+                                time_taken: newValue
+                              });
+                            }}
+                            isDisabled={submitting || examSettingForm.time_taken <= 5}
+                            className="min-w-8 h-8"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            </svg>
+                          </Button>
+                          <Input
+                            type="number"
+                            placeholder="60"
+                            min={5}
+                            max={600}
+                            value={examSettingForm.time_taken.toString()}
+                            onChange={(e) => setExamSettingForm({
+                              ...examSettingForm,
+                              time_taken: Math.max(5, Math.min(600, parseInt(e.target.value) || 60))
+                            })}
+                            isDisabled={submitting}
+                            className="flex-1"
+                            classNames={{
+                              input: "text-center"
+                            }}
+                          />
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="bordered"
+                            onPress={() => {
+                              const newValue = Math.min(600, examSettingForm.time_taken + 5);
+                              setExamSettingForm({
+                                ...examSettingForm,
+                                time_taken: newValue
+                              });
+                            }}
+                            isDisabled={submitting || examSettingForm.time_taken >= 600}
+                            className="min-w-8 h-8"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          </Button>
+                        </div>
+                        <p className="text-xs text-default-500">
+                          Time limit for the exam (5-600 minutes)
                         </p>
                       </div>
                     </div>

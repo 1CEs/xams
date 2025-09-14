@@ -74,6 +74,7 @@ interface ExamSchedule {
   allowed_attempts: number
   allowed_review: boolean
   show_answer: boolean
+  total_score?: number
   questions?: Array<{
     _id: string
     type: string
@@ -472,8 +473,8 @@ const SubmissionHistoryPage = () => {
 
               // Recalculate total score
               const totalScore = updatedAnswers.reduce((sum, answer) => sum + (answer.score_obtained || 0), 0)
-              const percentageScore = submission.max_possible_score > 0
-                ? (totalScore / submission.max_possible_score) * 100
+              const percentageScore = (examSchedule?.total_score || submission.max_possible_score) > 0
+                ? (totalScore / (examSchedule?.total_score || submission.max_possible_score)) * 100
                 : 0
 
               // Check if all essay questions are graded
@@ -757,7 +758,7 @@ const SubmissionHistoryPage = () => {
                             ? 'text-success'
                             : 'text-danger'
                             }`}>
-                            {submission.total_score}/{submission.max_possible_score} ({submission.percentage_score?.toFixed(1)}%)
+                            {submission.total_score}/{examSchedule?.total_score || submission.max_possible_score} ({submission.percentage_score?.toFixed(1)}%)
                           </span>
                         ) : (
                           <span className="text-warning font-medium">Pending</span>
@@ -785,7 +786,7 @@ const SubmissionHistoryPage = () => {
                           <p className="font-medium">
                             {submission.is_graded ? (
                               <span className={`${submission.percentage_score && submission.percentage_score >= 70 ? 'text-success' : 'text-danger'}`}>
-                                {submission.total_score}/{submission.max_possible_score} ({submission.percentage_score?.toFixed(1)}%)
+                                {submission.total_score}/{examSchedule?.total_score || submission.max_possible_score} ({submission.percentage_score?.toFixed(1)}%)
                               </span>
                             ) : (
                               <span className="text-warning">Pending</span>

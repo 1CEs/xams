@@ -1,7 +1,8 @@
 import { Card, CardBody, CardFooter, CardHeader, Image, CardProps, Button, Tooltip, Modal, Link, AvatarGroup, Avatar, DropdownTrigger, Dropdown, DropdownItem, DropdownMenu, useDisclosure } from '@nextui-org/react'
 import React, { useMemo } from 'react'
-import { FluentSettings16Filled, MdiBin } from '../icons/icons'
+import { FluentSettings16Filled, MdiBin, FeEdit } from '../icons/icons'
 import ConfirmModal from '../modals/confirm-modal'
+import CourseUpdateModal from '../overview/modals/course-update-modal'
 import { errorHandler } from '@/utils/error'
 import { clientAPI } from '@/config/axios.config'
 import { toast } from 'react-toastify'
@@ -16,10 +17,12 @@ type CourseCardProps = {
   description: string
   bgSrc: string
   groups?: IGroup[]
+  category?: string
 } & CardProps
 
-const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, groups, ...props }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, groups, category, ...props }) => {
   const {isOpen, onOpen, onOpenChange} = useDisclosure()
+  const {isOpen: isEditModalOpen, onOpen: onEditModalOpen, onOpenChange: onEditModalOpenChange} = useDisclosure()
   const { trigger, setTrigger } = useTrigger()
   const { user } = useUserStore()
 
@@ -155,17 +158,34 @@ const CourseCard: React.FC<CourseCardProps> = ({ id, title, description, bgSrc, 
                   <Button size='sm' isIconOnly><FluentSettings16Filled fontSize={20} /></Button>
                 </DropdownTrigger>
                 <DropdownMenu aria-label="Static Actions">
+                  <DropdownItem onPress={onEditModalOpen} startContent={<FeEdit fontSize={20} />} key="edit" className="text-warning" color="warning">
+                    Edit Course
+                  </DropdownItem>
                   <DropdownItem onPress={onOpen} startContent={<MdiBin fontSize={20} />} key="delete" className="text-danger" color="danger">
                     Delete Course
                   </DropdownItem>
                 </DropdownMenu>
               </Dropdown>
+              {/* Delete Course Modal */}
               <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
                 <ConfirmModal
                   content={`${title} will be delete after you confirm it.`}
                   header={`Delete ${title}`}
                   subHeader={`After you confirm it won't be revert.`}
                   onAction={onCourseDelete}
+                />
+              </Modal>
+              
+              {/* Edit Course Modal */}
+              <Modal size="2xl" isOpen={isEditModalOpen} onOpenChange={onEditModalOpenChange}>
+                <CourseUpdateModal
+                  courseId={id}
+                  initialData={{
+                    course_name: title,
+                    description: description,
+                    background_src: bgSrc,
+                    category: category || 'general'
+                  }}
                 />
               </Modal>
             </>

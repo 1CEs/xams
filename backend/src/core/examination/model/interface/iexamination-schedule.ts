@@ -22,4 +22,5 @@ export interface IExaminationSchedule {
     question_count?: number;
     total_score?: number; // Total score for the exam schedule
     assistant_grading?: boolean; // Enable AI assistant grading
+    time_taken?: number; // Time limit for the exam in minutes
 }

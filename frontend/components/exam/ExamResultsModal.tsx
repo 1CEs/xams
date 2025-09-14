@@ -22,6 +22,7 @@ interface ExamResultsModalProps {
   questions: any[]
   questionsPerPage: number
   setCurrentPage: (page: number) => void
+  setting: any
 }
 
 const ExamResultsModal = ({
@@ -30,7 +31,8 @@ const ExamResultsModal = ({
   examResult,
   questions,
   questionsPerPage,
-  setCurrentPage
+  setCurrentPage,
+  setting
 }: ExamResultsModalProps) => {
   return (
     <Modal
@@ -49,7 +51,7 @@ const ExamResultsModal = ({
               <div className="grid grid-cols-2 gap-4">
                 <Card className="p-4">
                   <p className="text-foreground/50">Total Score</p>
-                  <p className="text-2xl font-bold">{examResult.obtainedScore}/{examResult.totalScore}</p>
+                  <p className="text-2xl font-bold">{examResult.obtainedScore}/{setting?.total_score || examResult.totalScore}</p>
                 </Card>
                 <Card className="p-4">
                   <p className="text-foreground/50">Correct Answers</p>

@@ -13,10 +13,14 @@ import {
   Chip,
   Spinner,
   Card,
-  CardBody
+  CardBody,
+  Input,
+  Pagination,
+  Select,
+  SelectItem
 } from '@nextui-org/react'
 import { toast } from 'react-toastify'
-import { MdiBin, FaGroup, PhStudentFill, FeEdit, SolarRefreshLineDuotone } from '@/components/icons/icons'
+import { MdiBin, FaGroup, PhStudentFill, FeEdit, SolarRefreshLineDuotone, MdiSearch } from '@/components/icons/icons'
 
 interface Course {
   _id: string
@@ -34,17 +38,44 @@ interface Course {
 
 export function CoursesTable() {
   const [courses, setCourses] = useState<Course[]>([])
+  const [filteredCourses, setFilteredCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   useEffect(() => {
     fetchCourses()
   }, [])
 
+  useEffect(() => {
+    filterCourses()
+  }, [courses, searchQuery])
+
+  const filterCourses = () => {
+    let filtered = courses
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(course => 
+        course.course_name.toLowerCase().includes(query) ||
+        course.description?.toLowerCase().includes(query) ||
+        course._id.toLowerCase().includes(query)
+      )
+    }
+
+    setFilteredCourses(filtered)
+    setCurrentPage(1) // Reset to first page when filters change
+  }
+
   const fetchCourses = async () => {
     try {
       setLoading(true)
       const response = await clientAPI.get('/course')
-      setCourses(response.data.data || [])
+      const courseData = response.data.data || []
+      setCourses(courseData)
+      setFilteredCourses(courseData)
     } catch (error) {
       console.error('Error fetching courses:', error)
       toast.error('Failed to fetch courses')
@@ -93,7 +124,10 @@ export function CoursesTable() {
             </div>
             <div>
               <h3 className="text-lg sm:text-xl font-bold text-foreground">Courses Management</h3>
-              <p className="text-sm text-default-500">{courses.length} total courses</p>
+              <p className="text-sm text-default-500">
+                {filteredCourses.length} of {courses.length} courses
+                {searchQuery && ` (filtered by "${searchQuery}")`}
+              </p>
             </div>
           </div>
           <Button 
@@ -105,6 +139,37 @@ export function CoursesTable() {
           >
             Refresh
           </Button>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="px-4 sm:px-6 py-4 space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Input
+              className="flex-1"
+              placeholder="Search courses by name, description, or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              startContent={<MdiSearch className="h-4 w-4 text-default-400" />}
+              isClearable
+              onClear={() => setSearchQuery('')}
+            />
+          </div>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-default-500">Show:</span>
+              <Select
+                className="w-20"
+                selectedKeys={[rowsPerPage.toString()]}
+                onSelectionChange={(keys) => setRowsPerPage(Number(Array.from(keys)[0]))}
+              >
+                <SelectItem key="5" value="5">5</SelectItem>
+                <SelectItem key="10" value="10">10</SelectItem>
+                <SelectItem key="25" value="25">25</SelectItem>
+                <SelectItem key="50" value="50">50</SelectItem>
+              </Select>
+              <span className="text-sm text-default-500">per page</span>
+            </div>
+          </div>
         </div>
 
         <Table 
@@ -123,8 +188,10 @@ export function CoursesTable() {
             <TableColumn>CREATED</TableColumn>
             <TableColumn>ACTIONS</TableColumn>
           </TableHeader>
-          <TableBody emptyContent="No courses found">
-            {courses.map((course) => (
+          <TableBody emptyContent={searchQuery ? "No courses match the current search" : "No courses found"}>
+            {filteredCourses
+              .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+              .map((course) => (
               <TableRow key={course._id}>
                 <TableCell>
                   <div>
@@ -171,14 +238,6 @@ export function CoursesTable() {
                       variant="light" 
                       size="sm"
                       isIconOnly
-                      color="primary"
-                    >
-                      <FeEdit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="light" 
-                      size="sm"
-                      isIconOnly
                       color="danger"
                       onClick={() => handleDeleteCourse(course._id)}
                     >
@@ -190,6 +249,20 @@ export function CoursesTable() {
             ))}
           </TableBody>
         </Table>
+        
+        {/* Pagination */}
+        {filteredCourses.length > rowsPerPage && (
+          <div className="flex justify-center items-center p-4">
+            <Pagination
+              total={Math.ceil(filteredCourses.length / rowsPerPage)}
+              page={currentPage}
+              onChange={setCurrentPage}
+              showControls
+              showShadow
+              color="primary"
+            />
+          </div>
+        )}
       </CardBody>
     </Card>
   )

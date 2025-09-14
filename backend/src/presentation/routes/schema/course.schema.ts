@@ -64,5 +64,6 @@ export const ExamSettingSchema = t.Object({
     question_count: t.Number({ description: 'Number of questions to include is required' }),
     total_score: t.Optional(t.Number({ description: 'Total score for the exam schedule (optional, calculated from questions)' })),
     assistant_grading: t.Optional(t.Boolean({ description: 'Enable AI assistant grading (optional, defaults to false)' })),
-    selected_questions: t.Optional(t.Array(t.Any(), { description: 'Selected questions from frontend (optional)' }))
+    selected_questions: t.Optional(t.Array(t.Any(), { description: 'Selected questions from frontend (optional)' })),
+    time_taken: t.Optional(t.Number({ description: 'Time limit for the exam in minutes (optional)' }))
 })

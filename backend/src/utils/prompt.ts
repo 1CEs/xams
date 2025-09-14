@@ -27,8 +27,6 @@ export const EssayGradingAssistantPrompt = (
     question_type?: string,
     hasExpectedAnswers: boolean = true
 ): string => {
-    const questionTypeText = question_type === 'ses' ? 'Short Essay' : 'Long Essay';
-    
     return `
         You are an academic grading assistant. Your ONLY task is to evaluate the student's answer to the given question based on academic merit.
 
