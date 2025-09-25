@@ -204,23 +204,38 @@ export const LearnersTable = ({ studentIds, courseId, groupName, onStudentRemove
 
       try {
         setLoading(true);
-        // Fetch student data for each student ID
-        const promises = studentIds.map(id => clientAPI.get(`/user/${id}`));
+        // Fetch student data for each student ID with individual error handling
+        const promises = studentIds.map(async (id) => {
+          try {
+            return await clientAPI.get(`/user/${id}`);
+          } catch (error) {
+            console.warn(`Failed to fetch student with ID ${id}:`, error);
+            return null; // Return null for failed requests
+          }
+        });
         const responses = await Promise.all(promises);
         
-        // Extract student data from responses
-        const fetchedStudents = responses.map(response => {
-          const userData = response.data.data;
-          return {
-            _id: userData._id,
-            username: userData.username || 'Unknown',
-            email: userData.email || 'No email',
-            role: userData.role || 'student',
-            status: userData.status || { is_banned: false },
-            profile_url: userData.profile_url || `https://i.pravatar.cc/150?u=${userData._id}`,
-            info: userData.info || { first_name: 'Unknown', last_name: 'User' }
-          };
-        });
+        // Extract student data from responses and filter out invalid entries
+        const fetchedStudents = responses
+          .filter(response => response !== null) // Filter out null responses first
+          .map(response => {
+            const userData = response?.data?.data;
+            // Skip if userData is null, undefined, or missing _id
+            if (!userData || !userData._id) {
+              console.warn('Invalid user data received:', userData);
+              return null;
+            }
+            return {
+              _id: userData._id,
+              username: userData.username || 'Unknown',
+              email: userData.email || 'No email',
+              role: userData.role || 'student',
+              status: userData.status || { is_banned: false },
+              profile_url: userData.profile_url || `https://i.pravatar.cc/150?u=${userData._id}`,
+              info: userData.info || { first_name: 'Unknown', last_name: 'User' }
+            };
+          })
+          .filter(student => student !== null); // Remove null entries
         
         setStudents(fetchedStudents as any);
       } catch (err) {

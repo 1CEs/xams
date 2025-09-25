@@ -148,7 +148,7 @@ const NewQuestionForm = ({ examination_id, editingQuestion, onEditComplete }: Pr
                 }
 
                 return (
-                    <form className="w-full px-2 sm:px-4 lg:col-span-2 lg:pl-32" onSubmit={handleSubmit}>
+                    <form className="w-full px-2 sm:px-4 lg:col-span-2 lg:pl-32 pb-8" onSubmit={handleSubmit}>
                         {isEditing && (
                             <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
                                 <p className="text-sm text-primary font-medium">

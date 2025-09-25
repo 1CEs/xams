@@ -1,7 +1,7 @@
 import Elysia, { t } from "elysia";
 import { ExaminationController } from "../controllers/exam.controller";
 import { tokenVerifier } from "../middleware/token-verify.middleware";
-import { AddExaminationSchema, QuestionFormSchema, NestedQuestionSchema, NestedQuestionFromExistingSchema, updateExaminationSchema } from "./schema/exam.schema";
+import { AddExaminationSchema, QuestionFormSchema, NestedQuestionSchema, NestedQuestionFromExistingSchema, updateExaminationSchema, UpdateNestedQuestionSchema, UpdateSubQuestionSchema } from "./schema/exam.schema";
 import { IInstructor } from "../../core/user/model/interface/iintructor";
 import { catchAsync } from "../../utils/error";
 import { Static } from "@sinclair/typebox";
@@ -18,6 +18,8 @@ type QuestionBody = Static<typeof QuestionFormSchema>
 type NestedQuestionBody = Static<typeof NestedQuestionSchema>
 type NestedQuestionFromExistingBody = Static<typeof NestedQuestionFromExistingSchema>
 type UpdateExamBody = Static<typeof updateExaminationSchema>
+type UpdateNestedQuestionBody = Static<typeof UpdateNestedQuestionSchema>
+type UpdateSubQuestionBody = Static<typeof UpdateSubQuestionSchema>
 
 export const ExamRoute = new Elysia({ prefix: '/exam' })
     .derive(() => { 
@@ -45,8 +47,11 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
             .post('', catchAsync(async ({ body, user, controller }: ExamContext & { body: AddExamBody }) => await controller.addExamination({ ...body, instructor_id: user._id as unknown as string }, user, body.bankId, body.subBankPath)), {
                 body: AddExaminationSchema
             })
-            .patch('/:id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { id: string }, body: UpdateExamBody }) => await controller.updateExamination(params.id, body, user)), {
+            .put('/:id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { id: string }, body: UpdateExamBody }) => await controller.updateExamination(params.id, body, user)), {
                 body: updateExaminationSchema
+            })
+            .put('/question/:exam_id/:question_id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { exam_id: string, question_id: string }, body: QuestionBody }) => await controller.updateQuestion(params.exam_id, params.question_id, body, user)), {
+                body: QuestionFormSchema
             })
             .delete('/:id', catchAsync(async ({ params, controller, user }: ExamContext & { params: { id: string } }) => await controller.deleteExamination(params.id, user)))
 
@@ -74,6 +79,12 @@ export const ExamRoute = new Elysia({ prefix: '/exam' })
             })
             .post('/nested-question-from-existing/:id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { id: string }, body: NestedQuestionFromExistingBody }) => await controller.addNestedQuestionFromExisting(params.id, body.nestedQuestionData, body.questionIds, user)), {
                 body: NestedQuestionFromExistingSchema
+            })
+            .put('/nested-question/:exam_id/:question_id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { exam_id: string, question_id: string }, body: UpdateNestedQuestionBody }) => await controller.updateNestedQuestion(params.exam_id, params.question_id, body, user)), {
+                body: UpdateNestedQuestionSchema
+            })
+            .put('/nested-question/:exam_id/:question_id/sub-question/:sub_question_id', catchAsync(async ({ params, body, controller, user }: ExamContext & { params: { exam_id: string, question_id: string, sub_question_id: string }, body: UpdateSubQuestionBody }) => await controller.updateSubQuestion(params.exam_id, params.question_id, params.sub_question_id, body, user)), {
+                body: UpdateSubQuestionSchema
             })
 
             // Result-Only routes

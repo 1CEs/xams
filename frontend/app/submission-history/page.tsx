@@ -63,6 +63,8 @@ interface ExamSubmission {
     username: string
     email: string
     profile_url?: string
+    first_name: string
+    last_name: string
     full_name: string
   }
 }
@@ -97,6 +99,7 @@ const SubmissionHistoryPage = () => {
   const [examSchedule, setExamSchedule] = useState<ExamSchedule | null>(null)
   const [loading, setLoading] = useState(true)
   const [userLoaded, setUserLoaded] = useState(false)
+  const [studentProfile, setStudentProfile] = useState<any>(null)
   const [currentQuestionPage, setCurrentQuestionPage] = useState<{ [submissionId: string]: number }>({})
   const questionsPerPage = 5
 
@@ -136,6 +139,8 @@ const SubmissionHistoryPage = () => {
         return {
           email: response.data.data.email,
           profile_url: response.data.data.profile_url,
+          first_name: response.data.data.info.first_name,
+          last_name: response.data.data.info.last_name,
           full_name: response.data.data.info.first_name + ' ' + response.data.data.info.last_name
         }
       }
@@ -251,6 +256,12 @@ const SubmissionHistoryPage = () => {
           if (filteredSubmissions.length > 0) {
             setExpandedSubmissions({ [filteredSubmissions[0]._id]: true })
           }
+        }
+
+        // Fetch student profile information for student-specific views
+        if (student_id && !question_id) {
+          const studentInfo = await fetchStudentInfo(student_id)
+          setStudentProfile(studentInfo)
         }
       } catch (error) {
         console.error('Error fetching submission history:', error)
@@ -659,6 +670,46 @@ const SubmissionHistoryPage = () => {
           </div>
         </div>
 
+        {/* User Profile Card for student-specific views */}
+        {student_id && !question_id && studentProfile && (
+          <div className="mb-6">
+            <Card className="bg-gradient-to-r from-secondary/10 via-primary/10 to-secondary/10 border border-secondary/20">
+              <CardBody className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <img
+                      src={studentProfile.profile_url || `https://i.pravatar.cc/150?u=${student_id}`}
+                      alt={`${studentProfile.first_name} ${studentProfile.last_name}`}
+                      className="w-16 h-16 rounded-full object-cover border-3 border-secondary/30"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold text-foreground">
+                      {studentProfile.first_name} {studentProfile.last_name}
+                    </h2>
+                    <p className="text-default-600 flex items-center gap-2">
+                      <span>{studentProfile.email}</span>
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <Chip
+                      size="sm"
+                      variant="flat"
+                      color="secondary"
+                      className="mb-2"
+                    >
+                      Student Profile
+                    </Chip>
+                    <p className="text-sm text-default-500">
+                      Viewing submission history
+                    </p>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+        )}
+
         {/* Submissions List */}
         <div className="space-y-4">
           {submissions.length === 0 ? (
@@ -693,7 +744,9 @@ const SubmissionHistoryPage = () => {
                           // Show student profile picture for question-specific view
                           <img
                             src={submission.student_info.profile_url || `https://i.pravatar.cc/150?u=${submission.student_id}`}
-                            alt={submission.student_info.full_name}
+                            alt={submission.student_info?.first_name && submission.student_info?.last_name 
+                              ? `${submission.student_info.first_name} ${submission.student_info.last_name}`
+                              : submission.student_info.full_name}
                             className="w-10 h-10 rounded-full object-cover"
                           />
                         ) : (
@@ -705,7 +758,9 @@ const SubmissionHistoryPage = () => {
                         <div>
                           <h3 className="font-semibold">
                             {question_id ? (
-                              submission.student_info?.full_name || `Learner ${submission.student_id}`
+                              submission.student_info?.first_name && submission.student_info?.last_name 
+                                ? `${submission.student_info.first_name} ${submission.student_info.last_name}`
+                                : submission.student_info?.full_name || `Learner ${submission.student_id}`
                             ) : (
                               `Attempt ${submission.attempt_number}`
                             )}
@@ -991,7 +1046,7 @@ const SubmissionHistoryPage = () => {
                                                           {user?.role === 'instructor' ? "Learner answer:" : "Your answer:"}
                                                         </span>
                                                         <span className="text-sm font-semibold text-primary">
-                                                          {answer.submitted_choices?.join(', ') || 'No answer selected'}
+                                                          {stripHtmlTags(answer.submitted_choices?.join(', ') || 'No answer selected')}
                                                         </span>
                                                       </div>
                                                     }
@@ -1102,7 +1157,7 @@ const SubmissionHistoryPage = () => {
                                                                   {user?.role === 'instructor' ? "Learner answer:" : "Your answer:"}
                                                                 </span>
                                                                 <span className="text-sm font-semibold text-primary">
-                                                                  {nestedAnswer.submitted_choices?.join(', ') || 'No answer selected'}
+                                                                  {stripHtmlTags(nestedAnswer.submitted_choices?.join(', ') || 'No answer selected')}
                                                                 </span>
                                                               </div>
                                                             }
@@ -1362,7 +1417,7 @@ const SubmissionHistoryPage = () => {
                                                 {user?.role === 'instructor' ? "Learner answer:" : "Your answer:"}
                                               </span>
                                               <span className="text-sm font-semibold text-primary">
-                                                {answer.submitted_choices?.join(', ') || 'No answer selected'}
+                                                {stripHtmlTags(answer.submitted_choices?.join(', ') || 'No answer selected')}
                                               </span>
                                             </div>
                                           }
@@ -1402,7 +1457,7 @@ const SubmissionHistoryPage = () => {
                                                     }}
                                                   >
                                                     <div className="flex items-center justify-between w-full">
-                                                      <span className="text-sm">{choice.content}</span>
+                                                      <span className="text-sm">{stripHtmlTags(choice.content)}</span>
                                                       <div className="flex items-center gap-2">
                                                         {isSelected && (
                                                           <Chip size="sm" className='bg-blue-400/40' variant="flat">
@@ -1471,7 +1526,7 @@ const SubmissionHistoryPage = () => {
                                                         {user?.role === 'instructor' ? "Learner answer:" : "Your answer:"}
                                                       </span>
                                                       <span className="text-sm font-semibold text-primary">
-                                                        {nestedAnswer.submitted_choices?.join(', ') || 'No answer selected'}
+                                                        {stripHtmlTags(nestedAnswer.submitted_choices?.join(', ') || 'No answer selected')}
                                                       </span>
                                                     </div>
                                                   }
@@ -1512,7 +1567,7 @@ const SubmissionHistoryPage = () => {
                                                           >
                                                             <div className="flex items-center justify-between w-full">
                                                               <span className="font-medium text-default-700">
-                                                                {choice.content}
+                                                                {stripHtmlTags(choice.content)}
                                                               </span>
                                                               <div className="flex items-center gap-2">
                                                                 {isSelected && (

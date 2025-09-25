@@ -16,6 +16,8 @@ export interface IExaminationRepository extends IBaseRepository<any> {
     findDuplicateQuestions: (questions: IQuestion[], instructorId?: string) => Promise<{ questionText: string, examId: string, examTitle: string }[]>
     addNestedQuestion: (id: string, payload: { question: string; type: string; score: number; questions: IQuestion[] }) => Promise<IExamination | null>
     addNestedQuestionFromExisting: (examId: string, nestedQuestionData: { question: string; score: number }, questionIds: string[]) => Promise<IExamination | null>
+    updateNestedQuestion: (examId: string, questionId: string, payload: { question?: string; score?: number }) => Promise<IExamination | null>
+    updateSubQuestion: (examId: string, questionId: string, subQuestionId: string, payload: Partial<IQuestion>) => Promise<IExamination | null>
     addQuestionToNestedQuestion: (examId: string, parentQuestionId: string, question: Omit<IQuestion, "_id">) => Promise<IExamination | null>
     removeQuestionFromNestedQuestion: (examId: string, parentQuestionId: string, nestedQuestionId: string) => Promise<IExamination | null>
     resultSubmit: (examId: string, answers: Answer[]) => Promise<ExamResult>

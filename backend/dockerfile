@@ -1,30 +1,24 @@
-# Use the latest Bun image as the base
 FROM oven/bun:latest AS base
 WORKDIR /usr/src/xams/backend
 
-# Install dependencies
 FROM base AS install
 COPY package.json bun.lockb ./
 RUN bun install --frozen-lockfile
 
-# Dev dependencies
 FROM install AS dev-deps
 RUN mkdir -p /temp/dev
 RUN cp -R node_modules /temp/dev
 
-# Prod dependencies
 FROM install AS prod-deps
 RUN mkdir -p /temp/prod
 RUN bun install --frozen-lockfile --production && cp -R node_modules /temp/prod
 
-# Prerelease: copy dev dependencies and the rest of the app code
 FROM base AS prerelease
 COPY --from=dev-deps /temp/dev/node_modules node_modules
 COPY . . 
 ENV NODE_ENV=production
 RUN bun run build
 
-# Final release stage: copy prod dependencies and the rest of the app code
 FROM base AS release
 COPY --from=prod-deps /temp/prod/node_modules node_modules
 COPY . .

@@ -144,7 +144,8 @@ export class ExaminationScheduleRepository
             randomize_choice: examSettings?.randomize_choice || false,
             assistant_grading: examSettings?.assistant_grading || false,
             question_count: questionCount,
-            total_score: examSettings?.total_score // Always include total_score, even if undefined
+            total_score: examSettings?.total_score, // Always include total_score, even if undefined
+            time_taken: examSettings?.time_taken
         });
 
         // Save the examination schedule

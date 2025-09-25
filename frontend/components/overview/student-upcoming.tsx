@@ -88,7 +88,6 @@ const StudentUpcoming = (props: Props) => {
                   size="lg" 
                   variant="flat" 
                   color="success"
-                  startContent={<span className="text-base sm:text-lg">🎯</span>}
                   className="self-start sm:self-auto"
                 >
                   <span className="text-xs sm:text-sm">

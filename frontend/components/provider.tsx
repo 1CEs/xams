@@ -10,7 +10,7 @@ export const StepProvider = (
         <div className="flex flex-col gap-y-3">
             <HeadLine number={number} content={content} isOptional={isOptional}/>
             { children }
-            <Divider className="mt-3" />
+            {number !== 3 && <Divider className="mt-3" />}
         </div>
     )
 }

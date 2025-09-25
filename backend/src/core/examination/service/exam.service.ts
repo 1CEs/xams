@@ -78,6 +78,16 @@ export class ExaminationService implements IExaminationService {
         return result
     }
 
+    async updateNestedQuestion(examId: string, questionId: string, payload: { question?: string; score?: number }) {
+        const result = await this._repository.updateNestedQuestion(examId, questionId, payload)
+        return result
+    }
+
+    async updateSubQuestion(examId: string, questionId: string, subQuestionId: string, payload: Partial<IQuestion>) {
+        const result = await this._repository.updateSubQuestion(examId, questionId, subQuestionId, payload)
+        return result
+    }
+
     async resultSubmit(examId: string, answers: Answer[], examSchedule?: IExaminationSchedule) {
         // If an examination schedule is provided, use it for grading instead of fetching the exam
         if (examSchedule) {

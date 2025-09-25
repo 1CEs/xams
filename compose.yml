@@ -23,16 +23,12 @@ services:
       - DB_CONN=${DB_CONN}
       
       # OpenRouter API (for AI features)
-      - OPEN_ROUTER_API_KEY=${OPEN_ROUTER_API_KEY}
+      - HUGGING_FACE_API_KEY=${HUGGING_FACE_API_KEY}
       
       # JWT Configuration
       - JWT_SECRET=${JWT_SECRET}
       - ACCESS_TOKEN_EXP=${ACCESS_TOKEN_EXP:-24h}
       - REFRESH_TOKEN_EXP=${REFRESH_TOKEN_EXP:-7d}
-      
-      # RSA Keys (if using RSA instead of JWT)
-      - PUBLIC_KEY=${PUBLIC_KEY:-}
-      - PRIVATE_KEY=${PRIVATE_KEY:-}
       
       # Email Configuration
       - EMAIL_HOST=${EMAIL_HOST:-}

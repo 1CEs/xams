@@ -12,6 +12,9 @@ interface ExamResult {
     correctAnswer: string[]
     score: number
     obtainedScore: number
+    questionNumber?: number
+    isNested?: boolean
+    parentQuestionId?: string
   }[]
 }
 
@@ -62,32 +65,50 @@ const ExamResultsModal = ({
               <div className="space-y-4">
                 <h3 className="font-semibold">Question Details</h3>
                 <div className="grid grid-cols-5 gap-2">
-                  {examResult.details.map((detail, index) => (
-                    <Card
-                      key={detail.questionId}
-                      className={`p-2 ${detail.isCorrect ? 'border-success' : 'border-danger'} h-24 flex flex-col justify-center items-center cursor-pointer hover:scale-105 transition-transform`}
-                      onClick={() => {
-                        const questionIndex = questions.findIndex(q => q._id === detail.questionId) || 0
-                        const page = Math.floor(questionIndex / questionsPerPage) + 1
-                        setCurrentPage(page)
-                        onClose()
-                        setTimeout(() => {
-                          const questionElement = document.getElementById(`question-${questionIndex % questionsPerPage}`)
-                          if (questionElement) {
-                            questionElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  {examResult.details.map((detail, index) => {
+                    // Helper function to find the correct question index for navigation
+                    const findQuestionForNavigation = (questionId: string) => {
+                      // If it's a nested question, find the parent question
+                      if (detail.isNested && detail.parentQuestionId) {
+                        return questions.findIndex(q => q._id === detail.parentQuestionId)
+                      } else {
+                        return questions.findIndex(q => q._id === questionId)
+                      }
+                    }
+                    
+                    const questionIndex = findQuestionForNavigation(detail.questionId)
+                    
+                    return (
+                      <Card
+                        key={detail.questionId}
+                        className={`p-2 ${detail.isCorrect ? 'border-success' : 'border-danger'} ${detail.isNested ? 'border-l-4 border-l-primary' : ''} h-24 flex flex-col justify-center items-center cursor-pointer hover:scale-105 transition-transform`}
+                        onClick={() => {
+                          if (questionIndex >= 0) {
+                            const page = Math.floor(questionIndex / questionsPerPage) + 1
+                            setCurrentPage(page)
+                            onClose()
+                            setTimeout(() => {
+                              const questionElement = document.getElementById(`question-${detail.isNested ? detail.parentQuestionId : detail.questionId}`)
+                              if (questionElement) {
+                                questionElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                              }
+                            }, 100)
                           }
-                        }, 100)
-                      }}
-                    >
-                      <div className="text-center">
-                        <p className="font-medium text-sm">Q{index + 1}</p>
-                        <p className={`text-md ${detail.isCorrect ? 'text-success' : 'text-danger'}`}>
-                          {detail.isCorrect ? '✓' : '✗'}
-                        </p>
-                        <p className="text-xs text-foreground/50">{detail.obtainedScore}/{detail.score}</p>
-                      </div>
-                    </Card>
-                  ))}
+                        }}
+                      >
+                        <div className="text-center">
+                          <p className="font-medium text-sm">
+                            {detail.isNested ? `Q${detail.questionNumber || index + 1}` : `Q${detail.questionNumber || index + 1}`}
+                            {detail.isNested && <span className="text-xs text-primary ml-1">(sub)</span>}
+                          </p>
+                          <p className={`text-md ${detail.isCorrect ? 'text-success' : 'text-danger'}`}>
+                            {detail.isCorrect ? '✓' : '✗'}
+                          </p>
+                          <p className="text-xs text-foreground/50">{detail.obtainedScore}/{detail.score}</p>
+                        </div>
+                      </Card>
+                    )
+                  })}
                 </div>
               </div>
             </div>

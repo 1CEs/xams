@@ -20,6 +20,26 @@ const GroupFormModal = ({ courseId }: Props) => {
   })
   const [isGeneratingCode, setIsGeneratingCode] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [validationError, setValidationError] = useState<string | null>(null)
+
+  // Validate group name (English only, no spaces)
+  const validateGroupName = (name: string): string | null => {
+    if (!name.trim()) {
+      return "Group name is required"
+    }
+    
+    // Check for spaces
+    if (/\s/.test(name)) {
+      return "Group name cannot contain spaces"
+    }
+    
+    // Check for English characters only (letters, numbers, and common symbols like - _ . but no spaces)
+    if (!/^[A-Za-z0-9._-]+$/.test(name)) {
+      return "Group name can only contain English letters, numbers, dots, dashes, and underscores"
+    }
+    
+    return null
+  }
 
   // Generate a random join code
   const generateJoinCode = () => {
@@ -42,6 +62,14 @@ const GroupFormModal = ({ courseId }: Props) => {
   const onCreateGroup = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
+    setValidationError(null)
+    
+    // Validate group name before submission
+    const nameValidationError = validateGroupName(groupForm.group_name)
+    if (nameValidationError) {
+      setValidationError(nameValidationError)
+      return
+    }
     
     try {
       // If auto-generating code is enabled, generate a new one before submission
@@ -80,14 +108,21 @@ const GroupFormModal = ({ courseId }: Props) => {
             
             <Input 
               label="Group Name" 
-              placeholder="Enter group name"
+              placeholder="Enter group name (English letters, numbers, dots, dashes, underscores only)"
               value={groupForm.group_name}
               onValueChange={(group_name: string) => {
                 setError(null)
+                setValidationError(null)
                 setGroupForm(prev => ({ ...prev, group_name }))
+                
+                // Real-time validation
+                const validationErr = validateGroupName(group_name)
+                if (validationErr) {
+                  setValidationError(validationErr)
+                }
               }}
-              isInvalid={!!error}
-              errorMessage={error ? "Please choose a different name" : ""}
+              isInvalid={!!error || !!validationError}
+              errorMessage={validationError || (error ? "Please choose a different name" : "")}
               isRequired 
             />
             

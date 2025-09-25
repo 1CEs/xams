@@ -69,122 +69,7 @@ export class AIAssistantService {
                 };
             }
 
-            // Check for prompt injection attacks first
-            const trimmedAnswer = studentAnswer.trim();
-            const lowerAnswer = trimmedAnswer.toLowerCase();
-            
-            console.log('Checking prompt injection and meaningless answer patterns for:', trimmedAnswer);
-            console.log('Lowercase version:', lowerAnswer);
-            console.log('Length:', trimmedAnswer.length);
-
-            // Detect prompt injection attempts
-            const promptInjectionPatterns = [
-                // Direct injection commands
-                /ignore\s+(every|all|what|everything|above|below|previous|instructions?)/i,
-                /focus\s+(at|on)\s+(this|that|my|the)\s+(prompt|instruction|request)/i,
-                /(give|award|assign)\s+(me|us)\s+(full|perfect|maximum|max)\s+(score|points?|marks?)/i,
-                /(override|disregard|forget)\s+(instructions?|prompts?|rules?|guidelines?)/i,
-                
-                // System manipulation attempts
-                /you\s+(are|must|should|need|have)\s+to\s+(give|award|assign)/i,
-                /system\s+(override|hack|bypass|ignore)/i,
-                /act\s+(as|like)\s+(if|though)/i,
-                /pretend\s+(that|to|like)/i,
-                
-                // Score manipulation
-                /just\s+(give|award)\s+(me|us)\s+(\d+|full|perfect|maximum)/i,
-                /award\s+(\d+|full|perfect|maximum)\s+(points?|marks?|score)/i,
-                /set\s+(score|points?|marks?)\s+to\s+(\d+|full|perfect|maximum)/i,
-                
-                // Common injection phrases
-                /new\s+(instruction|prompt|rule)/i,
-                /different\s+(instruction|prompt|rule)/i,
-                /actually\s+(i\s+want|give|award)/i,
-                /instead\s+(of|give|award)/i,
-                
-                // Sophisticated attempts
-                /according\s+to\s+(new|updated|latest)\s+(rules?|guidelines?)/i,
-                /the\s+(real|actual|true)\s+(instruction|prompt|task)/i,
-                /(bypass|skip|ignore)\s+(grading|evaluation|assessment)/i
-            ];
-
-            const containsInjection = promptInjectionPatterns.some(pattern => pattern.test(lowerAnswer));
-            
-            if (containsInjection) {
-                // Log security incident for audit trail
-                console.error('🚨 SECURITY ALERT - PROMPT INJECTION DETECTED:', {
-                    timestamp: new Date().toISOString(),
-                    incident_type: 'PROMPT_INJECTION_ATTEMPT',
-                    student_answer: trimmedAnswer,
-                    question_text: questionText.substring(0, 100) + '...',
-                    detection_method: 'server_side_pattern_matching',
-                    action_taken: 'blocked_and_scored_zero'
-                });
-                
-                console.log('🚨 PROMPT INJECTION DETECTED - blocking attack attempt');
-                return {
-                    isCorrect: false,
-                    scoreObtained: 0,
-                    suggestion: 'Answer contains prompt injection attempt and has been flagged for security review.',
-                    confidence: 1.0
-                };
-            }
-            
-            // Common meaningless responses
-            const meaninglessPatterns = [
-                // Single characters or very short
-                /^.{1,2}$/,
-                // Punctuation only
-                /^[.!?@#$%^&*()_+=\-\[\]{}|\\:";'<>?,./]*$/,
-                // Common abbreviations/slang (exact match)
-                /^(wtf|idk|lol|lmao|rofl|omg|brb|ttyl|tbh|smh|fml|yolo|af|rip|nvm|ikr|imo|imho|gtg|asap|fyi)$/i,
-                // "I don't know" variations (simple)
-                /^i\s+dont?\s+know(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
-                /^i\s+don'?t\s+know(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
-                /^i\s+do\s+not\s+know(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
-                // "I still don't know" variations
-                /^i\s+still\s+dont?\s+know(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
-                /^i\s+still\s+don'?t\s+know(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
-                /^i\s+still\s+do\s+not\s+know(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
-                // Other "no idea" variations
-                /^(no\s+idea|i\s+have\s+no\s+(idea|clue)|dunno)(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*$/i,
-                // Repeated characters
-                /^(.)\1{2,}$/,
-                // Random keyboard mashing
-                /^[qwertyuiopasdfghjklzxcvbnm]{3,}$/i,
-                // Numbers only
-                /^\d+$/,
-                // Common nonsensical responses (exact match)
-                /^(no|yes|maybe|ok|okay|fine|whatever|dunno|nope|yep|meh|ugh|huh|hmm|um|uh|ah|oh)$/i,
-                // Short meaningless phrases
-                /^(i\s*don'?t\s*care|whatever|no\s*comment|pass|skip|next)$/i,
-                // Expressions with emoticons/slang only
-                /^(lol|haha|xd|lmao|omg|wtf|rofl)(\s+(lol|haha|xd|lmao|omg|wtf|rofl))*\s*$/i
-            ];
-
-            // Test each pattern individually for debugging
-            for (let i = 0; i < meaninglessPatterns.length; i++) {
-                const pattern = meaninglessPatterns[i];
-                const matches = pattern.test(lowerAnswer);
-                if (matches) {
-                    console.log(`Pattern ${i} matched: ${pattern}`);
-                }
-            }
-
-            const isInvalidAnswer = trimmedAnswer.length <= 2 || 
-                                  meaninglessPatterns.some(pattern => pattern.test(lowerAnswer));
-
-            console.log('Is invalid answer:', isInvalidAnswer);
-
-            if (isInvalidAnswer) {
-                console.log('CAUGHT MEANINGLESS ANSWER - returning 0%');
-                return {
-                    isCorrect: false,
-                    scoreObtained: 0,
-                    suggestion: `Answer "${trimmedAnswer}" appears to be meaningless, too short, or nonsensical to evaluate.`,
-                    confidence: 1.0
-                };
-            }
+            console.log('Processing student answer:', studentAnswer.trim());
 
             // Strip HTML tags for clean comparison
             const cleanStudentAnswer = this.stripHtmlTags(studentAnswer);
@@ -233,29 +118,6 @@ export class AIAssistantService {
             const suggestion = result.choices?.[0]?.message?.content || 'Unable to provide grading suggestion.';
             console.log('AI Response:', suggestion);
 
-            // Validate AI response for potential manipulation
-            const isManipulatedResponse = this.detectManipulatedAIResponse(suggestion, cleanStudentAnswer);
-            if (isManipulatedResponse) {
-                // Log security incident for audit trail
-                console.error('🚨 SECURITY ALERT - MANIPULATED AI RESPONSE DETECTED:', {
-                    timestamp: new Date().toISOString(),
-                    incident_type: 'AI_RESPONSE_MANIPULATION',
-                    student_answer: cleanStudentAnswer,
-                    ai_response: suggestion.substring(0, 200) + '...',
-                    question_text: cleanQuestionText.substring(0, 100) + '...',
-                    detection_method: 'ai_response_validation',
-                    action_taken: 'overridden_with_zero_score'
-                });
-                
-                console.log('🚨 MANIPULATED AI RESPONSE DETECTED - overriding with 0%');
-                return {
-                    isCorrect: false,
-                    scoreObtained: 0,
-                    suggestion: 'AI response appears to have been manipulated by prompt injection. Flagged for security review.',
-                    confidence: 1.0
-                };
-            }
-
             // Parse the AI's assessment and extract the percentage/score
             const gradingResult = this.parseAIGradingResponse(suggestion, maxScore, hasExpectedAnswers);
             
@@ -295,132 +157,78 @@ export class AIAssistantService {
         scoreObtained: number;
         confidence: number;
     } {
-        const lowerResponse = response.toLowerCase();
-        
         console.log('Parsing AI response:', response);
         
-        // Enhanced score patterns to match new structured format
-        const scorePatterns = [
-            // New structured format: SCORE: X/Y (Z%)
-            /score[:\s]*(\d+(?:\.\d+)?)\s*\/\s*(\d+)\s*\((\d+(?:\.\d+)?)%\)/i,
-            /score[:\s]*(\d+(?:\.\d+)?)\s*\/\s*(\d+)/i,
-            // Percentage patterns
-            /\((\d+(?:\.\d+)?)%\)/i,
-            /(\d+(?:\.\d+)?)%/i,
-            // Traditional patterns
-            /(\d+(?:\.\d+)?)\s*\/\s*(\d+)\s*points?/i,
-            /(\d+(?:\.\d+)?)\s*out\s*of\s*(\d+)/i,
-            /grade[:\s]*(\d+(?:\.\d+)?)/i,
-            /points?[:\s]*(\d+(?:\.\d+)?)/i
-        ];
-
         let extractedScore = 0;
-        let confidence = 0.7;
-        let scoreFound = false;
-
-        // Try to extract numerical score
-        for (const pattern of scorePatterns) {
-            const match = response.match(pattern);
-            if (match) {
-                console.log('Score pattern matched:', match);
-                
-                if (match[3]) {
-                    // Format: SCORE: X/Y (Z%) - use percentage
-                    const percentage = parseFloat(match[3]);
-                    extractedScore = (percentage / 100) * maxScore;
-                    console.log('Using percentage from structured format:', percentage + '%');
-                } else if (match[2]) {
-                    // Format: score/maxScore
-                    extractedScore = parseFloat(match[1]);
-                    const detectedMaxScore = parseFloat(match[2]);
-                    if (detectedMaxScore !== maxScore) {
-                        // Normalize to actual max score
-                        extractedScore = (extractedScore / detectedMaxScore) * maxScore;
-                    }
-                    console.log('Using score/maxScore format:', extractedScore + '/' + maxScore);
-                } else if (pattern.source.includes('%')) {
-                    // Format: percentage only
-                    const percentage = parseFloat(match[1]);
-                    extractedScore = (percentage / 100) * maxScore;
-                    console.log('Using percentage format:', percentage + '%');
-                } else {
-                    // Format: just score
-                    extractedScore = parseFloat(match[1]);
-                    console.log('Using raw score format:', extractedScore);
-                }
-                confidence = 0.9; // Higher confidence for structured format
-                scoreFound = true;
-                break;
-            }
-        }
-
-        // Enhanced keyword analysis for better score recognition
-        if (!scoreFound) {
-            console.log('No numerical score found, using keyword analysis');
-            
-            // Look for Thai keywords from the new prompt
-            if (lowerResponse.includes('ตรงกับเฉลย') || lowerResponse.includes('เดียวกัน') ||
-                lowerResponse.includes('ยอดเยี่ยม') || lowerResponse.includes('ครบถ้วน') ||
-                lowerResponse.includes('excellent') || lowerResponse.includes('perfect') || 
-                lowerResponse.includes('outstanding') || lowerResponse.includes('comprehensive') ||
-                lowerResponse.includes('matches') || lowerResponse.includes('identical')) {
-                extractedScore = maxScore * 0.95; // Give 95% for excellent/matching answers
-                confidence = 0.85;
-                console.log('Excellent/matching answer detected, giving 95%');
-            } else if (lowerResponse.includes('ถูกต้องส่วนใหญ่') || lowerResponse.includes('ครอบคลุมประเด็นหลัก') ||
-                      lowerResponse.includes('good') || lowerResponse.includes('correct') || 
-                      lowerResponse.includes('accurate') || lowerResponse.includes('well') ||
-                      lowerResponse.includes('solid') || lowerResponse.includes('satisfactory') ||
-                      lowerResponse.includes('mostly correct') || lowerResponse.includes('covers main points')) {
-                extractedScore = maxScore * 0.82; // Give 82% for good answers
-                confidence = 0.8;
-                console.log('Good answer detected, giving 82%');
-            } else if (lowerResponse.includes('ถูกต้องพอสมควร') || lowerResponse.includes('พอใช้') ||
-                      lowerResponse.includes('partial') || lowerResponse.includes('somewhat') ||
-                      lowerResponse.includes('adequate') || lowerResponse.includes('basic') ||
-                      lowerResponse.includes('fair') || lowerResponse.includes('reasonable')) {
-                extractedScore = maxScore * 0.65; // Give 65% for partial answers
-                confidence = 0.7;
-                console.log('Partial answer detected, giving 65%');
-            } else if (lowerResponse.includes('ความพยายาม') || lowerResponse.includes('เข้าใจผิด') ||
-                      lowerResponse.includes('attempt') || lowerResponse.includes('tries') ||
-                      lowerResponse.includes('effort') || lowerResponse.includes('some understanding')) {
-                extractedScore = maxScore * 0.35; // Give 35% for attempts
-                confidence = 0.6;
-                console.log('Attempt detected, giving 35%');
-            } else if (lowerResponse.includes('ไม่เกี่ยวข้อง') || lowerResponse.includes('ตัวอักษรสุ่ม') ||
-                      lowerResponse.includes('incorrect') || lowerResponse.includes('wrong') || 
-                      lowerResponse.includes('poor') || lowerResponse.includes('inadequate') ||
-                      lowerResponse.includes('nonsensical') || lowerResponse.includes('irrelevant') ||
-                      lowerResponse.includes('meaningless') || lowerResponse.includes('gibberish') ||
-                      lowerResponse.includes('random') || lowerResponse.includes('unrelated')) {
-                extractedScore = 0; // Give 0 for clearly wrong answers
-                confidence = 0.9;
-                console.log('Wrong/irrelevant answer detected, giving 0%');
-            } else {
-                // For unclear responses, be more generous with expected answers
-                if (hasExpectedAnswers) {
-                    extractedScore = maxScore * 0.7; // Give 70% for unclear responses with expected answers
-                    console.log('Unclear response with expected answers, giving 70%');
-                } else {
-                    extractedScore = maxScore * 0.75; // Give 75% for unclear responses in open questions
-                    console.log('Unclear response in open question, giving 75%');
-                }
-                confidence = 0.5;
-            }
-        }
-
-        // Additional check: if the response suggests the answer is nonsensical or random
-        if (lowerResponse.includes('does not make sense') || 
-            lowerResponse.includes('not relevant') ||
-            lowerResponse.includes('appears to be random') ||
-            lowerResponse.includes('gibberish') ||
-            lowerResponse.includes('meaningless') ||
-            lowerResponse.includes('ไม่มีความหมาย') ||
-            lowerResponse.includes('ไม่เกี่ยวข้อง')) {
-            extractedScore = 0;
+        let confidence = 0.8;
+        
+        // Strategy 1: Look for percentage in parentheses like "(100%)" or "(85%)"
+        const percentageInParentheses = response.match(/\((\d+(?:\.\d+)?)%\)/);
+        if (percentageInParentheses) {
+            const percentage = parseFloat(percentageInParentheses[1]);
+            extractedScore = (percentage / 100) * maxScore;
+            console.log('Using percentage from parentheses:', percentage + '%');
             confidence = 0.95;
-            console.log('Nonsensical answer override, giving 0%');
+        } else {
+            // Strategy 2: Look for "XX%" pattern
+            const percentagePattern = response.match(/(\d+(?:\.\d+)?)%/);
+            if (percentagePattern) {
+                const percentage = parseFloat(percentagePattern[1]);
+                extractedScore = (percentage / 100) * maxScore;
+                console.log('Using percentage pattern:', percentage + '%');
+                confidence = 0.9;
+            } else {
+                // Strategy 3: Look for "SCORE: X/Y" pattern
+                const scorePattern = response.match(/SCORE:\s*(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)/i);
+                if (scorePattern) {
+                    const numerator = parseFloat(scorePattern[1]);
+                    const denominator = parseFloat(scorePattern[2]);
+                    if (denominator > 0) {
+                        extractedScore = (numerator / denominator) * maxScore;
+                        console.log('Using score pattern:', numerator + '/' + denominator);
+                        confidence = 0.9;
+                    }
+                } else {
+                    // Strategy 4: Extract all numbers and use heuristics
+                    const numbers = response.match(/\d+(?:\.\d+)?/g);
+                    if (numbers && numbers.length > 0) {
+                        // Look for numbers that could be percentages (usually larger values in 0-100 range)
+                        const numericValues = numbers.map(n => parseFloat(n));
+                        const potentialPercentages = numericValues.filter(n => n >= 0 && n <= 100);
+                        
+                        if (potentialPercentages.length > 0) {
+                            // Prefer the largest percentage value (usually the final percentage)
+                            const percentage = Math.max(...potentialPercentages);
+                            extractedScore = (percentage / 100) * maxScore;
+                            console.log('Using largest percentage from numbers:', percentage + '%');
+                            confidence = 0.7;
+                        } else {
+                            // Look for scores in the maxScore range
+                            const scores = numericValues.filter(n => n >= 0 && n <= maxScore);
+                            if (scores.length > 0) {
+                                extractedScore = scores[0];
+                                console.log('Using direct score:', extractedScore);
+                                confidence = 0.7;
+                            } else {
+                                // Fallback to first number
+                                const firstNumber = numericValues[0];
+                                if (firstNumber > maxScore && firstNumber <= 100) {
+                                    extractedScore = (firstNumber / 100) * maxScore;
+                                } else {
+                                    extractedScore = Math.min(firstNumber, maxScore);
+                                }
+                                console.log('Using fallback number:', extractedScore);
+                                confidence = 0.5;
+                            }
+                        }
+                    } else {
+                        // No numbers found, give a default score
+                        extractedScore = maxScore * 0.5; // Give 50% as neutral score
+                        console.log('No numbers found, using default 50%');
+                        confidence = 0.3;
+                    }
+                }
+            }
         }
 
         // Ensure score is within bounds
@@ -438,46 +246,6 @@ export class AIAssistantService {
         };
     }
 
-    /**
-     * Detect if AI response appears to have been manipulated by prompt injection
-     */
-    private detectManipulatedAIResponse(aiResponse: string, originalStudentAnswer: string): boolean {
-        const lowerResponse = aiResponse.toLowerCase();
-        const lowerStudentAnswer = originalStudentAnswer.toLowerCase();
-        
-        // Check for suspicious AI responses that might indicate successful injection
-        const suspiciousResponsePatterns = [
-            // AI agreeing with injection attempts
-            /fulfills this criterion/i,
-            /contradicts? the stated grading guidelines/i,
-            /aligns with.*instruction.*award.*full/i,
-            /explicitly requested.*full score/i,
-            /implies? complete comprehension/i,
-            /would.*contradict.*guidelines/i,
-            
-            // AI being manipulated to ignore actual content
-            /while unusual.*aligns with/i,
-            /unconventional.*fulfills/i,
-            /meta-request.*understanding/i,
-            /directly requesting.*highest.*grade/i,
-            
-            // AI giving high scores for obvious injection attempts
-            /(?:90|95|100)%.*(?:ignore|focus|give.*full)/i,
-            /full.*score.*requested/i,
-        ];
-        
-        // Check if student answer contains injection patterns AND AI gives high score
-        const hasInjectionInAnswer = /ignore.*(?:above|below|every|what|all)|focus.*prompt|give.*(?:full|perfect).*score/i.test(lowerStudentAnswer);
-        const hasHighScore = /(?:90|95|100)%|score:\s*(?:0\.9|1)\/1/i.test(lowerResponse);
-        const hasSuspiciousReasoning = suspiciousResponsePatterns.some(pattern => pattern.test(lowerResponse));
-        
-        if (hasInjectionInAnswer && (hasHighScore || hasSuspiciousReasoning)) {
-            console.log('🚨 AI response appears manipulated - injection attempt with high score or suspicious reasoning');
-            return true;
-        }
-        
-        return false;
-    }
 
     /**
      * Grade multiple essay questions in batch

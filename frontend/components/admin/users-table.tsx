@@ -71,8 +71,10 @@ export function UsersTable() {
     confirmPassword: ''
   })
   const [showPassword, setShowPassword] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<User | null>(null)
   const { isOpen: isBanModalOpen, onOpen: onBanModalOpen, onClose: onBanModalClose } = useDisclosure()
   const { isOpen: isEditModalOpen, onOpen: onEditModalOpen, onClose: onEditModalClose } = useDisclosure()
+  const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onClose: onDeleteModalClose } = useDisclosure()
 
   useEffect(() => {
     fetchUsers()
@@ -130,13 +132,19 @@ export function UsersTable() {
     }
   }
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return
+  const handleDeleteUser = (user: User) => {
+    setUserToDelete(user)
+    onDeleteModalOpen()
+  }
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return
 
     try {
-      await clientAPI.delete(`/user/${userId}`)
+      await clientAPI.delete(`/user/${userToDelete._id}`)
       toast.success('User deleted successfully')
       fetchUsers() // Refresh the list
+      onDeleteModalClose()
     } catch (error) {
       console.error('Error deleting user:', error)
       toast.error('Failed to delete user')
@@ -453,7 +461,7 @@ export function UsersTable() {
                         size="sm"
                         isIconOnly
                         color="danger"
-                        onClick={() => handleDeleteUser(user._id)}
+                        onClick={() => handleDeleteUser(user)}
                       >
                         <MdiBin className="h-4 w-4" />
                       </Button>
@@ -614,6 +622,63 @@ export function UsersTable() {
               onPress={submitUserUpdate}
             >
               {showPassword && editForm.password ? 'Update User & Password' : 'Update User'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Delete User Confirmation Modal */}
+      <Modal isOpen={isDeleteModalOpen} onClose={onDeleteModalClose} size="md">
+        <ModalContent>
+          <ModalHeader>
+            <h3 className="text-lg font-semibold text-danger-600">⚠️ Delete User</h3>
+          </ModalHeader>
+          <ModalBody>
+            {userToDelete && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-3 bg-danger-50 rounded-lg border border-danger-200">
+                  <Avatar
+                    size="sm"
+                    name={userToDelete.info?.first_name ? `${userToDelete.info.first_name} ${userToDelete.info.last_name}` : userToDelete.username}
+                    className="bg-danger-100"
+                  />
+                  <div>
+                    <p className="font-medium text-danger-800">
+                      {userToDelete.info?.first_name && userToDelete.info?.last_name 
+                        ? `${userToDelete.info.first_name} ${userToDelete.info.last_name}`
+                        : userToDelete.username
+                      }
+                    </p>
+                    <p className="text-sm text-danger-600">{userToDelete.email}</p>
+                  </div>
+                </div>
+                
+                <div className="p-4 bg-danger-50 rounded-lg border border-danger-200">
+                  <p className="text-sm text-danger-800 font-medium mb-2">
+                    🚨 <strong>Warning: This action cannot be undone!</strong>
+                  </p>
+                  <p className="text-sm text-danger-700">
+                    Deleting this user will:
+                  </p>
+                  <ul className="text-sm text-danger-700 mt-2 ml-4 space-y-1">
+                    <li>• Permanently remove the user account</li>
+                    <li>• Delete all associated data</li>
+                    <li>• Remove the user from all courses and groups</li>
+                    <li>• This action is irreversible</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onDeleteModalClose}>
+              Cancel
+            </Button>
+            <Button 
+              color="danger"
+              onPress={confirmDeleteUser}
+            >
+              Delete User Permanently
             </Button>
           </ModalFooter>
         </ModalContent>

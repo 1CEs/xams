@@ -274,6 +274,24 @@ export class ExaminationController implements IExaminationController {
         return this._response<typeof exam>('Add Nested Question from Existing Successfully', 200, this._sanitizeExamData(exam, user))
     }
 
+    async updateNestedQuestion(examId: string, questionId: string, payload: { question?: string; score?: number }, user?: IInstructor) {
+        const exam = await this._service.updateNestedQuestion(examId, questionId, payload)
+        return this._response<typeof exam>('Update Nested Question Successfully', 200, this._sanitizeExamData(exam, user))
+    }
+
+    async updateSubQuestion(examId: string, questionId: string, subQuestionId: string, payload: Partial<IQuestion>, user?: IInstructor) {
+        // Validate Short Essay questions have at least one non-empty expected answer
+        if (payload.type === 'ses') {
+            if (!payload.expectedAnswers || payload.expectedAnswers.length === 0 || 
+                !payload.expectedAnswers.some(answer => answer.trim().length > 0)) {
+                return this._response('Short essay questions must have at least one expected answer', 400, null)
+            }
+        }
+        
+        const exam = await this._service.updateSubQuestion(examId, questionId, subQuestionId, payload)
+        return this._response<typeof exam>('Update Sub Question Successfully', 200, this._sanitizeExamData(exam, user))
+    }
+
     async verifyExamPassword(scheduleId: string, password: string) {
         try {
             const schedule = await this._scheduleService.getExaminationScheduleById(scheduleId);

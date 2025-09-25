@@ -163,15 +163,6 @@ const BankCard = ({ id, title, examId, exam_ids = [], subBanks = [], className, 
         >
           <button 
             className="w-full text-left px-4 py-2 hover:bg-[#303030] flex items-center gap-2"
-            onClick={handleNew}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14M5 12h14"></path>
-            </svg>
-            New
-          </button>
-          <button 
-            className="w-full text-left px-4 py-2 hover:bg-[#303030] flex items-center gap-2"
             onClick={handleRename}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

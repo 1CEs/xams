@@ -20,5 +20,7 @@ export interface IExaminationService {
     findDuplicateQuestions: (questions: IQuestion[], instructorId?: string) => Promise<{ questionText: string, examId: string, examTitle: string }[]>
     addNestedQuestion: (id: string, payload: { question: string; type: string; score: number; questions: IQuestion[] }) => Promise<IExamination | null>
     addNestedQuestionFromExisting: (examId: string, nestedQuestionData: { question: string; score: number }, questionIds: string[]) => Promise<IExamination | null>
+    updateNestedQuestion: (examId: string, questionId: string, payload: { question?: string; score?: number }) => Promise<IExamination | null>
+    updateSubQuestion: (examId: string, questionId: string, subQuestionId: string, payload: Partial<IQuestion>) => Promise<IExamination | null>
     resultSubmit: (examId: string, answers: Answer[], examSchedule?: IExaminationSchedule) => Promise<ExamResult>
 }

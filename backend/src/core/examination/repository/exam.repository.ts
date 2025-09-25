@@ -272,6 +272,84 @@ export class ExaminationRepository
         return result;
     }
 
+    async updateNestedQuestion(examId: string, questionId: string, payload: { question?: string; score?: number }) {
+        const updateFields: any = {};
+        
+        if (payload.question !== undefined) {
+            updateFields['questions.$.question'] = payload.question;
+        }
+        
+        if (payload.score !== undefined) {
+            updateFields['questions.$.score'] = payload.score;
+        }
+
+        const result = await this._model.findOneAndUpdate(
+            {
+                _id: examId,
+                'questions._id': questionId,
+                'questions.type': 'nested'
+            },
+            {
+                $set: updateFields
+            },
+            { new: true, runValidators: true }
+        ).exec();
+        
+        return result;
+    }
+
+    async updateSubQuestion(examId: string, questionId: string, subQuestionId: string, payload: Partial<IQuestion>) {
+        const updateFields: any = {};
+        
+        if (payload.question !== undefined) {
+            updateFields['questions.$[parent].questions.$[sub].question'] = payload.question;
+        }
+        
+        if (payload.type !== undefined) {
+            updateFields['questions.$[parent].questions.$[sub].type'] = payload.type;
+        }
+        
+        if (payload.score !== undefined) {
+            updateFields['questions.$[parent].questions.$[sub].score'] = payload.score;
+        }
+        
+        if (payload.choices !== undefined) {
+            updateFields['questions.$[parent].questions.$[sub].choices'] = payload.choices;
+        }
+        
+        if (payload.isRandomChoices !== undefined) {
+            updateFields['questions.$[parent].questions.$[sub].isRandomChoices'] = payload.isRandomChoices;
+        }
+        
+        if (payload.isTrue !== undefined) {
+            updateFields['questions.$[parent].questions.$[sub].isTrue'] = payload.isTrue;
+        }
+        
+        if (payload.expectedAnswers !== undefined) {
+            updateFields['questions.$[parent].questions.$[sub].expectedAnswers'] = payload.expectedAnswers;
+        }
+
+        const result = await this._model.findOneAndUpdate(
+            {
+                _id: examId,
+                'questions._id': questionId,
+                'questions.type': 'nested'
+            },
+            {
+                $set: updateFields
+            },
+            {
+                new: true,
+                runValidators: true,
+                arrayFilters: [
+                    { 'parent._id': questionId },
+                    { 'sub._id': subQuestionId }
+                ]
+            }
+        ).exec();
+        
+        return result;
+    }
 
     async resultSubmit(examId: string, answers: Answer[]) {
         // First update the exam with the submitted answers

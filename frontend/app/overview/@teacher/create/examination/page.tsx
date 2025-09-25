@@ -2,6 +2,7 @@
 import NewQuestionForm from "@/components/exam/new-question-form"
 import DraggableQuestion from "@/components/exam/question/draggable-question"
 import NestedQuestionForm from "@/components/exam/question/nested-question"
+import EditNestedQuestionModal from "@/components/exam/edit-nested-question-modal"
 
 import ConfirmModal from "@/components/modals/confirm-modal"
 import QuestionRandomizationModal from "@/components/modals/question-randomization-modal"
@@ -41,6 +42,7 @@ export default function CreateExaminationPage() {
     const { isOpen, onOpen, onOpenChange } = useDisclosure()
     const { isOpen: isAikenModalOpen, onOpen: onAikenModalOpen, onOpenChange: onAikenModalOpenChange } = useDisclosure()
     const { isOpen: isRandomizationModalOpen, onOpen: onRandomizationModalOpen, onOpenChange: onRandomizationModalOpenChange } = useDisclosure()
+    const { isOpen: isEditNestedModalOpen, onOpen: onEditNestedModalOpen, onOpenChange: onEditNestedModalOpenChange } = useDisclosure()
     const [deleteQuestionModal, setDeleteQuestionModal] = useState({ isOpen: false, questionId: '' })
     const [deleteAllModal, setDeleteAllModal] = useState({ isOpen: false })
     const [pendingQuestions, setPendingQuestions] = useState<any[]>([])
@@ -55,6 +57,7 @@ export default function CreateExaminationPage() {
     const { trigger, setTrigger } = useTrigger()
     const [isEditing, setIsEditing] = useState<boolean>(false)
     const [editingQuestion, setEditingQuestion] = useState<QuestionWithIdentifier<QuestionForm> | null>(null)
+    const [editingNestedQuestion, setEditingNestedQuestion] = useState<QuestionWithIdentifier<QuestionForm> | null>(null)
     const [formValues, setFormValues] = useState({
         title: '',
         description: ''
@@ -330,9 +333,19 @@ export default function CreateExaminationPage() {
         setIsNestedQuestion(false)
     }
 
+    const handleEditNestedQuestion = (question: QuestionWithIdentifier<QuestionForm>) => {
+        setEditingNestedQuestion(question)
+        onEditNestedModalOpen()
+    }
+
     const handleCancelEdit = () => {
         setEditingQuestion(null)
         setIsNewQuestion(false)
+    }
+
+    const handleCancelNestedEdit = () => {
+        setEditingNestedQuestion(null)
+        onEditNestedModalOpenChange()
     }
 
     // Add pagination logic
@@ -494,10 +507,6 @@ export default function CreateExaminationPage() {
                                             <h1>Add Nested Question</h1>
                                             <span className="text-tiny text-foreground/50">add your nested question.</span>
                                         </DropdownItem>
-                                        <DropdownItem startContent={<SystemUiconsReuse />} description='' key="reuse-question">
-                                            <h1>Reuse Question</h1>
-                                            <span className="text-tiny text-foreground/50">use your questions from question bank.</span>
-                                        </DropdownItem>
                                         <DropdownItem onPress={onAikenImportClick} startContent={<IcRoundFolder />} description="" key="import-aiken">
                                             <h1>Import Aiken</h1>
                                             <span className="text-tiny text-foreground/50">Import your question using an Aiken file.</span>
@@ -522,7 +531,6 @@ export default function CreateExaminationPage() {
                                         className="w-full"
                                     > What's aiken? </Button>
                                     <Button
-                                        startContent={<MingcuteDownFill fontSize={14} />}
                                         variant="flat"
                                         color='secondary'
                                         size="sm"
@@ -539,7 +547,6 @@ export default function CreateExaminationPage() {
                                         className="w-full"
                                     > Delete </Button>
                                     <Button
-                                        startContent={<MdiBin fontSize={14} />}
                                         variant="flat"
                                         color='danger'
                                         size="sm"
@@ -547,11 +554,12 @@ export default function CreateExaminationPage() {
                                         isDisabled={questionList.length === 0}
                                         className="w-full"
                                     > 
-                                        <span className="hidden sm:inline">Delete All Questions</span>
+                                        <span className="hidden sm:inline">Del All Questions</span>
                                         <span className="sm:hidden">Delete All</span>
                                     </Button>
                                     <div className="flex gap-x-2">
                                         <Button
+                                            onPress={() => router.push(`/overview`)}
                                             startContent={<IconParkOutlineCheckCorrect fontSize={14} />}
                                             variant="flat"
                                             className="text-blue-300 bg-blue-500/30 flex-1"
@@ -676,6 +684,7 @@ export default function CreateExaminationPage() {
                                                 question={question} 
                                                 id={question.id} 
                                                 onEdit={handleEditQuestion}
+                                                onEditNested={handleEditNestedQuestion}
                                             />
                                             <Tooltip content="Delete question">
                                                 <Button
@@ -966,6 +975,14 @@ ANSWER: B`}</pre>
                         )}
                     </ModalContent>
                 </Modal>
+
+                {/* Edit Nested Question Modal */}
+                <EditNestedQuestionModal
+                    isOpen={isEditNestedModalOpen}
+                    onOpenChange={handleCancelNestedEdit}
+                    nestedQuestion={editingNestedQuestion}
+                    examinationId={_id || ''}
+                />
 
             </DndContext>
         )

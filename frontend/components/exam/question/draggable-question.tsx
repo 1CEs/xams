@@ -12,9 +12,10 @@ interface DraggableQuestionProps {
     id: number
     disableDrag?: boolean
     onEdit?: (question: QuestionWithIdentifier<QuestionForm>) => void
+    onEditNested?: (question: QuestionWithIdentifier<QuestionForm>) => void
 }
 
-const DraggableQuestion = ({ id, question, disableDrag, onEdit }: DraggableQuestionProps) => {
+const DraggableQuestion = ({ id, question, disableDrag, onEdit, onEditNested }: DraggableQuestionProps) => {
     const {
         attributes,
         listeners,
@@ -87,7 +88,20 @@ const DraggableQuestion = ({ id, question, disableDrag, onEdit }: DraggableQuest
                             </div>
                         </div>
                         <div className="flex gap-2">
-                            {onEdit && (
+                            {question.type === 'nested' && onEditNested && (
+                                <Tooltip content="Edit nested question">
+                                    <Button 
+                                        onPress={() => onEditNested(question as QuestionWithIdentifier<QuestionForm>)} 
+                                        variant="flat" 
+                                        color="warning" 
+                                        size="sm"
+                                        isIconOnly
+                                    >
+                                        <FeEdit fontSize={14} />
+                                    </Button>
+                                </Tooltip>
+                            )}
+                            {question.type !== 'nested' && onEdit && (
                                 <Tooltip content="Edit question">
                                     <Button 
                                         onPress={() => onEdit(question as QuestionWithIdentifier<QuestionForm>)} 
@@ -147,10 +161,31 @@ const DraggableQuestion = ({ id, question, disableDrag, onEdit }: DraggableQuest
                         <div className="mt-4">
                             <div className="space-y-4">
                                 {question.questions.map((subQuestion, index) => (
-                                    <div key={index} className="border-l-2 border-gray-200 pl-4">
-                                        <p className="text-sm font-medium">{extractHtml(subQuestion.question)}</p>
-                                        <p className="text-xs text-gray-500">{matchQuestionType(subQuestion.type)}</p>
-                                        <p className="text-xs text-gray-500">Score: {subQuestion.score}</p>
+                                    <div key={index} className="border-l-2 border-gray-200 pl-4 relative">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium">{extractHtml(subQuestion.question)}</p>
+                                                <p className="text-xs text-gray-500">{matchQuestionType(subQuestion.type)}</p>
+                                                <p className="text-xs text-gray-500">Score: {subQuestion.score}</p>
+                                            </div>
+                                            {onEditNested && (
+                                                <Tooltip content="Edit sub-question">
+                                                    <Button
+                                                        size="sm"
+                                                        isIconOnly
+                                                        variant="light"
+                                                        color="primary"
+                                                        className="ml-2"
+                                                        onPress={() => {
+                                                            // Sub-question editing will be handled in the nested question modal
+                                                            onEditNested(question as QuestionWithIdentifier<QuestionForm>);
+                                                        }}
+                                                    >
+                                                        <FeEdit fontSize={12} />
+                                                    </Button>
+                                                </Tooltip>
+                                            )}
+                                        </div>
                                         {subQuestion.type === 'mc' && subQuestion.choices && (
                                             <div className="mt-2">
                                                 {subQuestion.choices.map((choice, choiceIndex) => (

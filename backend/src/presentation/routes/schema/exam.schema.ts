@@ -47,3 +47,27 @@ export const updateExaminationSchema = t.Object({
     description: t.Optional(t.String()),
     questions: t.Optional(t.Array(QuestionFormSchema)),
 })
+
+export const UpdateNestedQuestionSchema = t.Object({
+    question: t.Optional(t.String()),
+    score: t.Optional(t.Number())
+})
+
+export const UpdateSubQuestionSchema = t.Object({
+    question: t.Optional(t.String()),
+    type: t.Optional(t.Union([
+        t.Literal('tf'),
+        t.Literal('les'),
+        t.Literal('mc'),
+        t.Literal('ses')
+    ])),
+    choices: t.Optional(t.Array(t.Object({
+        content: t.String(),
+        isCorrect: t.Boolean(),
+        score: t.Number()
+    }))),
+    isRandomChoices: t.Optional(t.Boolean()),
+    isTrue: t.Optional(t.Boolean()),
+    expectedAnswers: t.Optional(t.Array(t.String())),
+    score: t.Optional(t.Number())
+})

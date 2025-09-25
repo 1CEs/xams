@@ -54,6 +54,9 @@ interface ExamResult {
     correctAnswer: string[]
     score: number
     obtainedScore: number
+    questionNumber?: number
+    isNested?: boolean
+    parentQuestionId?: string
   }[]
 }
 
@@ -530,7 +533,7 @@ const ExaminationPage = () => {
               if (subQuestion.choices) {
                 submittedSubAnswer.choices = subQuestion.choices.map(choice => ({
                   content: choice.content,
-                  isCorrect: choice.isCorrect
+                  isCorrect: choice.isCorrect || false
                 }))
               }
               
@@ -567,6 +570,13 @@ const ExaminationPage = () => {
               switch (question.type) {
                 case 'mc': // Multiple Choice
                   submittedAnswer.submitted_choices = answer.answers
+                  // Add original_choices for MC questions (for display purposes)
+                  if (question.choices) {
+                    submittedAnswer.original_choices = question.choices.map(choice => ({
+                      content: choice.content,
+                      isCorrect: choice.isCorrect || false
+                    }))
+                  }
                   break
                 case 'tf': // True/False
                   submittedAnswer.submitted_boolean = answer.answers[0] === 'true'
@@ -612,23 +622,57 @@ const ExaminationPage = () => {
       if (res.data.success) {
         // Transform the submission result to match the expected ExamResult format
         const submission = res.data.data
+        // Helper function to flatten nested question results
+        const flattenQuestionResults = (submittedAnswers: any[]) => {
+          const flattened: any[] = []
+          let questionCounter = 1
+          
+          submittedAnswers.forEach((answer: any) => {
+            const question = findQuestionById(answer.question_id, exam.questions)
+            
+            if (answer.question_type === 'nested' && answer.graded_nested_answers) {
+              // Handle nested questions - add each sub-question as separate result
+              answer.graded_nested_answers.forEach((nestedAnswer: any, subIndex: number) => {
+                flattened.push({
+                  questionId: nestedAnswer.question_id,
+                  isCorrect: nestedAnswer.is_correct || false,
+                  userAnswer: nestedAnswer.submitted_choices || [nestedAnswer.submitted_answer || String(nestedAnswer.submitted_boolean)],
+                  correctAnswer: [],
+                  score: nestedAnswer.max_score || 0,
+                  obtainedScore: nestedAnswer.score_obtained || 0,
+                  questionNumber: questionCounter + subIndex,
+                  isNested: true,
+                  parentQuestionId: answer.question_id
+                })
+              })
+              questionCounter += answer.graded_nested_answers.length
+            } else {
+              // Handle regular questions
+              flattened.push({
+                questionId: answer.question_id,
+                isCorrect: answer.is_correct || false,
+                userAnswer: answer.submitted_choices || [answer.submitted_answer || String(answer.submitted_boolean)],
+                correctAnswer: [],
+                score: question?.score || answer.max_score || 0,
+                obtainedScore: answer.score_obtained || 0,
+                questionNumber: questionCounter,
+                isNested: false
+              })
+              questionCounter++
+            }
+          })
+          
+          return flattened
+        }
+        
+        const flattenedDetails = flattenQuestionResults(submission.submitted_answers || [])
+        
         const examResult: ExamResult = {
           totalScore: submission.max_possible_score || 0,
           obtainedScore: submission.total_score || 0,
-          correctAnswers: submission.submitted_answers?.filter((a: any) => a.is_correct).length || 0,
-          totalQuestions: submission.submitted_answers?.length || 0,
-          details: submission.submitted_answers?.map((answer: any) => {
-            // Find the original question to get the max score
-            const question = findQuestionById(answer.question_id, exam.questions)
-            return {
-              questionId: answer.question_id,
-              isCorrect: answer.is_correct || false,
-              userAnswer: answer.submitted_choices || [answer.submitted_answer || String(answer.submitted_boolean)],
-              correctAnswer: [], // Will be populated by backend if needed
-              score: question?.score || answer.max_score || 0, // Use question max score, fallback to backend max_score
-              obtainedScore: answer.score_obtained || 0 // Add obtained score as separate field
-            }
-          }) || []
+          correctAnswers: flattenedDetails.filter(d => d.isCorrect).length,
+          totalQuestions: flattenedDetails.length,
+          details: flattenedDetails
         }
         
         setExamResult(examResult)
@@ -863,7 +907,12 @@ const ExaminationPage = () => {
                 <Button
                   color="default"
                   size="sm"
-                  onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onPress={() => {
+                    setCurrentPage(prev => Math.max(prev - 1, 1))
+                    setTimeout(() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }, 100)
+                  }}
                   isDisabled={currentPage === 1}
                   className="min-w-0"
                 >
@@ -873,7 +922,12 @@ const ExaminationPage = () => {
                 <Button
                   color="default"
                   size="sm"
-                  onPress={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  onPress={() => {
+                    setCurrentPage(prev => Math.min(prev + 1, totalPages))
+                    setTimeout(() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }, 100)
+                  }}
                   isDisabled={currentPage === totalPages}
                   className="min-w-0"
                 >

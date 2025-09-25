@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { Card, CardBody, Button, Chip, Tooltip, Link } from "@nextui-org/react";
 import { useExamSchedules } from "@/hooks/use-exam-schedules";
 import { SolarRefreshLineDuotone, UisSchedule } from "../icons/icons";
+import { useRouter } from "nextjs-toploader/app";
 
 interface ExamScheduleDetail {
   _id: string;
@@ -26,6 +27,7 @@ interface ExamScheduleDetail {
 const UpcomingExams = () => {
   const { examSchedules, isLoading, error } = useExamSchedules();
   const [showAll, setShowAll] = useState(false);
+  const router = useRouter();
 
   // Filter upcoming exams (within next 30 days or no date set)
   const upcomingExams = useMemo(() => {
@@ -69,7 +71,7 @@ const UpcomingExams = () => {
             
             return (
               <Card key={index} className="hover:shadow-md transition-shadow">
-                <CardBody className="p-4">
+                <CardBody className="p-4 cursor-pointer" onClick={() => router.push(`/overview/course?id=${exam.course_id}`)}>
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">

@@ -65,7 +65,7 @@ import { toast } from 'react-toastify'
 interface Question {
   _id: string
   question: string
-  type: 'mc' | 'tf' | 'sa' | 'nested'
+  type: 'mc' | 'tf' | 'ses' | 'les' | 'nested'
   score: number
   choices?: {
     content: string
@@ -295,6 +295,19 @@ export default function CreateSchedulePage() {
       default:
         return 'Unknown'
     }
+  }
+
+  // Helper function to count total questions including nested sub-questions
+  const getTotalQuestionCount = (questions: Question[]): number => {
+    return questions.reduce((total, question) => {
+      if (question.type === 'nested' && question.questions) {
+        // For nested questions, count all sub-questions
+        return total + question.questions.length
+      } else {
+        // For regular questions, count as 1
+        return total + 1
+      }
+    }, 0)
   }
 
   // IP Range validation and helper functions
@@ -677,25 +690,21 @@ export default function CreateSchedulePage() {
     });
     setSelectedExams(updatedExamIds);
 
-    // Only clear previous selections if not in additive mode
     if (!isAdditive) {
       setSelectedQuestions([]);
-      // Initialize selection methods for new exams (default to manual)
       const newMethods: { [examId: string]: 'manual' | 'random' } = {};
       const newCounts: { [examId: string]: number } = {};
       updatedExamIds.forEach(examId => {
         newMethods[examId] = 'manual';
-        newCounts[examId] = 5; // default random count
+        newCounts[examId] = 5;
       });
       setExamSelectionMethods(newMethods);
       setExamRandomCounts(newCounts);
     }
 
     if (updatedExamIds.length > 0) {
-      // Close exam modal
       setIsExamModalOpen(false);
 
-      // Fetch questions for newly selected exams
       const newExamIds = isAdditive
         ? updatedExamIds.filter(id => !Object.keys(examQuestions).includes(id))
         : updatedExamIds;
@@ -704,7 +713,6 @@ export default function CreateSchedulePage() {
         await fetchExamQuestions(newExamIds);
       }
 
-      // Initialize selection methods for new exams in additive mode
       if (isAdditive) {
         const newMethods = { ...examSelectionMethods };
         const newCounts = { ...examRandomCounts };
@@ -718,15 +726,15 @@ export default function CreateSchedulePage() {
         setExamRandomCounts(newCounts);
       }
 
-      // Go directly to question selection
       setCurrentStep('questions');
       setIsQuestionModalOpen(true);
 
-      // Update question count based on total questions from all selected exams
       let totalQuestions = 0;
       updatedExamIds.forEach(examId => {
         const exam = examinations.find(e => e._id === examId);
-        totalQuestions += exam?.questions?.length || 0;
+        if (exam?.questions) {
+          totalQuestions += getTotalQuestionCount(exam.questions);
+        }
       });
 
       setExamSettingForm(prev => ({
@@ -755,32 +763,25 @@ export default function CreateSchedulePage() {
 
 
 
-  // Generate random questions for a specific exam
   const handleRandomSelectionForExam = (examId: string, count: number) => {
     const exam = examinations.find(e => e._id === examId);
     const questions = examQuestions[examId] || [];
 
     if (!exam || questions.length === 0) return;
 
-    // Remove existing selections for this exam
     setSelectedQuestions(prev => prev.filter(q => q.examId !== examId));
 
-    // Shuffle and select random questions
     const shuffled = questions.sort(() => Math.random() - 0.5);
     const randomSelected = shuffled.slice(0, Math.min(count, questions.length));
 
-    // Convert to SelectedQuestion format
     const newSelectedQuestions: SelectedQuestion[] = randomSelected.map(question => ({
       ...question,
       examId,
       examTitle: exam.title
     }));
 
-    // Add to existing selections
     setSelectedQuestions(prev => [...prev, ...newSelectedQuestions]);
 
-    // Update selection mode based on current exam selection methods
-    // Include the current exam being set to random in the calculation
     const updatedExamMethods = { ...examSelectionMethods, [examId]: 'random' as const };
     const hasManualSelections = Object.values(updatedExamMethods).some(method => method === 'manual');
     const hasRandomSelections = Object.values(updatedExamMethods).some(method => method === 'random');
@@ -793,7 +794,6 @@ export default function CreateSchedulePage() {
       setSelectionMode('manual');
     }
 
-    // Add to selection history
     setSelectionHistory(prev => [...prev, {
       mode: 'random',
       count: newSelectedQuestions.length,
@@ -2154,7 +2154,7 @@ export default function CreateSchedulePage() {
                       <span className="text-sm font-medium">Select All</span>
                     </Checkbox>
                     <span className="text-xs text-default-500">
-                      ({allQuestionsFromManualExams.length} questions)
+                      ({getTotalQuestionCount(allQuestionsFromManualExams)} questions)
                     </span>
                   </div>
                 );
@@ -2182,7 +2182,7 @@ export default function CreateSchedulePage() {
                         <HealthiconsIExamMultipleChoice className="w-5 h-5 text-primary" />
                         <h3 className="text-lg font-semibold">{exam.title}</h3>
                         <Badge color="secondary" variant="flat">
-                          {questions.length} total questions
+                          {getTotalQuestionCount(questions)} total questions
                         </Badge>
                         {selectedFromExam.length > 0 && (
                           <Badge color="primary" variant="flat">
@@ -2276,7 +2276,7 @@ export default function CreateSchedulePage() {
                                 handleRandomSelectionForExam(examId, newCount);
                               }}
                               min={1}
-                              max={questions.length}
+                              max={getTotalQuestionCount(questions)}
                               size="sm"
                               className="w-48"
                             />
@@ -2346,18 +2346,54 @@ export default function CreateSchedulePage() {
                         {/* Random Selection Preview */}
                         {selectionMethod === 'random' && selectedFromExam.length > 0 && (
                           <div className="bg-secondary/10 p-3 rounded-lg">
-                            <p className="text-sm font-medium mb-2">Random Selection Preview:</p>
-                            <div className="space-y-1">
-                              {selectedFromExam.slice(0, 3).map((question, index) => (
-                                <p key={question._id} className="text-xs text-default-600">
-                                  • {question.question.substring(0, 60)}...
-                                </p>
+                            <p className="text-sm font-medium mb-3">Random Selection Preview:</p>
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                              {selectedFromExam.map((question, index) => (
+                                <Card key={question._id} className="border border-default-200">
+                                  <CardBody className="p-3">
+                                    <div className="flex items-start gap-3">
+                                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary text-white text-sm font-semibold flex items-center justify-center">
+                                        {index + 1}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          {getQuestionTypeIcon(question.type)}
+                                          <Chip size="sm" variant="flat" color="secondary">
+                                            {getQuestionTypeLabel(question.type)}
+                                          </Chip>
+                                          <Chip size="sm" variant="flat" color="primary">
+                                            {question.score} pts
+                                          </Chip>
+                                        </div>
+                                        <div 
+                                          className="text-sm font-medium line-clamp-2"
+                                          dangerouslySetInnerHTML={{ __html: question.question }}
+                                        />
+                                        {question.type === 'mc' && question.choices && question.choices.length > 0 && (
+                                          <div className="mt-2 text-xs text-default-500">
+                                            {question.choices.length} answer choices
+                                          </div>
+                                        )}
+                                        {question.type === 'tf' && (
+                                          <div className="mt-2 text-xs text-default-500">
+                                            True/False question
+                                          </div>
+                                        )}
+                                        {(question.type === 'ses' || question.type === 'les') && (
+                                          <div className="mt-2 text-xs text-default-500">
+                                            Essay question
+                                          </div>
+                                        )}
+                                        {question.type === 'nested' && question.questions && (
+                                          <div className="mt-2 text-xs text-default-500">
+                                            Contains {question.questions.length} sub-questions
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </CardBody>
+                                </Card>
                               ))}
-                              {selectedFromExam.length > 3 && (
-                                <p className="text-xs text-default-500">
-                                  ... and {selectedFromExam.length - 3} more questions
-                                </p>
-                              )}
                             </div>
                           </div>
                         )}

@@ -305,7 +305,8 @@ export class CourseController implements ICourseController {
                     randomize_question: examSettingData.randomize_question,
                     randomize_choice: examSettingData.randomize_choice,
                     total_score: examSettingData.total_score,
-                    assistant_grading: examSettingData.assistant_grading
+                    assistant_grading: examSettingData.assistant_grading,
+                    time_taken: examSettingData.time_taken
                 },
                 examSettingData.selected_questions // Pass the selected questions from frontend
             );
@@ -414,7 +415,8 @@ export class CourseController implements ICourseController {
                 question_count: examSettingData.question_count,
                 total_score: examSettingData.total_score,
                 exam_ids: examSettingData.exam_ids,
-                selected_questions: examSettingData.selected_questions
+                selected_questions: examSettingData.selected_questions,
+                time_taken: examSettingData.time_taken
             });
             
             console.log('✅ Successfully updated examination schedule:', updatedSchedule);

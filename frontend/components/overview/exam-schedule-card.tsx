@@ -73,6 +73,35 @@ export default function ExamScheduleCard({
   // Fetch exam schedule data using the schedule_id
   const { data: examSchedule, isLoading, error } = useFetch<{ data: ExamSchedule }>(`/exam-schedule/${setting.schedule_id}`)
 
+  // Count all questions including nested sub-questions
+  const countAllQuestions = (questions: any[]) => {
+    if (!questions || questions.length === 0) {
+      return { total: 0, regular: 0, nested: 0, subQuestions: 0 }
+    }
+
+    let regular = 0
+    let nested = 0
+    let subQuestions = 0
+
+    questions.forEach(question => {
+      if (question.type === 'nested' && question.questions && question.questions.length > 0) {
+        nested++ // Count nested containers for display purposes
+        subQuestions += question.questions.length
+      } else {
+        regular++
+      }
+    })
+
+    // Total = regular questions + sub-questions (don't count nested containers)
+    const total = regular + subQuestions
+    return { total, regular, nested, subQuestions }
+  }
+
+  // Get question count details
+  const questionCounts = useMemo(() => {
+    return countAllQuestions(examSchedule?.data?.questions || [])
+  }, [examSchedule?.data?.questions])
+
   // Check if current user is the instructor who created this exam schedule
   const isInstructor = useMemo(() => {
     return user && examSchedule?.data && user._id === examSchedule.data.instructor_id
@@ -370,7 +399,10 @@ export default function ExamScheduleCard({
 
         <div className="flex flex-wrap gap-1 sm:gap-2">
           <Chip size="sm" variant="flat" className="text-xs">
-            {schedule.question_count} Questions
+            {questionCounts.total} Questions
+            {questionCounts.nested > 0 && (
+              <span className="ml-1 text-warning">({questionCounts.nested} nested)</span>
+            )}
           </Chip>
           <Chip size="sm" variant="flat" className="text-xs">
             {schedule.allowed_attempts} Attempts
@@ -447,6 +479,21 @@ export default function ExamScheduleCard({
                 </Button>
               </Tooltip>
             </>
+          )}
+          
+          {isStudent && (
+            <Tooltip content="View my submissions">
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                color="primary"
+                onPress={() => router.push(`/submission-history?schedule_id=${setting.schedule_id}&student_id=${user?._id}`)}
+                className="min-w-unit-8 w-8 h-8 sm:min-w-unit-10 sm:w-10 sm:h-10"
+              >
+                <PhEyeDuotone className="h-3 w-3 sm:h-4 sm:w-4" />
+              </Button>
+            </Tooltip>
           )}
           
           <Button
@@ -557,8 +604,8 @@ export default function ExamScheduleCard({
                     <h4 className="font-semibold text-default-700 mb-3">Exam Settings</h4>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                       <div className="text-center p-3 bg-default-50 rounded-lg">
-                        <p className="text-2xl font-bold text-primary">{schedule.question_count}</p>
-                        <p className="text-xs text-default-600">Questions</p>
+                        <p className="text-2xl font-bold text-primary">{questionCounts.total}</p>
+                        <p className="text-xs text-default-600">Total Questions</p>
                       </div>
                       <div className="text-center p-3 bg-default-50 rounded-lg">
                         <p className="text-2xl font-bold text-secondary">{schedule.allowed_attempts}</p>
@@ -578,6 +625,37 @@ export default function ExamScheduleCard({
                       </div>
                     </div>
                   </div>
+
+                  {/* Question Breakdown */}
+                  {(questionCounts.nested > 0 || questionCounts.regular > 0) && (
+                    <div>
+                      <h4 className="font-semibold text-default-700 mb-3">Question Breakdown</h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="text-center p-3 bg-primary/10 rounded-lg">
+                          <p className="text-xl font-bold text-primary">{questionCounts.total}</p>
+                          <p className="text-xs text-default-600">Total Questions</p>
+                        </div>
+                        {questionCounts.regular > 0 && (
+                          <div className="text-center p-3 bg-secondary/10 rounded-lg">
+                            <p className="text-xl font-bold text-secondary">{questionCounts.regular}</p>
+                            <p className="text-xs text-default-600">Regular Questions</p>
+                          </div>
+                        )}
+                        {questionCounts.nested > 0 && (
+                          <div className="text-center p-3 bg-warning/10 rounded-lg">
+                            <p className="text-xl font-bold text-warning">{questionCounts.nested}</p>
+                            <p className="text-xs text-default-600">Nested Questions</p>
+                          </div>
+                        )}
+                        {questionCounts.subQuestions > 0 && (
+                          <div className="text-center p-3 bg-success/10 rounded-lg">
+                            <p className="text-xl font-bold text-success">{questionCounts.subQuestions}</p>
+                            <p className="text-xs text-default-600">Sub-Questions</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Additional Features */}
                   <div>
