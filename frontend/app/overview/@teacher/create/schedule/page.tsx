@@ -761,8 +761,6 @@ export default function CreateSchedulePage() {
     // Don't change currentStep, keep it as 'questions' to maintain context
   }
 
-
-
   const handleRandomSelectionForExam = (examId: string, count: number) => {
     const exam = examinations.find(e => e._id === examId);
     const questions = examQuestions[examId] || [];
@@ -771,10 +769,60 @@ export default function CreateSchedulePage() {
 
     setSelectedQuestions(prev => prev.filter(q => q.examId !== examId));
 
-    const shuffled = questions.sort(() => Math.random() - 0.5);
-    const randomSelected = shuffled.slice(0, Math.min(count, questions.length));
+    const getQuestionCount = (question: Question) => {
+      if (question.type === 'nested' && question.questions) {
+        return question.questions.length;
+      }
+      return 1;
+    };
 
-    const newSelectedQuestions: SelectedQuestion[] = randomSelected.map(question => ({
+    const totalAvailableCount = questions.reduce((sum, question) => sum + getQuestionCount(question), 0);
+    
+    if (count >= totalAvailableCount) {
+      const newSelectedQuestions: SelectedQuestion[] = questions.map(question => ({
+        ...question,
+        examId,
+        examTitle: exam.title
+      }));
+
+      setSelectedQuestions(prev => [...prev, ...newSelectedQuestions]);
+
+      const updatedExamMethods = { ...examSelectionMethods, [examId]: 'random' as const };
+      const hasManualSelections = Object.values(updatedExamMethods).some(method => method === 'manual');
+      const hasRandomSelections = Object.values(updatedExamMethods).some(method => method === 'random');
+
+      if (hasManualSelections && hasRandomSelections) {
+        setSelectionMode('hybrid');
+      } else if (Object.values(updatedExamMethods).every(method => method === 'random')) {
+        setSelectionMode('random');
+      } else {
+        setSelectionMode('manual');
+      }
+
+      setSelectionHistory(prev => [...prev, {
+        mode: 'random',
+        count: newSelectedQuestions.length,
+        timestamp: Date.now()
+      }]);
+      return;
+    }
+
+    const shuffledQuestions = [...questions].sort(() => Math.random() - 0.5);
+    const selectedQuestions: Question[] = [];
+    let remainingCount = count;
+
+    for (const question of shuffledQuestions) {
+      const questionCount = getQuestionCount(question);
+      if (questionCount <= remainingCount) {
+        selectedQuestions.push(question);
+        remainingCount -= questionCount;
+        if (remainingCount === 0) {
+          break;
+        }
+      }
+    }
+
+    const newSelectedQuestions: SelectedQuestion[] = selectedQuestions.map(question => ({
       ...question,
       examId,
       examTitle: exam.title
